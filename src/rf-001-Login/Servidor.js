@@ -26,12 +26,8 @@ const swaggerSpec = JSON.parse(
 );
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-// Serve o frontend (public/index.html e outros arquivos estáticos)
-// diretamente pelo Express. Isso faz o frontend e o backend viverem
-// no mesmo domínio quando publicado, eliminando qualquer problema de CORS
-// em produção. Localmente, você ainda pode usar o Live Server se preferir.
 app.use('/login', Express.static(path.join(__dirname, 'public')))
-app.use('/cadastro', Express.static(path.join(__dirname, '../rf-002-Cadastro/public')))
+app.use('/cadastro', Express.static(path.join(__dirname, '../rf-002-Cadastro_usuario/public')))
 
 const supabase = createClient(
     process.env.SUPABASE_URL,
