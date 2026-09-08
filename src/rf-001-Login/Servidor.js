@@ -22,7 +22,7 @@ app.use(cors({ origin: 'http://127.0.0.1:5500' }));
 app.use(Express.json())
 
 const swaggerSpec = JSON.parse(
-  readFileSync(new URL('./swagger.json', import.meta.url))
+  readFileSync(new URL('../../docs/api/API-SWAGGER.json ', import.meta.url))
 );
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
