@@ -197,7 +197,7 @@
                 document.getElementById("erro-senha").innerHTML = ` `
             }
 
-            if (nome || email.includes("@") || senha || senha.lenght >= 10) {
+            if (nome && email.includes("@") && senha && senha.lenght >= 10) {
                 loading.style.display = "flex";
                 try {
 
