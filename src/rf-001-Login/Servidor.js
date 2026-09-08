@@ -27,7 +27,7 @@ const swaggerSpec = JSON.parse(
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.use('/login', Express.static(path.join(__dirname, 'public')))
-app.use('/cadastro', Express.static(path.join(__dirname, '../rf-002-Cadastro_usuario/public')))
+app.use('/cadastro-usuario', Express.static(path.join(__dirname, '../rf-002-Cadastro_usuario/public')))
 
 const supabase = createClient(
     process.env.SUPABASE_URL,
