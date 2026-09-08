@@ -30,7 +30,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 // diretamente pelo Express. Isso faz o frontend e o backend viverem
 // no mesmo domínio quando publicado, eliminando qualquer problema de CORS
 // em produção. Localmente, você ainda pode usar o Live Server se preferir.
-app.use(Express.static(path.join(__dirname, 'public')))
+app.use(Express.static(path.join(__dirname, 'public', '../rf-002-Cadastro_usuario/public/' )))
 
 const supabase = createClient(
     process.env.SUPABASE_URL,
