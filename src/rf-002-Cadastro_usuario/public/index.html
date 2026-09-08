@@ -196,7 +196,7 @@
             else {
                 document.getElementById("erro-senha").innerHTML = ` `
             }
-
+            //Verifica se todos os campos estão preenchidos corretamente e faz a requisição
             if (nome && email.includes("@") && senha && senha.length >= 10) {
                 // Bloqueia a tela
                 loading.style.display = "flex";
@@ -212,6 +212,8 @@
                 if (response.status === 200) {
                     alert(resultado.mensagem)
                 } else if (response.status === 400) {
+                    alert(resultado.mensagem)
+                } else if (response.status === 409) {
                     alert(resultado.mensagem)
                 }
 

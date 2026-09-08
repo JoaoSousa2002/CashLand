@@ -22,12 +22,15 @@ app.use(cors({ origin: 'http://127.0.0.1:5500' }));
 app.use(Express.json())
 
 const swaggerSpec = JSON.parse(
-    readFileSync(new URL('../../docs/api/API-SWAGGER.json ', import.meta.url))
+    readFileSync(new URL('../../docs/api/API-SWAGGER.json', import.meta.url))
 );
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
+app.get('/', (req, res) => res.redirect('/login'));
 app.use('/login', Express.static(path.join(__dirname, 'public')))
 app.use('/cadastro-usuario', Express.static(path.join(__dirname, '../rf-002-Cadastro_usuario/public')))
+
+
 
 const supabase = createClient(
     process.env.SUPABASE_URL,
@@ -73,15 +76,19 @@ app.post('/login', async (req, res) => {
 app.post('/cadastro-usuario', async (req, res) => {
     const { nome, email, senha } = req.body;
 
-    const {data} = await supabase
+    if (!nome || !email || !email.includes('@') || !senha || senha.length < 10) {
+        return res.status(400).json({ mensagem: 'Dados inválidos ou incompletos' });
+    }
+
+    const { data } = await supabase
         .from('usuarios')
         .select('email')
         .eq('email', email)
         .maybeSingle()
-        
-    
-    if(data){
-        res.status(400).json({mensagem: "Esse email já está cadastrado"})
+
+
+    if (data) {
+        res.status(409).json({ mensagem: "Esse email já está cadastrado" })
     } else {
         const { error } = await supabase
             .from('usuarios')
@@ -90,9 +97,10 @@ app.post('/cadastro-usuario', async (req, res) => {
                 email: email,
                 senha_hash: await gerarHashSenha(senha)
             })
-    
+
         if (error) {
             console.log('Erro ao criar:', error.message);
+            return res.status(500).json({ mensagem: 'Erro ao cadastrar usuário' });
         } else {
             res.status(200).json({
                 mensagem: 'Cadastro realizado com sucesso, prossiga para o login!',

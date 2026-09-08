@@ -51,7 +51,8 @@
           }
         }
       }
-    }, "/cadastrar-usuario": {
+    },
+    "/cadastrar-usuario": {
       "post": {
         "summary": "cadastra um  novo usuário",
         "tags": [
@@ -69,7 +70,7 @@
                   "senha"
                 ],
                 "properties": {
-                  "nome":{
+                  "nome": {
                     "type": "string",
                     "example": "Joao Sousa"
                   },
@@ -90,8 +91,14 @@
           "200": {
             "description": "Cadastro realizado com sucesso, prossiga para o login!"
           },
-          "40": {
+          "400": {
+            "description": "Dados inválidos ou incompletos"
+          },
+          "409": {
             "description": "Esse email já está cadastrado"
+          },
+          "500": {
+            "description": "Erro ao cadastrar usuário"
           }
         }
       }
