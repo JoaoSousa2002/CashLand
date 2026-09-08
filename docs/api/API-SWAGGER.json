@@ -6,31 +6,93 @@
     "description": "API de autenticação e gerenciamento do CashLand"
   },
   "servers": [
-    { "url": "http://localhost:3000", "description": "Servidor local" }
+    {
+      "url": "http://localhost:3000",
+      "description": "Servidor local"
+    }
   ],
   "paths": {
     "/login": {
       "post": {
         "summary": "Autentica um usuário",
-        "tags": ["Autenticação"],
+        "tags": [
+          "Autenticação"
+        ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["email", "senha"],
+                "required": [
+                  "email",
+                  "senha"
+                ],
                 "properties": {
-                  "email": { "type": "string", "example": "usuario@exemplo.com" },
-                  "senha": { "type": "string", "example": "minhaSenha123" }
+                  "email": {
+                    "type": "string",
+                    "example": "usuario@exemplo.com"
+                  },
+                  "senha": {
+                    "type": "string",
+                    "example": "minhaSenha123"
+                  }
                 }
               }
             }
           }
         },
         "responses": {
-          "200": { "description": "Login realizado com sucesso" },
-          "401": { "description": "Email ou senha inválidos" }
+          "200": {
+            "description": "Login realizado com sucesso"
+          },
+          "401": {
+            "description": "Email ou senha inválidos"
+          }
+        }
+      }
+    }, "/cadastrar-usuario": {
+      "post": {
+        "summary": "cadastra um  novo usuário",
+        "tags": [
+          "Cadastramento de usuario"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "nome",
+                  "email",
+                  "senha"
+                ],
+                "properties": {
+                  "nome":{
+                    "type": "string",
+                    "example": "Joao Sousa"
+                  },
+                  "email": {
+                    "type": "string",
+                    "example": "usuario@exemplo.com"
+                  },
+                  "senha": {
+                    "type": "string",
+                    "example": "minhaSenha123"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Cadastro realizado com sucesso, prossiga para o login!"
+          },
+          "401": {
+            "description": "Email ou senha inválidos"
+          }
         }
       }
     }
