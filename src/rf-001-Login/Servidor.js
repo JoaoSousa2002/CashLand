@@ -22,7 +22,7 @@ app.use(cors({ origin: 'http://127.0.0.1:5500' }));
 app.use(Express.json())
 
 const swaggerSpec = JSON.parse(
-  readFileSync(new URL('../../docs/api/API-SWAGGER.json ', import.meta.url))
+    readFileSync(new URL('../../docs/api/API-SWAGGER.json ', import.meta.url))
 );
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
@@ -72,6 +72,39 @@ app.post('/login', async (req, res) => {
         usuario: { id: usuario.id_usuario, nome: usuario.nome }
     });
 })
+
+app.post('/cadastro-usuario', async (req, res) => {
+    const { nome, email, senha } = req.body;
+
+
+    // Verifica se os campos estão preenchidos
+    if (!nome) {
+        return res.status(400).json({ mensagem: "O campo 'Nome' deve ser preenchido" })
+    } else if (!email) {
+        return res.status(400).json({ mensagem: "O campo 'Email' deve ser preenchido" })
+    } else if (!senha) {
+        return res.status(400).json({ mensagem: "O campo 'Senha' deve ser preenchido" })
+    }
+
+    const { error } = await supabase
+        .from('usuarios')
+        .insert({
+            nome: nome,
+            email: email,
+            senha_hash: await gerarHashSenha(senha)
+        })
+
+    if (error) {
+        console.log('Erro ao criar:', error.message);
+    } else {
+        res.status(200).json({
+            mensagem: 'Cadastro realizado com sucesso, prossiga para o login!',
+        });
+    }
+
+}
+
+)
 
 // O Render (e a maioria dos provedores de hospedagem) define a porta
 // dinamicamente via variável de ambiente PORT. Localmente, cai no 3000.

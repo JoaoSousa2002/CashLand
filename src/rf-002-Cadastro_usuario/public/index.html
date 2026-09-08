@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+</head>
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: Arial, sans-serif;
+    }
+
+    .container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        background-color: #f0f2f5;
+    }
+
+    #div-Login {
+        background-color: #ffffff;
+        border-radius: 12px;
+        padding: 40px;
+        width: 320px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    #div-Login form {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    #div-Login label {
+        font-weight: bold;
+        margin-bottom: 5px;
+        display: block;
+    }
+
+    #div-Login input {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        font-size: 14px;
+    }
+
+    #div-Login input:focus {
+        outline: none;
+        border-color: #4a90d9;
+        box-shadow: 0 0 0 2px rgba(74, 144, 217, 0.2);
+    }
+</style>
+
+<body>
+    <div class="container">
+        <div id="div-Login">
+            <label for="meuForm_Cadastro">CashLand</label>
+            <form action="" id="meuForm">
+                <label for="Email">Nome: </label><br>
+                <input type="text" name="Nome" id="Nome">
+
+                <label for="Email">Email: </label><br>
+                <input type="text" name="Email" id="Email">
+
+                <label for="Senha">Senha:</label><br>
+                <input type="password" name="Senha" id="Senha">
+
+                <input type="submit" value="Enviar">
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById("meuForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            const email = document.getElementById("Email").value;
+            const senha = document.getElementById("Senha").value;
+            const nome = document.getElementById("Nome").value;
+
+            const response = await fetch(`/cadastro-usuario`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nome, email, senha })
+            });
+            const resultado = await response.json();
+            if (response.status === 200) {
+                alert(resultado.mensagem)
+                window.location.href = '../../rf-001-Login/public/index.html'
+            }
+
+        })
+    </script>
+</body>
+
+</html>
