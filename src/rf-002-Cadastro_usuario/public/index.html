@@ -201,9 +201,6 @@
                         body: JSON.stringify({ nome, email, senha })
                     });
                     const resultado = await response.json();
-                    if (response.status === 200) {
-                        alert(resultado.mensagem)
-                    }
                 } catch (erro) {
 
                     console.log(erro);
@@ -211,6 +208,9 @@
                 } finally {
 
                     loading.style.display = "none";
+                    if (response.status === 200) {
+                        alert(resultado.mensagem)
+                    }
 
                 }
             }
