@@ -84,15 +84,45 @@
         /* border: 2px solid black; */
         width: 100%;
     }
+
+    #loading-overlay {
+        display: none;
+
+        position: fixed;
+        top: 0;
+        left: 0;
+
+        width: 100vw;
+        height: 100vh;
+
+        background-color: rgba(0, 0, 0, 0.5);
+
+        z-index: 9999;
+
+        justify-content: center;
+        align-items: center;
+    }
+
+    .loading-box {
+        background-color: white;
+        padding: 30px;
+        border-radius: 10px;
+    }
 </style>
 
 <body>
+    <div id="loading-overlay">
+        <div class="loading-box">
+            Carregando...
+        </div>
+    </div>
+
     <div class="container">
         <div id="div-Login">
 
             <div id="id-Titulo">
                 <h1>CashLand</h1>
-                <input type="button"  value="Voltar" id="botao-Voltar" onclick="location.href='/login'" >
+                <input type="button" value="Voltar" id="botao-Voltar" onclick="location.href='/login'">
             </div>
 
 
@@ -103,7 +133,7 @@
                     <input type="text" name="Nome" id="Nome" placeholder="Ex: Daniel">
                 </div>
                 <div id="erro-nome">
-                    
+
                 </div>
 
                 <div class="input-dados">
@@ -130,6 +160,7 @@
     <script>
         document.getElementById("meuForm").addEventListener("submit", async (e) => {
             e.preventDefault();
+            const loading = document.getElementById("loading-overlay");
 
             const nome = document.getElementById("Nome").value;
             const email = document.getElementById("Email").value;
@@ -160,15 +191,27 @@
                 document.getElementById("erro-senha").innerHTML = ` `
             }
 
-            if (nome || email.includes("@") ||senha) {
-                const response = await fetch(`/cadastro-usuario`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ nome, email, senha })
-                });
-                const resultado = await response.json();
-                if (response.status === 200) {
-                    alert(resultado.mensagem)
+            if (nome || email.includes("@") || senha) {
+                loading.style.display = "flex";
+                try {
+
+                    const response = await fetch(`/cadastro-usuario`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ nome, email, senha })
+                    });
+                    const resultado = await response.json();
+                    if (response.status === 200) {
+                        alert(resultado.mensagem)
+                    }
+                } catch (erro) {
+
+                    console.log(erro);
+
+                } finally {
+
+                    loading.style.display = "none";
+
                 }
             }
 
