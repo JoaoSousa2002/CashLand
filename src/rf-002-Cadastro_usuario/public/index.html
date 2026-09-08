@@ -173,8 +173,6 @@
             const nome = document.getElementById("Nome").value;
             const email = document.getElementById("Email").value;
             const senha = document.getElementById("Senha").value;
-            var erro = false;
-
 
             // Verifica se os campo nome e senha estão vazios ou se o campo email falta o '@'', se sim, retorna mensagem de erro
             // O else serve para caso já tenha aparecido a mensagem de erro e o usuario insira o campo corretamente
@@ -191,9 +189,9 @@
             else {
                 document.getElementById("erro-email").innerHTML = ` `
             }
-            if (!senha) {
+            if (!senha.lenght(10) < 10) {
                 document.getElementById("erro-senha").innerHTML = `
-                <h5 style="color: rgb(160, 2, 2); margin-left: 80px;">ERRO: A não pode estar vazia</h5> `
+                <h5 style="color: rgb(160, 2, 2); margin-left: 80px;">ERRO: A senha deve ter no minimo 5 caracteres</h5> `
             }
             else {
                 document.getElementById("erro-senha").innerHTML = ` `

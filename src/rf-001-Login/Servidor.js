@@ -73,16 +73,6 @@ app.post('/login', async (req, res) => {
 app.post('/cadastro-usuario', async (req, res) => {
     const { nome, email, senha } = req.body;
 
-
-    // Verifica se os campos estão preenchidos
-    if (!nome) {
-        return res.status(400).json({ mensagem: "O campo 'Nome' deve ser preenchido" })
-    } else if (!email) {
-        return res.status(400).json({ mensagem: "O campo 'Email' deve ser preenchido" })
-    } else if (!senha) {
-        return res.status(400).json({ mensagem: "O campo 'Senha' deve ser preenchido" })
-    }
-
     const { error } = await supabase
         .from('usuarios')
         .insert({
