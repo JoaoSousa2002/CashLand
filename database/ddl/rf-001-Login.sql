@@ -11,16 +11,10 @@ create table usuarios (
 insert into
   usuarios (nome, email, senha_hash)
 
-  
+
 values
   (
     'João Teste',
     'teste@email.com',
     '$2b$10$du3vleTTAvT.nmxNhYaMjuPfdWxX31FEW6wJnQuqET2B1tbc0BLMG'
-  );
-
---123456
-select
-  *
-from
-  usuarios;
+  ); --123456
