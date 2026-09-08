@@ -90,8 +90,8 @@
           "200": {
             "description": "Cadastro realizado com sucesso, prossiga para o login!"
           },
-          "401": {
-            "description": "Email ou senha inválidos"
+          "40": {
+            "description": "Esse email já está cadastrado"
           }
         }
       }

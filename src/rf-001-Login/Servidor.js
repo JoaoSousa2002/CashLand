@@ -73,21 +73,33 @@ app.post('/login', async (req, res) => {
 app.post('/cadastro-usuario', async (req, res) => {
     const { nome, email, senha } = req.body;
 
-    const { error } = await supabase
-        .from('usuarios')
-        .insert({
-            nome: nome,
-            email: email,
-            senha_hash: await gerarHashSenha(senha)
-        })
-
-    if (error) {
-        console.log('Erro ao criar:', error.message);
+    const {data} = await supabase
+        .from('usuarios'
+        .select('email')
+        .eq('email', email)
+        .maybeSingle()
+        )
+    
+    if(data){
+        res.status(400).json({mensagem: "Esse email já está cadastrado"})
     } else {
-        res.status(200).json({
-            mensagem: 'Cadastro realizado com sucesso, prossiga para o login!',
-        });
+        const { error } = await supabase
+            .from('usuarios')
+            .insert({
+                nome: nome,
+                email: email,
+                senha_hash: await gerarHashSenha(senha)
+            })
+    
+        if (error) {
+            console.log('Erro ao criar:', error.message);
+        } else {
+            res.status(200).json({
+                mensagem: 'Cadastro realizado com sucesso, prossiga para o login!',
+            });
+        }
     }
+
 
 }
 

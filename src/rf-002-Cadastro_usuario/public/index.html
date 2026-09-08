@@ -198,29 +198,24 @@
             }
 
             if (nome && email.includes("@") && senha && senha.length >= 10) {
+                // Bloqueia a tela
                 loading.style.display = "flex";
-                try {
 
-                    const response = await fetch(`/cadastro-usuario`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ nome, email, senha })
-                    });
-                    const resultado = await response.json();
-                } catch (erro) {
+                const response = await fetch(`/cadastro-usuario`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nome, email, senha })
+                });
+                const resultado = await response.json();
 
-                    console.log(erro);
-
-                } finally {
-
-                    loading.style.display = "none";
-                    if (response.status === 200) {
-                        alert(resultado.mensagem)
-                    }
-
+                loading.style.display = "none";
+                if (response.status === 200) {
+                    alert(resultado.mensagem)
+                } else if (response.status === 400) {
+                    alert(resultado.mensagem)
                 }
-            }
 
+            }
         })
     </script>
 </body>
