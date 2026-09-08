@@ -189,7 +189,7 @@
             else {
                 document.getElementById("erro-email").innerHTML = ` `
             }
-            if (!senha || senha.lenght < 10) {
+            if (!senha || senha.length < 10) {
                 document.getElementById("erro-senha").innerHTML = `
                 <h5 style="color: rgb(160, 2, 2); margin-left: 80px;">ERRO: A senha deve ter no minimo 10 caracteres</h5> `
             }
@@ -197,7 +197,7 @@
                 document.getElementById("erro-senha").innerHTML = ` `
             }
 
-            if (nome && email.includes("@") && senha && senha.lenght >= 10) {
+            if (nome && email.includes("@") && senha && senha.length >= 10) {
                 loading.style.display = "flex";
                 try {
 
