@@ -14,19 +14,21 @@
         font-family: Arial, sans-serif;
     }
 
+    /* Centraliza a DIV*/
     .container {
         display: flex;
         justify-content: center;
         align-items: center;
         height: 100vh;
-        background-color: #f0f2f5;
+        background-color: #cadaf2;
     }
 
     #div-Login {
+        /* border: 2px solid black; */
         background-color: #ffffff;
         border-radius: 12px;
         padding: 40px;
-        width: 320px;
+        width: 420px;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     }
 
@@ -34,44 +36,93 @@
         display: flex;
         flex-direction: column;
         gap: 5px;
+        /* border: 2px solid black; */
     }
 
-    #div-Login label {
+    .input-dados label {
         font-weight: bold;
         margin-bottom: 5px;
         display: block;
+        /* border: 2px solid green; */
     }
 
-    #div-Login input {
+    #botao-Voltar {
+        width: 100px;
+        height: 20px;
+        margin-left: 100px;
+    }
+
+
+    .input-dados {
+        /* border: 2px solid red; */
+        display: flex;
+        align-items: center;
+        gap: 5px;
+
+        input {
+            height: 40px;
+            width: 400px;
+        }
+
+    }
+
+    #input-submit {
+        display: flex;
+        justify-content: center;
+
+        /* border: 2px solid black; */
+        input {
+            height: 50px;
+            border-radius: 12px;
+            width: 100px;
+            margin-top: 12px;
+        }
+    }
+
+    #id-Titulo {
+        display: inline-flex;
+        /* border: 2px solid black; */
         width: 100%;
-        padding: 10px;
-        border: 1px solid #ccc;
-        border-radius: 8px;
-        font-size: 14px;
-    }
-
-    #div-Login input:focus {
-        outline: none;
-        border-color: #4a90d9;
-        box-shadow: 0 0 0 2px rgba(74, 144, 217, 0.2);
     }
 </style>
 
 <body>
     <div class="container">
         <div id="div-Login">
-            <label for="meuForm_Cadastro">CashLand</label>
-            <form action="" id="meuForm">
-                <label for="Email">Nome: </label><br>
-                <input type="text" name="Nome" id="Nome">
 
-                <label for="Email">Email: </label><br>
-                <input type="text" name="Email" id="Email">
+            <div id="id-Titulo">
+                <h1>CashLand</h1>
+                <input type="button"  value="Voltar" id="botao-Voltar" onclick="location.href='/login'" >
+            </div>
 
-                <label for="Senha">Senha:</label><br>
-                <input type="password" name="Senha" id="Senha">
 
-                <input type="submit" value="Enviar">
+            <form id="meuForm">
+                <h4>Cadastro de usuario</h4>
+                <div class="input-dados">
+                    <label for="Email">Nome:</label><br>
+                    <input type="text" name="Nome" id="Nome" placeholder="Ex: Daniel">
+                </div>
+                <div id="erro-nome">
+                    
+                </div>
+
+                <div class="input-dados">
+                    <label for="Email">Email:</label><br>
+                    <input type="text" name="Email" id="Email" placeholder="Ex: Daniel@gmail.com">
+                </div>
+
+                <div id="erro-email"></div>
+
+                <div class="input-dados">
+                    <label for="Senha">Senha:</label><br>
+                    <input type="password" name="Senha" id="Senha" placeholder="Ex: Dani@wpm#0*7">
+                </div>
+
+                <div id="erro-senha"></div>
+                <div id="input-submit">
+                    <input type="submit" value="Enviar" id="botao-Enviar">
+                </div>
+
             </form>
         </div>
     </div>
@@ -80,19 +131,45 @@
         document.getElementById("meuForm").addEventListener("submit", async (e) => {
             e.preventDefault();
 
+            const nome = document.getElementById("Nome").value;
             const email = document.getElementById("Email").value;
             const senha = document.getElementById("Senha").value;
-            const nome = document.getElementById("Nome").value;
+            var erro = false;
 
-            const response = await fetch(`/cadastro-usuario`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ nome, email, senha })
-            });
-            const resultado = await response.json();
-            if (response.status === 200) {
-                alert(resultado.mensagem)
-                window.location.href = "/login"
+
+            // Verifica se os campo nome e senha estão vazios ou se o campo email falta o '@'', se sim, retorna mensagem de erro
+            // O else serve para caso já tenha aparecido a mensagem de erro e o usuario insira o campo corretamente
+            if (!nome) {
+                document.getElementById("erro-nome").innerHTML = `
+                <h5 style="color: rgb(160, 2, 2); margin-left: 80px;">ERRO: O nome não pode estar vazio</h5> `
+            } else {
+                document.getElementById("erro-nome").innerHTML = ` `
+            }
+            if (!email.includes("@")) {
+                document.getElementById("erro-email").innerHTML = `
+                <h5 style="color: rgb(160, 2, 2); margin-left: 80px;">ERRO: insira um email valido</h5> `
+            }
+            else {
+                document.getElementById("erro-email").innerHTML = ` `
+            }
+            if (!senha) {
+                document.getElementById("erro-senha").innerHTML = `
+                <h5 style="color: rgb(160, 2, 2); margin-left: 80px;">ERRO: A não pode estar vazia</h5> `
+            }
+            else {
+                document.getElementById("erro-senha").innerHTML = ` `
+            }
+
+            if (nome || email.includes("@") ||senha) {
+                const response = await fetch(`/cadastro-usuario`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nome, email, senha })
+                });
+                const resultado = await response.json();
+                if (response.status === 200) {
+                    alert(resultado.mensagem)
+                }
             }
 
         })
