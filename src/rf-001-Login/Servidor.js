@@ -74,11 +74,11 @@ app.post('/cadastro-usuario', async (req, res) => {
     const { nome, email, senha } = req.body;
 
     const {data} = await supabase
-        .from('usuarios'
+        .from('usuarios')
         .select('email')
         .eq('email', email)
         .maybeSingle()
-        )
+        
     
     if(data){
         res.status(400).json({mensagem: "Esse email já está cadastrado"})
