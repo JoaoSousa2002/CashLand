@@ -29,8 +29,8 @@
           }
         },
         "responses": {
-          "200": { "description": "Login bem-sucedido" },
-          "401": { "description": "Credenciais inválidas" }
+          "200": { "description": "Login realizado com sucesso" },
+          "401": { "description": "Email ou senha inválidos" }
         }
       }
     }
