@@ -6,6 +6,8 @@ import ws from 'ws'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import 'dotenv/config'
+import swaggerUi from 'swagger-ui-express';
+import swaggerSpec from '../../docs/api/Swagger.js';
 
 // __dirname não existe nativamente em ES Modules, então recriamos aqui.
 // Isso garante que o Express.static funcione independente de onde o
@@ -18,6 +20,7 @@ const app = Express()
 
 app.use(cors({ origin: 'http://127.0.0.1:5500' }));
 app.use(Express.json())
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // Serve o frontend (public/index.html e outros arquivos estáticos)
 // diretamente pelo Express. Isso faz o frontend e o backend viverem
