@@ -22,5 +22,5 @@ Preencha a tabela abaixo com os integrantes do seu grupo:
 - **BRANCH_PRINCIPAL:** main
 - **LINK_APLICACAO_DEPLOY:** https://dashboard.render.com/web/srv-dafl4k0n74is73aguusg/deploys
 - **LINK_BANCO_DADOS:** https://supabase.com/dashboard/project/xjfgkakjpuxoznbwznyb
-- **LINK_API_SWAGGER:** https://[seu-backend]/api-docs (Documentação OpenAPI/Swagger)
+- **LINK_API_SWAGGER:** https://cashland-cdf0.onrender.com/api-docs/
 - **LINK_DEMONSTRAÇÃO:** https://cashland-cdf0.onrender.com/
