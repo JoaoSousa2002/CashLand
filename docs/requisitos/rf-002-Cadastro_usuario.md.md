@@ -2,16 +2,16 @@
 
 ## 🎯 1. Identificação do Requisito
 
-| Campo | Valor |
-|---|---|
-| **ID** | RF-002 |
-| **Título** | Cadastro de Novo Usuário no Sistema |
-| **Tipo** | Requisito Funcional |
-| **Prioridade** | ALTA (bloqueia os demais requisitos, exceto o RF-01) |
-| **Complexidade** | MÉDIA (estimado 5 story points) |
-| **Status** | Concluído |
-| **Data de Criação** | 08/09/2026 |
-| **Última Atualização** | 08/09/2026 |
+| Campo                  | Valor                                                |
+| ---------------------- | ---------------------------------------------------- |
+| **ID**                 | RF-002                                               |
+| **Título**             | Cadastro de Novo Usuário no Sistema                  |
+| **Tipo**               | Requisito Funcional                                  |
+| **Prioridade**         | ALTA (bloqueia os demais requisitos, exceto o RF-01) |
+| **Complexidade**       | MÉDIA (estimado 5 story points)                      |
+| **Status**             | Concluído                                            |
+| **Data de Criação**    | 08/09/2026                                           |
+| **Última Atualização** | 08/09/2026                                           |
 
 **Breve Descrição:**
 O sistema deve permitir que o usuário crie um novo cadastro informando nome, email válido e senha, que será armazenada de forma criptografada (hash).
@@ -112,23 +112,23 @@ O sistema precisa saber quem está logado para mostrar os dados referentes ao us
 
 ### Regras de Negócio (RN)
 
-| ID | Regra | Descrição |
-|---|---|---|
-| **RN-01** | Email único | Email deve ser único no sistema; não permitir duplicatas |
-| **RN-02** | Senha válida | A senha deve ter no mínimo 10 caracteres |
-| **RN-03** | Nome informado | O usuário deve ter o nome cadastrado |
-| **RN-04** | Senha nunca em texto puro | A senha é convertida em hash (bcrypt) antes de ser salva; o texto original nunca é armazenado |
-| **RN-05** | Mensagem de erro contextual | Cada erro de validação é exibido próximo ao campo correspondente (nome, email ou senha), não como mensagem genérica única |
+| ID        | Regra                          | Descrição                                                                                                                                                          |
+| --------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **RN-01** | Email único                    | Email deve ser único no sistema; não permitir duplicatas                                                                                                           |
+| **RN-02** | Senha válida                   | A senha deve ter no mínimo 10 caracteres                                                                                                                           |
+| **RN-03** | Nome informado                 | O usuário deve ter o nome cadastrado                                                                                                                               |
+| **RN-04** | Senha nunca em texto puro      | A senha é convertida em hash (bcrypt) antes de ser salva; o texto original nunca é armazenado                                                                      |
+| **RN-05** | Mensagem de erro contextual    | Cada erro de validação é exibido próximo ao campo correspondente (nome, email ou senha), não como mensagem genérica única                                          |
 | **RN-06** | Bloqueio durante processamento | Enquanto a requisição de cadastro está em andamento, o sistema exibe um overlay de carregamento que impede novas interações do usuário, evitando envios duplicados |
 
 ### Requisitos Não-Funcionais (RNF)
 
-| ID | Atributo | Requisito | Métrica | Justificativa |
-|---|---|---|---|---|
-| **RNF-01** | Performance | Resposta em menos de 2 segundos em condições normais | Tempo médio de resposta | Evita que o usuário ache que o cadastro travou |
-| **RNF-02** | Segurança de dados | Senha armazenada apenas como hash, nunca em texto puro | Verificação do valor salvo na tabela `usuarios` | Protege credenciais mesmo em caso de vazamento do banco |
-| **RNF-03** | Disponibilidade | Serviço acessível publicamente via Render | Uptime observado | Necessário para testes remotos do professor, sem exigir instalação local |
-| **RNF-04** | Usabilidade | Feedback visual imediato de erro de validação por campo | Presença de mensagem de erro visível abaixo de cada campo inválido | Reduz frustração e tentativa-e-erro do usuário |
+| ID         | Atributo           | Requisito                                               | Métrica                                                            | Justificativa                                                            |
+| ---------- | ------------------ | ------------------------------------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------ |
+| **RNF-01** | Performance        | Resposta em menos de 2 segundos em condições normais    | Tempo médio de resposta                                            | Evita que o usuário ache que o cadastro travou                           |
+| **RNF-02** | Segurança de dados | Senha armazenada apenas como hash, nunca em texto puro  | Verificação do valor salvo na tabela `usuarios`                    | Protege credenciais mesmo em caso de vazamento do banco                  |
+| **RNF-03** | Disponibilidade    | Serviço acessível publicamente via Render               | Uptime observado                                                   | Necessário para testes remotos do professor, sem exigir instalação local |
+| **RNF-04** | Usabilidade        | Feedback visual imediato de erro de validação por campo | Presença de mensagem de erro visível abaixo de cada campo inválido | Reduz frustração e tentativa-e-erro do usuário                           |
 
 > **Observação sobre RNF-03:** o projeto roda no plano gratuito do Render, que não garante SLA formal e "dorme" após inatividade — a primeira requisição após um período parado pode levar 30-50 segundos. Isso é declarado aqui como limitação conhecida do ambiente de hospedagem, não como falha do sistema.
 
@@ -187,6 +187,7 @@ O sistema precisa saber quem está logado para mostrar os dados referentes ao us
 │                                                │
 └────────────────────────────────────────────────┘
 ```
+
 > Implementação real: `#loading-overlay` cobre a tela inteira com fundo escurecido (`rgba(0,0,0,0.5)`) e uma caixa branca central com o texto "Carregando...". Bloqueia visualmente a interação até a resposta do servidor chegar.
 
 **Mockup - Tela 4: Erro de Validação (por campo)**
@@ -209,6 +210,7 @@ O sistema precisa saber quem está logado para mostrar os dados referentes ao us
 │              [ Enviar ]                        │
 └────────────────────────────────────────────────┘
 ```
+
 > **Gap em relação ao modelo de referência:** o modelo pede validação visual com borda vermelha/verde e checkmark nos campos. A implementação atual mostra a mensagem de erro em texto vermelho abaixo do campo, mas não altera a borda do input nem exibe checkmark de sucesso.
 
 **Mockup - Tela 5: Sucesso (via `alert`)**
@@ -224,6 +226,7 @@ O sistema precisa saber quem está logado para mostrar os dados referentes ao us
 │                              [   OK   ]        │
 └────────────────────────────────────────────────┘
 ```
+
 > A confirmação de sucesso hoje é um `alert()` nativo do navegador, não uma tela dedicada de confirmação como no modelo de referência (que mostra dados salvos e botões de ação).
 
 **Descrição de Estados:**
@@ -309,12 +312,12 @@ O sistema precisa saber quem está logado para mostrar os dados referentes ao us
 
 ### Tecnologias Escolhidas (reaproveitadas do RF-01)
 
-| Camada | Tecnologia | Justificativa |
-|---|---|---|
-| Backend | Express 5 | Já em uso no módulo de login |
-| BD | Supabase (PostgreSQL) | Mesma tabela `usuarios` do login |
-| Hash | bcrypt | Mesma função `gerarHashSenha` do RF-01 |
-| Documentação de API | swagger-ui-express | Já configurado, cobre também esta rota |
+| Camada              | Tecnologia            | Justificativa                          |
+| ------------------- | --------------------- | -------------------------------------- |
+| Backend             | Express 5             | Já em uso no módulo de login           |
+| BD                  | Supabase (PostgreSQL) | Mesma tabela `usuarios` do login       |
+| Hash                | bcrypt                | Mesma função `gerarHashSenha` do RF-01 |
+| Documentação de API | swagger-ui-express    | Já configurado, cobre também esta rota |
 
 ### Fluxo de Dados
 
@@ -329,7 +332,7 @@ O sistema precisa saber quem está logado para mostrar os dados referentes ao us
 
 ## 🔒 6. Validação de Segurança OWASP
 
-### A02:2021 — Cryptographic Failures
+### A04:2025 — Cryptographic Failures
 
 **Vulnerabilidade:** Armazenar a senha do novo usuário em texto puro exporia todas as credenciais em caso de vazamento do banco.
 
@@ -354,7 +357,7 @@ SELECT senha_hash FROM usuarios WHERE email = 'daniel@gmail.com';
 // Resultado esperado: $2b$10$... (hash bcrypt, nunca "MinhaSenha123456")
 ```
 
-### A04:2021 — Insecure Design (validação de entrada)
+### A06:2025 — Insecure Design (validação de entrada)
 
 **Vulnerabilidade:** Sem validação de tamanho/formato, um atacante poderia cadastrar senhas triviais (`"123"`) ou registros com campos vazios, fragilizando a segurança de contas futuras.
 

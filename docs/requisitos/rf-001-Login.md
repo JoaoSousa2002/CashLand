@@ -12,8 +12,6 @@
 **Breve Descrição:**
 O sistema deve ter sistema de autenticação obrigatoria para acessar o sistema.
 
-
-
 ## 📋 2. DESCRIÇÃO E ATORES
 
 **Descrição Detalhada:**
@@ -50,8 +48,6 @@ O sistema precisa saber quem está logado para mostrar os dados referentes ao us
   
   - ❌ DELETE (não pode deletar)
 
-
-
 # Sistema (Ator automatico)
 
 - **Papel:** Valida a entrada de usuarios.
@@ -61,8 +57,6 @@ O sistema precisa saber quem está logado para mostrar os dados referentes ao us
 - **Permissões:**
   
   - ✅ Todas operações
-
-
 
 ## 🔄 3. ESPECIFICAÇÃO DE CASOS DE USO + REQUISITOS NÃO-FUNCIONAIS
 
@@ -79,8 +73,6 @@ O sistema precisa saber quem está logado para mostrar os dados referentes ao us
 ### Pós-Condições (Falha)
 
 - ✅ Mensagem de erro exibida ao usuário
-
-
 
 ### Fluxo principal
 
@@ -104,8 +96,6 @@ O sistema precisa saber quem está logado para mostrar os dados referentes ao us
 
 10. Servidor retorna mensagem informando se as credenciais informadas estão corretas e autoriza login
 
-
-
 ### Fluxos alternativo A1: Campo email ou senha vazio
 
 ```
@@ -114,8 +104,6 @@ O sistema precisa saber quem está logado para mostrar os dados referentes ao us
 5a.3. Usuario pode tentar inserir os campos faltantes
 ```
 
-
-
 ### Fluxo alternativo A2: Usuario não cadastrado
 
 ```
@@ -123,8 +111,6 @@ O sistema precisa saber quem está logado para mostrar os dados referentes ao us
 8a.2. Sistema retorna mensagem informando "Email ou senha inválidos 
 8a.3. Usuario pode tentar inserir outro email
 ```
-
-
 
 ### Fluxo alternativo A3: Senha incorreta
 
@@ -153,8 +139,6 @@ O sistema precisa saber quem está logado para mostrar os dados referentes ao us
 | **RNF-01** | Performance     | Resposta em <5 segundos | Tempo médio de resposta | UX: usuário não fica esperando             |
 | **RNF-02** | Usabilidade     | Design minimalista      | Conexões concorrentes   | O sistema deve ter um design facil de usar |
 | **RNF-03** | Disponibilidade | 99% uptime em produção  | N/A                     | Negócio depende da aplicação               |
-
-
 
 ## 🎨 4. PROTÓTIPO FUNCIONAL (HTML + CSS + CÓDIGO + BD + DEPLOY)
 
@@ -264,8 +248,6 @@ O sistema precisa saber quem está logado para mostrar os dados referentes ao us
 - **Mobile (320px):** Card de login ocupa quase toda a largura da tela, botão full-width
 - **Tablet (768px):** Card centralizado com largura fixa (~320px), como já implementado no CSS atual
 - **Desktop (1024px+):** Mesmo layout centralizado — não há necessidade de duas colunas para um formulário tão simples
-
-
 
 ## 🏗️ 5. ARQUITETURA E ADR
 
@@ -405,7 +387,7 @@ O sistema precisa saber quem está logado para mostrar os dados referentes ao us
 
 ## 🔒 6. VALIDAÇÃO DE SEGURANÇA OWASP
 
-### A02:2021 — Cryptographic Failures
+### A04:2025 — Cryptographic Failures
 
 **Vulnerabilidade:** Armazenamento de senhas em texto puro permitiria que qualquer vazamento do banco expusesse credenciais diretamente utilizáveis.
 
@@ -441,7 +423,7 @@ console.log(errada); // false
 
 ---
 
-### A07:2021 — Identification and Authentication Failures
+### A07:2025 — Identification and Authentication Failures
 
 **Vulnerabilidade:** Mensagens de erro diferentes para "email não encontrado" e "senha incorreta" permitem que um atacante enumere quais emails têm conta no sistema.
 
@@ -475,4 +457,50 @@ POST /login { "email": "usuario@real.com", "senha": "senhaErrada" }
 
 // Resultado: respostas idênticas — impossível diferenciar externamente
 // qual dos dois campos estava incorreto.
+```
+
+### A05:2021 — Injection
+
+**Vulnerabilidade:** Se o valor do campo `email` fosse concatenado diretamente numa string SQL, um atacante poderia manipular a consulta (SQL Injection) para retornar todos os usuários, ignorar a validação de senha, ou vazar dados de outras tabelas.
+
+**Implementação:**
+
+javascript
+
+```javascript
+// Servidor.js
+const { data: usuario, error } = await supabase
+    .from('usuarios')
+    .select('id_usuario, nome, senha_hash')
+    .eq('email', email)   // valor passado como parâmetro, nunca concatenado
+    .single();
+```
+
+O SDK do Supabase (`@supabase/supabase-js`) monta a consulta via query builder, que gera automaticamente uma query parametrizada por baixo dos panos — o valor de `email` é sempre tratado como dado, nunca interpretado como parte da sintaxe SQL. Isso é o equivalente ao uso de *prepared statements*:
+
+javascript
+
+```javascript
+// ❌ NUNCA FAÇA ISSO (concatenação manual, vulnerável a Injection):
+const query = `SELECT * FROM usuarios WHERE email = '${email}'`;
+
+// ✅ O que o projeto já faz (via SDK do Supabase, seguro por padrão):
+.eq('email', email)
+```
+
+**Teste:**
+
+javascript
+
+```javascript
+// Tentativa de injeção clássica no campo de login
+POST /login
+{
+  "email": "x' OR '1'='1",
+  "senha": "qualquer"
+}
+
+// Resultado esperado: nenhum usuário encontrado (o valor inteiro é tratado
+// como texto literal de comparação, não como fragmento de SQL).
+// → 401 { "mensagem": "Email ou senha inválidos" }
 ```
