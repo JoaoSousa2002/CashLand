@@ -7,8 +7,12 @@
   },
   "servers": [
     {
-      "url": "http://localhost:3000",
-      "description": "Servidor local"
+      "url": "https://cashland-cdf0.onrender.com",
+      "description": "Servidor web render"
+    },
+    {
+      "url": "localhost:3000",
+      "description": "http://localhost:3000"
     }
   ],
   "paths": {
