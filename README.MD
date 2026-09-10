@@ -4,17 +4,18 @@
 
 Preencha a tabela abaixo com os integrantes do seu grupo:
 
-| ID  | Nome Completo                  | Papel Primário | Papel Secundário | E-mail / Contato             |
-| --- | ------------------------------ | -------------- | ---------------- | ---------------------------- |
-| 1   | João Victor Sousa da Conceição | Scrum Master   | Fullstack        | joao47064706@edu.df.senac.br |
-
-
+| ID  | Nome Completo                          | Papel Primário | Papel Secundário | E-mail / Contato                |
+| --- | -------------------------------------- | -------------- | ---------------- | ------------------------------- |
+| 1   | João Victor Sousa da Conceição         | Scrum Master   | Fullstack        | joao47064706@edu.df.senac.br    |
+| 2   | Natasha Fabiana Montenegro de Oliveira | Fullstack      |                  | natasha59249796@edu.df.senac.br |
+| 3   | Pedro Henrique Ferreira Barros         | Fullstack      |                  | pedro59528666@edu.df.senac.br   |
+| 4   | Pedro Henrique Sobral Limões           | Fullstack      |                  | pedro59694736@edu.df.senac.br   |
 
 ### Identificação
 
 - **NOME_DO_PROJETO:** CashLand
 
-- **DESCRICAO_BREVE:** Sistema Web para gerenciamento financeiro pessoal, com funcionalidades de criação de metas, agenda
+- **DESCRICAO_BREVE:** Sistema Web para gerenciamento financeiro pessoal, com funcionalidades de criação de metas, agenda, categorização, lançamentos financeiros, dashboard de gastos etc.
 
 ### Localização dos Artefatos
 
