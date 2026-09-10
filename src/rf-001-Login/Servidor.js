@@ -31,6 +31,8 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 // rotas de URL para direcionar o front-end
 app.get('/', (res) => res.redirect('/login'));
 app.use('/login', Express.static(path.join(__dirname, 'public')))
+
+// Esse é o modelo para as proximas RFs - nome da rota e o caminho dela (até a pasta public, não precisa especificar o index.html)
 app.use('/cadastro-usuario', Express.static(path.join(__dirname, '../rf-002-Cadastro_usuario/public')))
 
 
@@ -52,12 +54,11 @@ async function testarConexao() {
         .limit(1);
 
     if (error) {
-        console.log(' Falha ao conectar/consultar o Supabase:', error.message);
+        console.log(' Falha ao conectar/consultar o Supabase:', error.message)
     } else {
-        console.log(' Conexão com o Supabase OK.');
+        console.log(' Conexão com o Supabase OK.')
     }
 }
-
 testarConexao();
 
 // Rotas da api

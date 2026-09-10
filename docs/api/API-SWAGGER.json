@@ -11,8 +11,8 @@
       "description": "Servidor web render"
     },
     {
-      "url": "localhost:3000",
-      "description": "http://localhost:3000"
+      "url": "http://localhost:3000",
+      "description": "Servidor local"
     }
   ],
   "paths": {
@@ -56,7 +56,7 @@
         }
       }
     },
-    "/cadastrar-usuario": {
+    "/cadastro-usuario": {
       "post": {
         "summary": "cadastra um  novo usuário",
         "tags": [
