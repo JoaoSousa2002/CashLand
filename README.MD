@@ -8,6 +8,7 @@
 | 2   | Natasha Fabiana Montenegro de Oliveira | Fullstack      |                  | natasha59249796@edu.df.senac.br |
 | 3   | Pedro Henrique Ferreira Barros         | Fullstack      |                  | pedro59528666@edu.df.senac.br   |
 | 4   | Pedro Henrique Sobral Limões           | Fullstack      |                  | pedro59694736@edu.df.senac.br   |
+| 5   | Igor Amore Lima da Costa               | Fullstack      |                  | igor56730136@edu.df.senac.br    |
 
 ### Identificação
 
