@@ -2,8 +2,6 @@
 
 ### Composição da Equipe
 
-Preencha a tabela abaixo com os integrantes do seu grupo:
-
 | ID  | Nome Completo                          | Papel Primário | Papel Secundário | E-mail / Contato                |
 | --- | -------------------------------------- | -------------- | ---------------- | ------------------------------- |
 | 1   | João Victor Sousa da Conceição         | Scrum Master   | Fullstack        | joao47064706@edu.df.senac.br    |
