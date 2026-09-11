@@ -29,7 +29,7 @@ const swaggerSpec = JSON.parse(
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // rotas de URL para direcionar o front-end
-app.get('/', (res) => res.redirect('/login'));
+app.get('/', (req, res) => res.redirect('/login'));
 app.use('/login', Express.static(path.join(__dirname, 'public')))
 
 // Esse é o modelo para as proximas RFs - nome da rota e o caminho dela (até a pasta public, não precisa especificar o index.html)
