@@ -166,6 +166,11 @@
     </div>
 
     <script>
+
+        function MostrarErro(id, mensagem) {
+            document.getElementById(id).innerHTML = `
+            <h5 style="color: rgb(160, 2, 2); margin-left: 80px;">${mensagem}</h5> `;
+        }
         document.getElementById("meuForm").addEventListener("submit", async (e) => {
             e.preventDefault();
             const loading = document.getElementById("loading-overlay");
@@ -177,24 +182,21 @@
             // Verifica se os campo nome e senha estão vazios ou se o campo email falta o '@'', se sim, retorna mensagem de erro
             // O else serve para caso já tenha aparecido a mensagem de erro e o usuario insira o campo corretamente
             if (!nome) {
-                document.getElementById("erro-nome").innerHTML = `
-                <h5 style="color: rgb(160, 2, 2); margin-left: 80px;">ERRO: O nome não pode estar vazio</h5> `
+                MostrarErro("erro-nome", "ERRO: O nome não pode estar vazio")
             } else {
-                document.getElementById("erro-nome").innerHTML = ` `
+                MostrarErro("erro-nome", "")
             }
             if (!email.includes("@")) {
-                document.getElementById("erro-email").innerHTML = `
-                <h5 style="color: rgb(160, 2, 2); margin-left: 80px;">ERRO: insira um email valido</h5> `
+                MostrarErro("erro-email", "ERRO: insira um email valido")
             }
             else {
-                document.getElementById("erro-email").innerHTML = ` `
+                MostrarErro("erro-email", "")
             }
             if (!senha || senha.length < 10) {
-                document.getElementById("erro-senha").innerHTML = `
-                <h5 style="color: rgb(160, 2, 2); margin-left: 80px;">ERRO: A senha deve ter no minimo 10 caracteres</h5> `
+                MostrarErro("erro-senha","ERRO: A senha deve ter no minimo 10 caracteres")
             }
             else {
-                document.getElementById("erro-senha").innerHTML = ` `
+                MostrarErro("erro-senha", "")
             }
             //Verifica se todos os campos estão preenchidos corretamente e faz a requisição
             if (nome && email.includes("@") && senha && senha.length >= 10) {
