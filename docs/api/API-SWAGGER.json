@@ -56,9 +56,11 @@
         }
       }
     },
-    "/cadastro-usuario": {
+
+
+    "/confirmar-cadastro": {
       "post": {
-        "summary": "cadastra um  novo usuário",
+        "summary": "Cadastra um  novo usuário",
         "tags": [
           "Cadastramento de usuario"
         ],
@@ -95,6 +97,51 @@
           "200": {
             "description": "Cadastro realizado com sucesso, prossiga para o login!"
           },
+          "501": {
+            "description": "Usuario criado, mas o email de confirmação não foi enviado, erro"
+          },
+          "500": {
+            "description": "Erro ao cadastrar usuário"
+          }
+        }
+      }
+    },
+
+
+    "/solicitar-codigo": {
+      "post": {
+        "summary": "Envia codigo ao email enviado pelo usuario e verifica se o Email é valido",
+        "tags": [
+          "Solicita codigo por Email"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "nome",
+                  "email"
+                ],
+                "properties": {
+                  "nome": {
+                    "type": "string",
+                    "example": "Joao Sousa"
+                  },
+                  "email": {
+                    "type": "string",
+                    "example": "usuario@exemplo.com"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Codigo enviado para o email!"
+          },
           "400": {
             "description": "Dados inválidos ou incompletos"
           },
@@ -102,7 +149,7 @@
             "description": "Esse email já está cadastrado"
           },
           "500": {
-            "description": "Erro ao cadastrar usuário"
+            "description": "O envio de email falhou: erro"
           }
         }
       }

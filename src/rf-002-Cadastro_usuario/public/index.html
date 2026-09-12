@@ -155,7 +155,6 @@
             transform: rotate(360deg);
         }
     }
-
 </style>
 
 <body>
@@ -170,6 +169,25 @@
 
     <div class="loading-overlay" id="resultado-overlay">
         <div class="loading-box" id="resultado-funcao">
+        </div>
+    </div>
+
+    <div class="loading-overlay" id="solicitacaoCodigo-overlay">
+        <div class="loading-box" id="solicitacao-codigo">
+            <div id="div-codigo-overlay"
+                style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 20px;">
+                <div>
+                    <h5 style="color: rgb(103, 198, 40); margin: 0;">Digite o código enviado para o seu email</h5>
+                </div>
+                <div style="display: flex; align-items: center; justify-content: center;">
+                    <input id="input-codigo" style="width: 150px; text-align: center;" type="text" maxlength="6"
+                        placeholder="000000">
+                </div>
+                <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+                    <input style="width: 100px;" type="button" onclick="ConfirmarCodigo_overlay()" value="Confirmar">
+                    <input style="width: 100px;" type="button" onclick="FechaResultado_overlay(2)" value="Cancelar">
+                </div>
+            </div>
         </div>
     </div>
 
@@ -212,10 +230,13 @@
             </form>
         </div>
     </div>
-    
+
     <script>
         const loading = document.getElementById("loading-overlay");
         const resultado_overlay = document.getElementById("resultado-overlay");
+        const solicitacaoCodigo_overlay = document.getElementById("solicitacaoCodigo-overlay")
+        // Recebe o codigo digitado pelo usuario
+        var codigoDigitado = document.getElementById("input-codigo").value;
 
         function MostrarErro(id, mensagem) {
             document.getElementById(id).innerHTML = `
@@ -230,7 +251,7 @@
                         <h5 style="color: rgb(103, 198, 40); margin: 0;">${mensagem}</h5>
                     </div>
                     <div style="display: flex; align-items: center; justify-content: center;">
-                     <input style="width: 100px;" type="button" onclick="FechaResultado_overlay()" value="Continuar">
+                     <input style="width: 100px;" type="button" onclick="FechaResultado_overlay(1)" value="Continuar">
                     </div>
                 </div>`
             } else {
@@ -241,15 +262,19 @@
                         <h5 style="color: rgb(160, 2, 2); margin: 0;">${mensagem}</h5>
                     </div>
                     <div style="display: flex; align-items: center; justify-content: center;">
-                     <input style="width: 100px;" type="button" onclick="FechaResultado_overlay()" value="Continuar">
+                     <input style="width: 100px;" type="button" onclick="FechaResultado_overlay(1)" value="Continuar">
                     </div>
                 </div>`
             }
         }
-        function FechaResultado_overlay() {
-            resultado_overlay.style.display = "none"
+        function FechaResultado_overlay(num) {
+            if (num === 1) {
+                resultado_overlay.style.display = "none"
+            } else if (num === 2) {
+                solicitacaoCodigo_overlay.style.display = "none"
+            }
         }
-        
+
         document.getElementById("meuForm").addEventListener("submit", async (e) => {
             e.preventDefault();
 
@@ -264,7 +289,7 @@
             } else {
                 MostrarErro("erro-nome", "")
             }
-            if (!email.includes("@")) {
+            if (!email.includes("@") || !email.includes(".com")) {
                 MostrarErro("erro-email", "ERRO: insira um email valido")
             }
             else {
@@ -277,25 +302,21 @@
                 MostrarErro("erro-senha", "")
             }
             //Verifica se todos os campos estão preenchidos corretamente e faz a requisição
-            if (nome && email.includes("@") && senha && senha.length >= 10) {
+            if (nome && email.includes("@") && email.includes(".com") && senha && senha.length >= 10) {
                 // Bloqueia a tela
                 loading.style.display = "flex";
 
-                const response = await fetch(`/cadastro-usuario`, {
+                const response = await fetch(`/solicitar-codigo`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ nome, email, senha })
+                    body: JSON.stringify({nome, email})
                 });
                 const resultado = await response.json();
 
                 loading.style.display = "none";
                 if (response.status === 200) {
-                    resultado_overlay.style.display = "flex";
-                    MostrarResultado_Overlay(1, resultado.mensagem)
-                    console.log(resultado.mensagem)
-                } else if (response.status === 400) {
-                    resultado_overlay.style.display = "flex";
-                    MostrarResultado_Overlay(0, resultado.mensagem)
+                    solicitacaoCodigo_overlay.style.display = "flex";
+                    // MostrarResultado_Overlay(1, resultado.mensagem)
                     console.log(resultado.mensagem)
                 } else if (response.status === 409) {
                     resultado_overlay.style.display = "flex";
