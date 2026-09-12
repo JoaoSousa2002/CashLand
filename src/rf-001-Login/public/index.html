@@ -55,18 +55,121 @@
         border-color: #4a90d9;
         box-shadow: 0 0 0 2px rgba(74, 144, 217, 0.2);
     }
+
+    .loading-overlay {
+        display: none;
+
+        position: fixed;
+        top: 0;
+        left: 0;
+
+        width: 100vw;
+        height: 100vh;
+
+        background-color: rgba(0, 0, 0, 0.5);
+
+        z-index: 9999;
+
+        justify-content: center;
+        align-items: center;
+    }
+
+    .loading-box {
+        display: flex;
+        justify-content: center;
+        background-color: #ffffff;
+        border-radius: 12px;
+        padding: 50px;
+        width: 400px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        font-size: 20px;
+
+        input {
+            height: 40px;
+            width: 400px;
+            padding: 5px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+        }
+    }
+
+    .spinning-wheel {
+        /* Create a perfect circle */
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+
+        /* Create the wheel track (light gray) and the spinning indicator (blue) */
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #000000;
+
+        /* Link to the animation: 1 second duration, smooth linear pace, loops forever */
+        animation: spin 1s linear infinite;
+
+        margin-left: 20px;
+    }
+
+    @keyframes spin {
+        from {
+            transform: rotate(0deg);
+        }
+
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    .campo-senha {
+        position: relative;
+        display: inline-block;
+    }
+
+    .campo-senha input {
+        padding-right: 40px;
+    }
+
+    .campo-senha button {
+        position: absolute;
+        right: 8px;
+        top: 50%;
+        transform: translateY(-50%);
+
+        border: none;
+        background: none;
+        cursor: pointer;
+        font-size: 18px;
+    }
 </style>
 
 <body>
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="loading-box">
+            <div style="margin: auto 0;">
+                <p>Carregando... </p>
+            </div>
+            <div class="spinning-wheel"></div>
+        </div>
+    </div>
+
+    <div class="loading-overlay" id="resultado-overlay">
+        <div class="loading-box" id="resultado-funcao">
+        </div>
+    </div>
+
     <div class="container">
         <div id="div-Login">
             <label for="meuForm">CashLand</label>
             <form action="" id="meuForm">
                 <label for="Email">Email: </label><br>
                 <input type="text" name="Email" id="Email">
+                <div id="erro-email"></div>
 
                 <label for="Senha">Senha:</label><br>
-                <input type="password" name="Senha" id="Senha">
+                <div class="campo-senha">
+                    <input type="password" name="Senha" id="Senha">
+                    <button type="button" id="mostrar-senha">👁</button>
+                </div>
+                <div id="erro-senha"></div>
                 <a href="/cadastro-usuario">Cadastrar novo usuario</a>
 
                 <input type="submit" value="Enviar">
@@ -75,19 +178,90 @@
     </div>
 
     <script>
+        const loading = document.getElementById("loading-overlay");
+        const resultado_overlay = document.getElementById("resultado-overlay");
+        function MostrarErro(id, mensagem) {
+            document.getElementById(id).innerHTML = `
+            <h5 style="color: rgb(160, 2, 2); margin-left: 10px;">${mensagem}</h5> `;
+        }
+        function MostrarResultado_Overlay(tipo, mensagem) {
+            if (tipo == 1) {
+                document.getElementById("resultado-funcao").innerHTML =
+                    `<div id="div-resultado-overlay"
+                    style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 20px;">
+                    <div>
+                        <h5 style="color: rgb(103, 198, 40); margin: 0;">${mensagem}</h5>
+                    </div>
+                    <div style="display: flex; align-items: center; justify-content: center;">
+                     <input style="width: 100px;" type="button" onclick="FechaResultado_overlay()" value="Continuar">
+                    </div>
+                </div>`
+            } else {
+                document.getElementById("resultado-funcao").innerHTML =
+                    `<div id="div-resultado-overlay"
+                    style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center gap: 20px;">
+                    <div>
+                        <h5 style="color: rgb(160, 2, 2); margin: 0;">${mensagem}</h5>
+                    </div>
+                    <div style="display: flex; align-items: center; justify-content: center;">
+                     <input style="width: 100px;" type="button" onclick="FechaResultado_overlay()" value="Continuar">
+                    </div>
+                </div>`
+            }
+        }
+        function FechaResultado_overlay() {
+            resultado_overlay.style.display = "none"
+        }
+        
+        // Sistema para mostrar a senha
+        const senha = document.getElementById("Senha");
+        const mostrarSenha = document.getElementById("mostrar-senha");
+        mostrarSenha.addEventListener("click", () => {
+            if (senha.type === "password") {
+                senha.type = "text";
+                mostrarSenha.textContent = "🙈";
+            } else {
+                senha.type = "password";
+                mostrarSenha.textContent = "👁";
+            }
+        });
         document.getElementById("meuForm").addEventListener("submit", async (e) => {
             e.preventDefault();
-
             const email = document.getElementById("Email").value;
             const senha = document.getElementById("Senha").value;
 
-            const response = await fetch(`/login`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({email, senha})
-            });
-            const resultado = await response.json();
-            alert(resultado.mensagem)
+            if (!email.includes("@")) {
+                MostrarErro("erro-email", "ERRO: insira um email valido")
+            }
+            else {
+                MostrarErro("erro-email", "")
+            }
+            if (!senha || senha.length < 10) {
+                MostrarErro("erro-senha", "ERRO: A senha deve ter no minimo 10 caracteres")
+            }
+            else {
+                MostrarErro("erro-senha", "")
+            }
+            if (email.includes("@") && senha && senha.length >= 10) {
+                loading.style.display = "flex"
+                const response = await fetch(`/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, senha })
+                });
+                const resultado = await response.json();
+                loading.style.display = "none";
+
+                if (response.status === 200) {
+                    resultado_overlay.style.display = "flex";
+                    MostrarResultado_Overlay(1, resultado.mensagem)
+                    console.log(resultado.mensagem)
+                } else if (response.status === 401) {
+                    resultado_overlay.style.display = "flex";
+                    MostrarResultado_Overlay(0, resultado.mensagem)
+                    console.log(resultado.mensagem)
+                }
+            }
 
         })
     </script>
