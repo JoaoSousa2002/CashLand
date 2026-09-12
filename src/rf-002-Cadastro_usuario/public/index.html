@@ -23,7 +23,7 @@
         background-color: #cadaf2;
     }
 
-    #div-Login {
+    #div-Cadastro {
         /* border: 2px solid black; */
         background-color: #ffffff;
         border-radius: 12px;
@@ -32,7 +32,7 @@
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     }
 
-    #div-Login form {
+    #div-Cadastro form {
         display: flex;
         flex-direction: column;
         gap: 5px;
@@ -93,7 +93,7 @@
         width: 100%;
     }
 
-    #loading-overlay {
+    .loading-overlay {
         display: none;
 
         position: fixed;
@@ -112,21 +112,72 @@
     }
 
     .loading-box {
-        background-color: white;
-        padding: 30px;
-        border-radius: 10px;
+        display: flex;
+        justify-content: center;
+        background-color: #ffffff;
+        border-radius: 12px;
+        padding: 50px;
+        width: 400px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        font-size: 20px;
+
+        input {
+            height: 40px;
+            width: 400px;
+            padding: 5px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+        }
+    }
+
+    .spinning-wheel {
+        /* Create a perfect circle */
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+
+        /* Create the wheel track (light gray) and the spinning indicator (blue) */
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #000000;
+
+        /* Link to the animation: 1 second duration, smooth linear pace, loops forever */
+        animation: spin 1s linear infinite;
+
+        margin-left: 20px;
+    }
+
+    @keyframes spin {
+        from {
+            transform: rotate(0deg);
+        }
+
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    #div-style-overlay {
+        display: flex;
     }
 </style>
 
 <body>
-    <div id="loading-overlay">
+    <div class="loading-overlay" id="loading-overlay">
         <div class="loading-box">
-            Carregando...
+            <div style="margin: auto 0;">
+                <p>Carregando... </p>
+            </div>
+            <div class="spinning-wheel"></div>
+        </div>
+    </div>
+
+    <div class="loading-overlay" id="resultado-overlay">
+        <div class="loading-box" id="resultado-funcao">
         </div>
     </div>
 
     <div class="container">
-        <div id="div-Login">
+        <div id="div-Cadastro">
 
             <div id="id-Titulo">
                 <h1>CashLand</h1>
@@ -164,16 +215,46 @@
             </form>
         </div>
     </div>
-
+    
     <script>
+        const loading = document.getElementById("loading-overlay");
+        const resultado_overlay = document.getElementById("resultado-overlay");
 
         function MostrarErro(id, mensagem) {
             document.getElementById(id).innerHTML = `
             <h5 style="color: rgb(160, 2, 2); margin-left: 80px;">${mensagem}</h5> `;
         }
+        function MostrarResultado_Overlay(tipo, mensagem) {
+            if (tipo == 1) {
+                document.getElementById("resultado-funcao").innerHTML =
+                    `<div id="div-resultado-overlay"
+                    style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 20px;">
+                    <div>
+                        <h5 style="color: rgb(103, 198, 40); margin: 0;">${mensagem}</h5>
+                    </div>
+                    <div style="display: flex; align-items: center; justify-content: center;">
+                     <input style="width: 100px;" type="button" onclick="FechaResultado_overlay()" value="Continuar">
+                    </div>
+                </div>`
+            } else {
+                document.getElementById("resultado-funcao").innerHTML =
+                    `<div id="div-resultado-overlay"
+                    style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center gap: 20px;">
+                    <div>
+                        <h5 style="color: rgb(160, 2, 2); margin: 0;">${mensagem}</h5>
+                    </div>
+                    <div style="display: flex; align-items: center; justify-content: center;">
+                     <input style="width: 100px;" type="button" onclick="FechaResultado_overlay()" value="Continuar">
+                    </div>
+                </div>`
+            }
+        }
+        function FechaResultado_overlay() {
+            resultado_overlay.style.display = "none"
+        }
+        
         document.getElementById("meuForm").addEventListener("submit", async (e) => {
             e.preventDefault();
-            const loading = document.getElementById("loading-overlay");
 
             const nome = document.getElementById("Nome").value;
             const email = document.getElementById("Email").value;
@@ -193,7 +274,7 @@
                 MostrarErro("erro-email", "")
             }
             if (!senha || senha.length < 10) {
-                MostrarErro("erro-senha","ERRO: A senha deve ter no minimo 10 caracteres")
+                MostrarErro("erro-senha", "ERRO: A senha deve ter no minimo 10 caracteres")
             }
             else {
                 MostrarErro("erro-senha", "")
@@ -212,11 +293,17 @@
 
                 loading.style.display = "none";
                 if (response.status === 200) {
-                    alert(resultado.mensagem)
+                    resultado_overlay.style.display = "flex";
+                    MostrarResultado_Overlay(1, resultado.mensagem)
+                    console.log(resultado.mensagem)
                 } else if (response.status === 400) {
-                    alert(resultado.mensagem)
+                    resultado_overlay.style.display = "flex";
+                    MostrarResultado_Overlay(0, resultado.mensagem)
+                    console.log(resultado.mensagem)
                 } else if (response.status === 409) {
-                    alert(resultado.mensagem)
+                    resultado_overlay.style.display = "flex";
+                    MostrarResultado_Overlay(0, resultado.mensagem)
+                    console.log(resultado.mensagem)
                 }
 
             }
