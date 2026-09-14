@@ -35,6 +35,7 @@ app.use('/login', Express.static(path.join(__dirname, 'public')))
 
 // Esse é o modelo para as proximas RFs - nome da rota e o caminho dela (até a pasta public, não precisa especificar o index.html)
 app.use('/cadastro-usuario', Express.static(path.join(__dirname, '../rf-002-Cadastro_usuario/public')))
+app.use('/resetar-senha', Express.static(path.join(__dirname, 'public/reset-senha')))
 
 
 const supabase = createClient(
@@ -192,6 +193,187 @@ app.post('/confirmar-cadastro', async (req, res) => {
     }
 
 })
+
+// ===== ROTAS PARA RECUPERAÇÃO DE SENHA (RF-001) =====
+
+// Sistema de rate limiting simples para rotas de reset de senha
+const tentativasResetSenha = new Map();
+const LIMITE_TENTATIVAS = 3;
+const TEMPO_BLOQUEIO_MS = 15 * 60 * 1000; // 15 minutos
+
+function verificarRateLimitResetSenha(email) {
+    const agora = Date.now();
+    const registro = tentativasResetSenha.get(email);
+
+    if (!registro) {
+        tentativasResetSenha.set(email, { tentativas: 1, bloqueioAte: null });
+        return { permitido: true, motivo: '' };
+    }
+
+    if (registro.bloqueioAte && agora < registro.bloqueioAte) {
+        const tempoRestante = Math.ceil((registro.bloqueioAte - agora) / 1000);
+        return { permitido: false, motivo: `Muitas tentativas. Tente novamente em ${tempoRestante} segundos` };
+    }
+
+    if (registro.bloqueioAte && agora >= registro.bloqueioAte) {
+        tentativasResetSenha.delete(email);
+        tentativasResetSenha.set(email, { tentativas: 1, bloqueioAte: null });
+        return { permitido: true, motivo: '' };
+    }
+
+    if (registro.tentativas >= LIMITE_TENTATIVAS) {
+        registro.bloqueioAte = agora + TEMPO_BLOQUEIO_MS;
+        return { permitido: false, motivo: `Muitas tentativas. Tente novamente em ${Math.ceil(TEMPO_BLOQUEIO_MS / 1000)} segundos` };
+    }
+
+    registro.tentativas++;
+    return { permitido: true, motivo: '' };
+}
+
+// ROTA 1 - Solicitar reset de senha
+app.post('/solicitar-reset-senha', async (req, res) => {
+    const { email } = req.body;
+
+    // Validação do email
+    if (!email || !email.includes('@')) {
+        return res.status(400).json({
+            mensagem: 'Email inválido ou não informado'
+        });
+    }
+
+    // Verificar rate limit
+    const verificacaoRateLimit = verificarRateLimitResetSenha(email);
+    if (!verificacaoRateLimit.permitido) {
+        return res.status(429).json({
+            mensagem: verificacaoRateLimit.motivo
+        });
+    }
+
+    // Consultar se o email existe no banco
+    const { data: usuario, error } = await supabase
+        .from('usuarios')
+        .select('nome, email')
+        .eq('email', email)
+        .maybeSingle();
+
+    if (error) {
+        console.error('Erro ao consultar usuário:', error.message);
+        return res.status(500).json({
+            mensagem: 'Erro ao consultar usuário'
+        });
+    }
+
+    if (!usuario) {
+        return res.status(404).json({
+            mensagem: 'Email não cadastrado'
+        });
+    }
+
+    try {
+        const codigo = gerarCodigo();
+        salvarCodigo(email, codigo);
+
+        await enviarEmail({
+            destinatarioEmail: email,
+            destinatarioNome: usuario.nome,
+            assunto: 'Redefinição de senha - CashLand',
+            conteudoHtml: `
+                <html>
+                    <body>
+                        <h2>Redefinição de senha</h2>
+                        <p>Olá, ${usuario.nome}!</p>
+                        <p>Use o código abaixo para redefinir sua senha:</p>
+                        <h1 style="letter-spacing: 4px;">
+                            ${codigo}
+                        </h1>
+                        <p>Esse código expira em 10 minutos.</p>
+                    </body>
+                </html>
+            `
+        });
+
+        return res.status(200).json({
+            mensagem: 'Código enviado para o email!'
+        });
+
+    } catch (erro) {
+        console.error('Erro ao enviar código:', erro);
+        return res.status(500).json({
+            mensagem: 'Não foi possível enviar o código'
+        });
+    }
+});
+
+// ROTA 2 - Confirmar reset de senha
+app.post('/confirmar-reset-senha', async (req, res) => {
+    const { email, codigoDigitado, novaSenha } = req.body;
+
+    // Validações
+    if (!email || !codigoDigitado || !novaSenha || novaSenha.length < 10) {
+        return res.status(400).json({
+            mensagem: 'Dados inválidos ou incompletos'
+        });
+    }
+
+    // Verificar rate limit
+    const verificacaoRateLimit = verificarRateLimitResetSenha(email);
+    if (!verificacaoRateLimit.permitido) {
+        return res.status(429).json({
+            mensagem: verificacaoRateLimit.motivo
+        });
+    }
+
+    // Validar código
+    const resultado = validarCodigo(email, String(codigoDigitado));
+
+    if (!resultado.valido) {
+        return res.status(400).json({
+            mensagem: resultado.motivo
+        });
+    }
+
+    try {
+        // Gerar hash da nova senha
+        const novaSenhaHash = await gerarHashSenha(novaSenha);
+
+        // Atualizar senha no banco
+        const { data: usuarioAtualizado, error } = await supabase
+            .from('usuarios')
+            .update({
+                senha_hash: novaSenhaHash
+            })
+            .eq('email', email)
+            .select('id_usuario')
+            .maybeSingle();
+
+        if (error) {
+            console.error('Erro ao atualizar senha:', error.message);
+            return res.status(500).json({
+                mensagem: 'Erro ao atualizar senha'
+            });
+        }
+
+        if (!usuarioAtualizado) {
+            return res.status(404).json({
+                mensagem: 'Usuário não encontrado'
+            });
+        }
+
+        // Limpar tentativas de rate limit após sucesso
+        tentativasResetSenha.delete(email);
+
+        return res.status(200).json({
+            mensagem: 'Senha alterada com sucesso!'
+        });
+
+    } catch (erro) {
+        console.error('Erro ao processar reset de senha:', erro);
+        return res.status(500).json({
+            mensagem: 'Erro ao processar sua solicitação'
+        });
+    }
+});
+
 // O Render (e a maioria dos provedores de hospedagem) define a porta
 // dinamicamente via variável de ambiente PORT. Localmente, cai no 3000.
 const PORT = process.env.PORT || 3000;

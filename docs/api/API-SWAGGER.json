@@ -159,6 +159,105 @@
           }
         }
       }
+    },
+    "/solicitar-reset-senha": {
+      "post": {
+        "summary": "Solicita um código de verificação para redefinir a senha",
+        "tags": [
+          "Redefinição de Senha"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "email"
+                ],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "example": "usuario@gmail.com"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Código enviado para o email!"
+          },
+          "400": {
+            "description": "Email inválido ou não informado"
+          },
+          "404": {
+            "description": "Email não cadastrado"
+          },
+          "429": {
+            "description": "Muitas tentativas. Tente novamente mais tarde"
+          },
+          "500": {
+            "description": "Não foi possível enviar o código"
+          }
+        }
+      }
+    },
+    "/confirmar-reset-senha": {
+      "post": {
+        "summary": "Confirma o código de verificação e atualiza a senha",
+        "tags": [
+          "Redefinição de Senha"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "email",
+                  "codigoDigitado",
+                  "novaSenha"
+                ],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "example": "usuario@gmail.com"
+                  },
+                  "codigoDigitado": {
+                    "type": "string",
+                    "example": "123456"
+                  },
+                  "novaSenha": {
+                    "type": "string",
+                    "example": "minhaNovaSenha123",
+                    "description": "Mínimo de 10 caracteres"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Senha alterada com sucesso!"
+          },
+          "400": {
+            "description": "Dados inválidos ou incompletos (código inválido/expirado ou senha menor que 10 caracteres)"
+          },
+          "404": {
+            "description": "Usuário não encontrado"
+          },
+          "429": {
+            "description": "Muitas tentativas. Tente novamente mais tarde"
+          },
+          "500": {
+            "description": "Erro ao atualizar senha"
+          }
+        }
+      }
     }
   }
 }

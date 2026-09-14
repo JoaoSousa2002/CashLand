@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Redefinir Senha</title>
+</head>
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: Arial, sans-serif;
+    }
+
+    .container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        background-color: #f0f2f5;
+        padding: 20px;
+    }
+
+    .card {
+        background-color: #ffffff;
+        border-radius: 12px;
+        padding: 40px;
+        width: 100%;
+        max-width: 400px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .card h1 {
+        font-size: 24px;
+        margin-bottom: 30px;
+        text-align: center;
+        color: #333;
+    }
+
+    .card h2 {
+        font-size: 18px;
+        margin-bottom: 20px;
+        color: #333;
+    }
+
+    .step {
+        display: none;
+    }
+
+    .step.active {
+        display: block;
+    }
+
+    form {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    label {
+        font-weight: bold;
+        margin-bottom: 5px;
+        display: block;
+        color: #333;
+    }
+
+    input {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        font-size: 14px;
+    }
+
+    input:focus {
+        outline: none;
+        border-color: #4a90d9;
+        box-shadow: 0 0 0 2px rgba(74, 144, 217, 0.2);
+    }
+
+    button {
+        width: 100%;
+        padding: 12px;
+        background-color: #4a90d9;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: background-color 0.3s;
+    }
+
+    button:hover {
+        background-color: #357abd;
+    }
+
+    button:disabled {
+        background-color: #ccc;
+        cursor: not-allowed;
+    }
+
+    .link-voltar {
+        text-align: center;
+        margin-top: 15px;
+    }
+
+    .link-voltar a {
+        color: #4a90d9;
+        text-decoration: none;
+        font-size: 14px;
+    }
+
+    .link-voltar a:hover {
+        text-decoration: underline;
+    }
+
+    .erro {
+        color: #d32f2f;
+        font-size: 12px;
+        margin-top: 5px;
+        display: none;
+    }
+
+    .erro.show {
+        display: block;
+    }
+
+    .loading-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 9999;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .loading-box {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background-color: #ffffff;
+        border-radius: 12px;
+        padding: 50px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        gap: 20px;
+    }
+
+    .spinning-wheel {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #000000;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        from {
+            transform: rotate(0deg);
+        }
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    .resultado-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 9999;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .resultado-box {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        background-color: #ffffff;
+        border-radius: 12px;
+        padding: 50px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        gap: 20px;
+        text-align: center;
+        max-width: 400px;
+    }
+
+    .resultado-box h5 {
+        margin: 0;
+        font-size: 16px;
+    }
+
+    .resultado-sucesso h5 {
+        color: #4caf50;
+    }
+
+    .resultado-erro h5 {
+        color: #d32f2f;
+    }
+
+    .info-texto {
+        font-size: 12px;
+        color: #666;
+        margin-top: 10px;
+    }
+</style>
+
+<body>
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="loading-box">
+            <div>
+                <p>Carregando...</p>
+            </div>
+            <div class="spinning-wheel"></div>
+        </div>
+    </div>
+
+    <div class="resultado-overlay" id="resultado-overlay">
+        <div class="resultado-box" id="resultado-conteudo">
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <h1>🔐 Redefinir Senha</h1>
+
+            <!-- PASSO 1: Solicitar Código -->
+            <div class="step active" id="passo-1">
+                <h2>Passo 1 de 2: Verificar Email</h2>
+                <form id="form-solicitar-codigo">
+                    <div>
+                        <label for="email">Email:</label>
+                        <input type="email" id="email" name="email" required>
+                        <div class="erro" id="erro-email"></div>
+                    </div>
+                    <button type="submit">Enviar Código</button>
+                </form>
+                <div class="link-voltar">
+                    <a href="/login">Voltar para Login</a>
+                </div>
+            </div>
+
+            <!-- PASSO 2: Confirmar Reset -->
+            <div class="step" id="passo-2">
+                <h2>Passo 2 de 2: Redefinir Senha</h2>
+                <form id="form-confirmar-reset">
+                    <div>
+                        <label for="codigo">Código de Verificação:</label>
+                        <input type="text" id="codigo" name="codigo" placeholder="Ex: 123456" maxlength="6" required>
+                        <div class="erro" id="erro-codigo"></div>
+                    </div>
+                    <div>
+                        <label for="nova-senha">Nova Senha:</label>
+                        <input type="password" id="nova-senha" name="nova-senha" required>
+                        <div class="erro" id="erro-nova-senha"></div>
+                    </div>
+                    <button type="submit">Alterar Senha</button>
+                </form>
+                <div class="link-voltar">
+                    <a href="javascript:voltarParaPasso1()">Usar outro email</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let emailAtual = '';
+
+        function mostrarErro(id, mensagem) {
+            const elemento = document.getElementById(id);
+            if (mensagem) {
+                elemento.textContent = mensagem;
+                elemento.classList.add('show');
+            } else {
+                elemento.textContent = '';
+                elemento.classList.remove('show');
+            }
+        }
+
+        function limparErros() {
+            mostrarErro('erro-email', '');
+            mostrarErro('erro-codigo', '');
+            mostrarErro('erro-nova-senha', '');
+        }
+
+        function mostrarResultado(tipo, mensagem) {
+            const overlay = document.getElementById('resultado-overlay');
+            const conteudo = document.getElementById('resultado-conteudo');
+            
+            const classeResultado = tipo === 'sucesso' ? 'resultado-sucesso' : 'resultado-erro';
+            
+            conteudo.className = `resultado-box ${classeResultado}`;
+            conteudo.innerHTML = `
+                <div>
+                    <h5>${mensagem}</h5>
+                </div>
+                <div>
+                    <button onclick="fecharResultado()">Continuar</button>
+                </div>
+            `;
+            
+            overlay.style.display = 'flex';
+        }
+
+        function fecharResultado() {
+            document.getElementById('resultado-overlay').style.display = 'none';
+        }
+
+        function trocarPasso(numeroPasso) {
+            document.getElementById('passo-1').classList.remove('active');
+            document.getElementById('passo-2').classList.remove('active');
+            document.getElementById(`passo-${numeroPasso}`).classList.add('active');
+            limparErros();
+        }
+
+        function voltarParaPasso1() {
+            emailAtual = '';
+            document.getElementById('form-confirmar-reset').reset();
+            trocarPasso(1);
+        }
+
+        // FORMULÁRIO 1: Solicitar Código
+        document.getElementById('form-solicitar-codigo').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value.trim();
+            
+            // Validação do email
+            if (!email || !email.includes('@')) {
+                mostrarErro('erro-email', 'Email inválido');
+                return;
+            }
+
+            limparErros();
+            document.getElementById('loading-overlay').style.display = 'flex';
+
+            try {
+                const response = await fetch('/solicitar-reset-senha', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+
+                const resultado = await response.json();
+
+                if (response.status === 200) {
+                    emailAtual = email;
+                    document.getElementById('loading-overlay').style.display = 'none';
+                    mostrarResultado('sucesso', 'Código enviado com sucesso! Verifique seu email.');
+                    setTimeout(() => {
+                        fecharResultado();
+                        trocarPasso(2);
+                    }, 2000);
+                } else if (response.status === 404) {
+                    mostrarErro('erro-email', 'Email não cadastrado');
+                } else if (response.status === 429) {
+                    mostrarErro('erro-email', resultado.mensagem);
+                } else if (response.status === 400) {
+                    mostrarErro('erro-email', resultado.mensagem);
+                } else {
+                    mostrarErro('erro-email', 'Erro ao solicitar código');
+                }
+            } catch (erro) {
+                console.error('Erro:', erro);
+                mostrarErro('erro-email', 'Erro na conexão com o servidor');
+            } finally {
+                document.getElementById('loading-overlay').style.display = 'none';
+            }
+        });
+
+        // FORMULÁRIO 2: Confirmar Reset
+        document.getElementById('form-confirmar-reset').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const codigo = document.getElementById('codigo').value.trim();
+            const novaSenha = document.getElementById('nova-senha').value;
+
+            // Validações
+            if (!codigo || codigo.length !== 6 || isNaN(codigo)) {
+                mostrarErro('erro-codigo', 'Código deve ter 6 dígitos');
+                return;
+            }
+
+            if (!novaSenha || novaSenha.length < 10) {
+                mostrarErro('erro-nova-senha', 'Senha deve ter no mínimo 10 caracteres');
+                return;
+            }
+
+            limparErros();
+            document.getElementById('loading-overlay').style.display = 'flex';
+
+            try {
+                const response = await fetch('/confirmar-reset-senha', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: emailAtual,
+                        codigoDigitado: codigo,
+                        novaSenha: novaSenha
+                    })
+                });
+
+                const resultado = await response.json();
+
+                document.getElementById('loading-overlay').style.display = 'none';
+
+                if (response.status === 200) {
+                    mostrarResultado('sucesso', 'Senha alterada com sucesso! Redirecionando para login...');
+                    setTimeout(() => {
+                        window.location.href = '/login';
+                    }, 2000);
+                } else if (response.status === 400) {
+                    const motivo = resultado.mensagem.toLowerCase();
+                    if (motivo.includes('codigo')) {
+                        mostrarErro('erro-codigo', resultado.mensagem);
+                    } else if (motivo.includes('senha')) {
+                        mostrarErro('erro-nova-senha', resultado.mensagem);
+                    } else {
+                        mostrarErro('erro-codigo', resultado.mensagem);
+                    }
+                } else if (response.status === 429) {
+                    mostrarErro('erro-codigo', resultado.mensagem);
+                } else if (response.status === 404) {
+                    mostrarResultado('erro', 'Usuário não encontrado. Redirecionando para login...');
+                    setTimeout(() => {
+                        window.location.href = '/login';
+                    }, 2000);
+                } else {
+                    mostrarErro('erro-codigo', 'Erro ao alterar senha');
+                }
+            } catch (erro) {
+                console.error('Erro:', erro);
+                mostrarErro('erro-codigo', 'Erro na conexão com o servidor');
+            } finally {
+                document.getElementById('loading-overlay').style.display = 'none';
+            }
+        });
+    </script>
+</body>
+
+</html>
