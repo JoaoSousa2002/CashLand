@@ -174,7 +174,7 @@
 
     <div class="loading-overlay" id="solicitacaoCodigo-overlay">
         <div class="loading-box" id="solicitacao-codigo">
-            <form id="meuForm-solicitar-codigo"
+            <form id="meuForm-confirmar-cadastro"
                 style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 20px;">
                 <div>
                     <h5 style="color: rgb(0, 0, 0); margin: 0;">Digite o código enviado para o seu email</h5>
@@ -359,7 +359,7 @@
             }
         })
 
-        document.getElementById("meuForm-solicitar-codigo").addEventListener("submit", async (e) => {
+        document.getElementById("meuForm-confirmar-cadastro").addEventListener("submit", async (e) => {
             e.preventDefault();
             let codigoDigitado = document.getElementById("input-codigo").value;
             solicitacaoCodigo_overlay.style.display = "none"
@@ -383,7 +383,17 @@
                         MostrarResultado_Overlay(1, resultado.mensagem)
                         retonarLogin = true;
                         break;
+                    case 201:
+                        resultado_overlay.style.display = "flex";
+                        MostrarResultado_Overlay(1, resultado.mensagem);
+                        retonarLogin = true;
+                        break;
                     case 400:
+                        solicitacaoCodigo_overlay.style.display = "none"
+                        resultado_overlay.style.display = "flex"
+                        MostrarResultado_Overlay(2, resultado.mensagem)
+                        break;
+                    case 401:
                         solicitacaoCodigo_overlay.style.display = "none"
                         resultado_overlay.style.display = "flex"
                         MostrarResultado_Overlay(2, resultado.mensagem)

@@ -116,7 +116,7 @@ app.post('/solicitar-codigo', async (req, res) => {
         .maybeSingle()  // Se a lista existir, retorna ela, se não, não retorna nada
 
     if (data) {
-        res.status(409).json({ mensagem: "Esse email já está cadastrado" })
+        return res.status(409).json({ mensagem: "Esse email já está cadastrado" })
     }
     // se o email não está cadastrado, continua com o cadastro
     else {
@@ -135,12 +135,11 @@ app.post('/solicitar-codigo', async (req, res) => {
         <p>Esse código expira em 10 minutos.</p>
       </body></html>`
             });
-            res.status(200).json({ mensagem: "Codigo enviado para o email!" })
             console.log("Codigo enviado - Server side");
+            return res.status(200).json({ mensagem: "Codigo enviado para o email!" })
         } catch (erro) {
-            res.status(500).json({ mensagem: "O envio de email falhou!", erro })
             console.error('O envio de email falhou:', erro);
-            // normalmente não deve travar a resposta por causa do email
+            return res.status(500).json({ mensagem: "O envio de email falhou!", erro })
         }
     }
 });
@@ -149,7 +148,13 @@ app.post('/solicitar-codigo', async (req, res) => {
 
 app.post('/confirmar-cadastro', async (req, res) => {
     const { nome, email, senha, codigoDigitado } = req.body;
+
+    if (!nome || !email || !email.includes('@') || !email.includes(".com") || !senha || senha.length < 10 || !codigoDigitado) {
+        console.log("Dados invalido ou incompletos")
+        return res.status(400).json({ mensagem: 'Dados inválidos ou incompletos' });
+    }
     const resultado = validarCodigo(email, codigoDigitado)
+
     if (resultado.valido) {
         const { error } = await supabase
             .from('usuarios')
@@ -159,13 +164,9 @@ app.post('/confirmar-cadastro', async (req, res) => {
                 senha_hash: await gerarHashSenha(senha)
 
             })
-        res.status(200).json({
-            mensagem: "Cadastro realizado com sucesso, prossiga para o login!"
-        });
-        console.log("Cadastro realizado com sucesso")
         if (error) {
             console.log('Erro ao criar:', error.message);
-            return res.status(500).json({ mensagem: "Erro ao cadastrar usuário"});
+            return res.status(500).json({ mensagem: "Erro ao cadastrar usuário" });
         } else {
             try {
                 await enviarEmail({
@@ -174,15 +175,20 @@ app.post('/confirmar-cadastro', async (req, res) => {
                     assunto: 'Bem-vindo ao CashLand!',
                     conteudoHtml: `<h1>Olá, ${nome}!</h1><p>Sua conta foi criada com sucesso.</p>`
                 });
+
             } catch (erro) {
-                res.status(501).json({ mensagem: "Usuario criado, mas o email de confirmação não foi enviado", erro })
                 console.error('Usuário criado, mas email falhou:', erro);
+                return res.status(201).json({ mensagem: "Usuario criado, mas o email de confirmação não foi enviado", erro })
                 // normalmente não deve travar a resposta por causa do email
             }
         }
+        console.log("Cadastro realizado com sucesso")
+        return res.status(200).json({
+            mensagem: "Cadastro realizado com sucesso, prossiga para o login!"
+        });
     } else {
-        res.status(400).json({ mensagem: resultado.motivo })
         console.log(resultado.motivo)
+        return res.status(401).json({ mensagem: resultado.motivo })
     }
 
 })

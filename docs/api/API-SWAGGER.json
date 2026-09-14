@@ -56,8 +56,6 @@
         }
       }
     },
-
-
     "/confirmar-cadastro": {
       "post": {
         "summary": "Recebe o codigo do usuario e verifica se é o mesmo enviado, se sim, cria o usuario",
@@ -78,15 +76,19 @@
                 "properties": {
                   "nome": {
                     "type": "string",
-                    "example": "Joao Sousa"
+                    "example": "Usuario teste"
                   },
                   "email": {
                     "type": "string",
-                    "example": "usuario@exemplo.com"
+                    "example": "usuario@gmail.com"
                   },
                   "senha": {
                     "type": "string",
                     "example": "minhaSenha123"
+                  }, 
+                  "codigoDigitado":{
+                    "type": "string",
+                    "example": "123456"
                   }
                 }
               }
@@ -97,8 +99,14 @@
           "200": {
             "description": "Cadastro realizado com sucesso, prossiga para o login!"
           },
-          "501": {
+          "201": {
             "description": "Usuario criado, mas o email de confirmação não foi enviado, erro"
+          },
+          "400": {
+            "description": "Dados inválidos ou incompletos" 
+          },
+          "401": {
+            "description": "-Erro de codigo (Incorreto, expirado ou não solicitado)"
           },
           "500": {
             "description": "Erro ao cadastrar usuário"
@@ -106,8 +114,6 @@
         }
       }
     },
-
-
     "/solicitar-codigo": {
       "post": {
         "summary": "Envia codigo ao email enviado pelo usuario e verifica se o Email é valido",
