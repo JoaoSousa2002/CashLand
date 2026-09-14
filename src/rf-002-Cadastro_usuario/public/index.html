@@ -233,6 +233,7 @@
 
     <script>
         let reabrirJanelaCodigo = false;
+        let retonarLogin = false;
         const loading = document.getElementById("loading-overlay");
         const resultado_overlay = document.getElementById("resultado-overlay");
         const solicitacaoCodigo_overlay = document.getElementById("solicitacaoCodigo-overlay");
@@ -248,6 +249,7 @@
         }
         function MostrarResultado_Overlay(tipo, mensagem) {
             if (tipo == 1) {
+                // SUCESSO
                 document.getElementById("resultado-funcao").innerHTML =
                     `<div id="div-resultado-overlay"
                     style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 20px;">
@@ -259,6 +261,7 @@
                     </div>
                 </div>`
             } else {
+                // ERRO
                 document.getElementById("resultado-funcao").innerHTML =
                     `<div id="div-resultado-overlay"
                     style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center gap: 20px;">
@@ -277,8 +280,10 @@
                 if (reabrirJanelaCodigo) {
                     reabrirJanelaCodigo = false; // reseta pra não reabrir de novo à toa
                     solicitacaoCodigo_overlay.style.display = "flex";
+                } else if (retonarLogin) {
+                    reabrirJanelaCodigo = false;
+                    window.location.href = "/login";
                 }
-                window.location.href = "/login";
             } else if (num === 2) {
                 solicitacaoCodigo_overlay.style.display = "none"
             }
@@ -376,6 +381,7 @@
                         // solicitacaoCodigo_overlay.style.display = "none"
                         resultado_overlay.style.display = "flex"
                         MostrarResultado_Overlay(1, resultado.mensagem)
+                        retonarLogin = true;
                         break;
                     case 400:
                         solicitacaoCodigo_overlay.style.display = "none"
