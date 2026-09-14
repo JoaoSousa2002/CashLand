@@ -60,7 +60,7 @@
 
     "/confirmar-cadastro": {
       "post": {
-        "summary": "Cadastra um  novo usuário",
+        "summary": "Recebe o codigo do usuario e verifica se é o mesmo enviado, se sim, cria o usuario",
         "tags": [
           "Cadastramento de usuario"
         ],

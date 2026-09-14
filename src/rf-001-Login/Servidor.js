@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
-import { enviarEmail } from '../rf-002-Cadastro_usuario/Email.js';
-import { gerarHashSenha, validarSenha } from './Autenticacao.js'
+import { enviarEmail, gerarCodigo, salvarCodigo, validarCodigo } from '../rf-002-Cadastro_usuario/Email.js';
+import { gerarHashSenha, validarSenha, } from './Autenticacao.js'
 import Express from 'express'
 import cors from 'cors'
 import ws from 'ws'
@@ -59,8 +59,7 @@ async function testarConexao() {
     } else {
         console.log(' Conexão com o Supabase OK.')
     }
-}
-testarConexao();
+} testarConexao();
 
 // Rotas da api
 app.post('/login', async (req, res) => {
@@ -102,7 +101,7 @@ app.post('/login', async (req, res) => {
 // ROTA PARA VERIFICAR SE O EMAIL EXISTE
 app.post('/solicitar-codigo', async (req, res) => {
     const { nome, email } = req.body;
-    var codAcesso = Math.floor(100000 + Math.random() * 900000).toString()
+
 
     // 3. O backend recebe o email e verifica se é valido (inicialmente)
     if (!nome || !email || !email.includes('@') || !email.includes(".com")) {
@@ -123,14 +122,21 @@ app.post('/solicitar-codigo', async (req, res) => {
     else {
         //Verificar email com codigo aleatorio
         try {
+            const codigo = gerarCodigo();
+            salvarCodigo(email, codigo);
             await enviarEmail({
                 destinatarioEmail: email,
                 destinatarioNome: nome,
-                assunto: 'Verifique seu Email',
-                conteudoHtml: `<h1>Olá, ${nome}!</h1><p>Seu codigo de acesso é:${codAcesso} .</p>`
+                assunto: 'Seu código de verificação',
+                conteudoHtml: `<html><body>
+        <h2>Código de verificação</h2>
+        <p>Use o código abaixo para continuar:</p>
+        <h1 style="letter-spacing: 4px;">${codigo}</h1>
+        <p>Esse código expira em 10 minutos.</p>
+      </body></html>`
             });
             res.status(200).json({ mensagem: "Codigo enviado para o email!" })
-            console.log("Codigo enviado");
+            console.log("Codigo enviado - Server side");
         } catch (erro) {
             res.status(500).json({ mensagem: "O envio de email falhou!", erro })
             console.error('O envio de email falhou:', erro);
@@ -142,36 +148,41 @@ app.post('/solicitar-codigo', async (req, res) => {
 // ROTA PARA CRIAR O CADASTRO
 
 app.post('/confirmar-cadastro', async (req, res) => {
-    const { nome, email, senha } = req.body;
+    const { nome, email, senha, codigoDigitado } = req.body;
+    const resultado = validarCodigo(email, codigoDigitado)
+    if (resultado.valido) {
+        const { error } = await supabase
+            .from('usuarios')
+            .insert({
+                nome: nome,
+                email: email,
+                senha_hash: await gerarHashSenha(senha)
 
-    const { error } = await supabase
-        .from('usuarios')
-        .insert({
-            nome: nome,
-            email: email,
-            senha_hash: await gerarHashSenha(senha)
-        })
-    if (error) {
-        console.log('Erro ao criar:', error.message);
-        return res.status(500).json({ mensagem: 'Erro ao cadastrar usuário' });
-    } else {
-        try {
-            await enviarEmail({
-                destinatarioEmail: email,
-                destinatarioNome: nome,
-                assunto: 'Bem-vindo ao CashLand!',
-                conteudoHtml: `<h1>Olá, ${nome}!</h1><p>Sua conta foi criada com sucesso.</p>`
-            });
-        } catch (erro) {
-            res.status(501).json({mensagem: "Usuario criado, mas o email de confirmação não foi enviado", erro})
-            console.error('Usuário criado, mas email falhou:', erro);
-            // normalmente não deve travar a resposta por causa do email
-        } finally {
-            res.status(200).json({
-                mensagem: 'Cadastro realizado com sucesso, prossiga para o login!'
-            });
-
+            })
+        res.status(200).json({
+            mensagem: "Cadastro realizado com sucesso, prossiga para o login!"
+        });
+        console.log("Cadastro realizado com sucesso")
+        if (error) {
+            console.log('Erro ao criar:', error.message);
+            return res.status(500).json({ mensagem: "Erro ao cadastrar usuário"});
+        } else {
+            try {
+                await enviarEmail({
+                    destinatarioEmail: email,
+                    destinatarioNome: nome,
+                    assunto: 'Bem-vindo ao CashLand!',
+                    conteudoHtml: `<h1>Olá, ${nome}!</h1><p>Sua conta foi criada com sucesso.</p>`
+                });
+            } catch (erro) {
+                res.status(501).json({ mensagem: "Usuario criado, mas o email de confirmação não foi enviado", erro })
+                console.error('Usuário criado, mas email falhou:', erro);
+                // normalmente não deve travar a resposta por causa do email
+            }
         }
+    } else {
+        res.status(400).json({ mensagem: resultado.motivo })
+        console.log(resultado.motivo)
     }
 
 })

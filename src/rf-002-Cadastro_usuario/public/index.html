@@ -174,20 +174,20 @@
 
     <div class="loading-overlay" id="solicitacaoCodigo-overlay">
         <div class="loading-box" id="solicitacao-codigo">
-            <div id="div-codigo-overlay"
+            <form id="meuForm-solicitar-codigo"
                 style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 20px;">
                 <div>
-                    <h5 style="color: rgb(103, 198, 40); margin: 0;">Digite o código enviado para o seu email</h5>
+                    <h5 style="color: rgb(0, 0, 0); margin: 0;">Digite o código enviado para o seu email</h5>
                 </div>
                 <div style="display: flex; align-items: center; justify-content: center;">
                     <input id="input-codigo" style="width: 150px; text-align: center;" type="text" maxlength="6"
-                        placeholder="000000">
+                        pattern="\d{6}" placeholder="000000" title="O código deve ter exatamente 6 números" required>
                 </div>
                 <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
-                    <input style="width: 100px;" type="button" onclick="ConfirmarCodigo_overlay()" value="Confirmar">
+                    <input style="width: 100px;" type="submit" value="Confirmar">
                     <input style="width: 100px;" type="button" onclick="FechaResultado_overlay(2)" value="Cancelar">
                 </div>
-            </div>
+            </form>
         </div>
     </div>
 
@@ -232,11 +232,15 @@
     </div>
 
     <script>
+        let reabrirJanelaCodigo = false;
         const loading = document.getElementById("loading-overlay");
         const resultado_overlay = document.getElementById("resultado-overlay");
-        const solicitacaoCodigo_overlay = document.getElementById("solicitacaoCodigo-overlay")
-        // Recebe o codigo digitado pelo usuario
-        var codigoDigitado = document.getElementById("input-codigo").value;
+        const solicitacaoCodigo_overlay = document.getElementById("solicitacaoCodigo-overlay");
+
+
+        let nome = "";
+        let email = "";
+        let senha = "";
 
         function MostrarErro(id, mensagem) {
             document.getElementById(id).innerHTML = `
@@ -270,6 +274,11 @@
         function FechaResultado_overlay(num) {
             if (num === 1) {
                 resultado_overlay.style.display = "none"
+                if (reabrirJanelaCodigo) {
+                    reabrirJanelaCodigo = false; // reseta pra não reabrir de novo à toa
+                    solicitacaoCodigo_overlay.style.display = "flex";
+                }
+                window.location.href = "/login";
             } else if (num === 2) {
                 solicitacaoCodigo_overlay.style.display = "none"
             }
@@ -278,9 +287,9 @@
         document.getElementById("meuForm").addEventListener("submit", async (e) => {
             e.preventDefault();
 
-            const nome = document.getElementById("Nome").value;
-            const email = document.getElementById("Email").value;
-            const senha = document.getElementById("Senha").value;
+            nome = document.getElementById("Nome").value;
+            email = document.getElementById("Email").value;
+            senha = document.getElementById("Senha").value;
 
             // Verifica se os campo nome e senha estão vazios ou se o campo email falta o '@'', se sim, retorna mensagem de erro
             // O else serve para caso já tenha aparecido a mensagem de erro e o usuario insira o campo corretamente
@@ -306,24 +315,93 @@
                 // Bloqueia a tela
                 loading.style.display = "flex";
 
-                const response = await fetch(`/solicitar-codigo`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({nome, email})
-                });
-                const resultado = await response.json();
+                try {
+                    const response = await fetch(`/solicitar-codigo`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ nome, email })
+                    });
+                    const resultado = await response.json();
 
-                loading.style.display = "none";
-                if (response.status === 200) {
-                    solicitacaoCodigo_overlay.style.display = "flex";
-                    // MostrarResultado_Overlay(1, resultado.mensagem)
-                    console.log(resultado.mensagem)
-                } else if (response.status === 409) {
+                    loading.style.display = "none";
+                    switch (response.status) {
+                        case 200:
+                            solicitacaoCodigo_overlay.style.display = "flex";
+                            // Não tem mensagem pois chama a tela de codigo
+                            console.log(resultado.mensagem)
+                            break;
+                        case 400:
+                            resultado_overlay.style.display = "flex";
+                            MostrarResultado_Overlay(2, resultado.mensagem)
+                            console.log(resultado.mensagem)
+                        case 409:
+                            resultado_overlay.style.display = "flex";
+                            MostrarResultado_Overlay(2, resultado.mensagem)
+                            console.log(resultado.mensagem)
+                        case 500:
+                            resultado_overlay.style.display = "flex";;
+                            MostrarResultado_Overlay(2, resultado.mensagem)
+                            console.log(resultado.mensagem)
+                        default:
+                            break;
+                    }
+                } catch (error) {
                     resultado_overlay.style.display = "flex";
-                    MostrarResultado_Overlay(0, resultado.mensagem)
-                    console.log(resultado.mensagem)
+                    MostrarResultado_Overlay(1, "Ocorreu um erro, por favor tente mais tarde")
+                    console.log("Erro desconhecido: ", error)
                 }
 
+            }
+        })
+
+        document.getElementById("meuForm-solicitar-codigo").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            let codigoDigitado = document.getElementById("input-codigo").value;
+            solicitacaoCodigo_overlay.style.display = "none"
+
+            try {
+                loading.style.display = "flex";
+
+                const response = await fetch('/confirmar-cadastro', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nome, email, senha, codigoDigitado })
+                })
+                const resultado = await response.json();
+                console.log("Codigo enviado - Client side")
+                loading.style.display = "none";
+
+                switch (response.status) {
+                    case 200:
+                        // solicitacaoCodigo_overlay.style.display = "none"
+                        resultado_overlay.style.display = "flex"
+                        MostrarResultado_Overlay(1, resultado.mensagem)
+                        break;
+                    case 400:
+                        solicitacaoCodigo_overlay.style.display = "none"
+                        resultado_overlay.style.display = "flex"
+                        MostrarResultado_Overlay(2, resultado.mensagem)
+                        reabrirJanelaCodigo = true;
+                        break;
+
+                    case 500:
+                        // solicitacaoCodigo_overlay.style.display = "none"
+                        resultado_overlay.style.display = "flex"
+                        MostrarResultado_Overlay(2, resultado.mensagem)
+                        break;
+                    case 501:
+                        // solicitacaoCodigo_overlay.style.display = "none"
+                        resultado_overlay.style.display = "flex"
+                        MostrarResultado_Overlay(2, resultado.mensagem)
+                        break;
+                    default:
+                        break;
+                }
+            } catch (error) {
+                // solicitacaoCodigo_overlay.style.display = "none"
+                resultado_overlay.style.display = "flex";
+                MostrarResultado_Overlay(1, "Ocorreu um erro, por favor tente mais tarde")
+                console.log("Erro desconhecido: ", error)
             }
         })
     </script>
