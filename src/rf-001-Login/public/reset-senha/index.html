@@ -156,6 +156,26 @@
             padding: 25px;
         }
     }
+    .campo-senha {
+        position: relative;
+        display: inline-block;
+    }
+
+    .campo-senha input {
+        padding-right: 40px;
+    }
+
+    .campo-senha button {
+        position: absolute;
+        right: 8px;
+        top: 50%;
+        transform: translateY(-50%);
+
+        border: none;
+        background: none;
+        cursor: pointer;
+        font-size: 18px;
+    }
 </style>
 </head>
 
@@ -186,8 +206,11 @@
                 </div>
                 <div>
                     <label for="Senha" style="font-size: 0.83em; font-weight: bold;">Nova senha:</label>
-                    <input type="password" name="Senha" id="Senha" placeholder="No mínimo 10 caracteres"
-                        autocomplete="new-password" required>
+                    <div class="campo-senha">
+                        <input type="password" name="Senha" id="Senha" placeholder="No mínimo 10 caracteres"
+                            autocomplete="new-password" required>
+                        <button type="button" id="mostrar-senha" aria-label="Mostrar ou ocultar senha">👁</button>
+                    </div>
                     <div id="erro-senha"></div>
                 </div>
                 <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
@@ -273,6 +296,18 @@
             }
         }
 
+        // Sistema para mostrar a senha
+        const campoSenha = document.getElementById("Senha");
+        const mostrarSenha = document.getElementById("mostrar-senha");
+        mostrarSenha.addEventListener("click", () => {
+            if (campoSenha.type === "password") {
+                campoSenha.type = "text";
+                mostrarSenha.textContent = "🙈";
+            } else {
+                campoSenha.type = "password";
+                mostrarSenha.textContent = "👁";
+            }
+        });
         document.getElementById("meuForm").addEventListener("submit", async (e) => {
             e.preventDefault();
             email = document.getElementById("Email").value.trim();

@@ -155,6 +155,29 @@
             transform: rotate(360deg);
         }
     }
+    .campo-senha {
+        position: relative;
+        display: inline-block;
+        flex: 1;
+        min-width: 0;
+    }
+
+    .campo-senha input {
+        width: 100%;
+        padding-right: 40px;
+    }
+
+    .campo-senha button {
+        position: absolute;
+        right: 8px;
+        top: 50%;
+        transform: translateY(-50%);
+
+        border: none;
+        background: none;
+        cursor: pointer;
+        font-size: 18px;
+    }
 </style>
 
 <body>
@@ -229,7 +252,10 @@
 
                 <div class="input-dados">
                     <label for="Senha">Senha:</label><br>
-                    <input type="password" name="Senha" id="Senha" placeholder="Ex: Dani@wpm#0*7">
+                    <div class="campo-senha">
+                        <input type="password" name="Senha" id="Senha" placeholder="Ex: Dani@wpm#0*7">
+                        <button type="button" id="mostrar-senha" aria-label="Mostrar ou ocultar senha">👁</button>
+                    </div>
                 </div>
 
                 <div id="erro-senha"></div>
@@ -299,6 +325,18 @@
             }
         }
 
+        // Sistema para mostrar a senha
+        const campoSenha = document.getElementById("Senha");
+        const mostrarSenha = document.getElementById("mostrar-senha");
+        mostrarSenha.addEventListener("click", () => {
+            if (campoSenha.type === "password") {
+                campoSenha.type = "text";
+                mostrarSenha.textContent = "🙈";
+            } else {
+                campoSenha.type = "password";
+                mostrarSenha.textContent = "👁";
+            }
+        });
         document.getElementById("meuForm").addEventListener("submit", async (e) => {
             e.preventDefault();
 
