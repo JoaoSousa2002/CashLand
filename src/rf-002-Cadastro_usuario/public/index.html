@@ -174,15 +174,27 @@
 
     <div class="loading-overlay" id="solicitacaoCodigo-overlay">
         <div class="loading-box" id="solicitacao-codigo">
-            <form id="meuForm-confirmar-cadastro"
+            <form id="meuForm-confirmar-cadastro" novalidate
                 style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 20px;">
                 <div>
                     <h5 style="color: rgb(0, 0, 0); margin: 0;">Digite o código enviado para o seu email</h5>
                 </div>
-                <div style="display: flex; align-items: center; justify-content: center;">
+                <div>
+                    <label for="input-codigo" style="font-size: 0.83em; font-weight: bold;">Código:</label>
                     <input id="input-codigo" style="width: 150px; text-align: center;" type="text" maxlength="6"
-                        pattern="\d{6}" placeholder="000000" title="O código deve ter exatamente 6 números" required>
+                        inputmode="numeric" pattern="\d{6}" placeholder="000000" autocomplete="one-time-code" required>
+                    <div id="erro-codigo"></div>
                 </div>
+
+                <!-- <label for="input-codigo" style="font-size: 0.83em; font-weight: bold;">Código:</label>
+                    <input id="input-codigo" style="width: 150px; text-align: center;" type="text" maxlength="6"
+                        inputmode="numeric" pattern="\d{6}" placeholder="000000" autocomplete="one-time-code" required>
+                    <div id="erro-codigo"></div> -->
+
+                <!-- <div style="display: flex; align-items: center; justify-content: center;">
+                    <input id="input-codigo" style="width: 150px; text-align: center;" type="text" maxlength="6" pattern="\d{6}" placeholder="000000" required>
+                </div>
+                <div id="erro-codigo"></div> -->
                 <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
                     <input style="width: 100px;" type="submit" value="Confirmar">
                     <input style="width: 100px;" type="button" onclick="FechaResultado_overlay(2)" value="Cancelar">
@@ -198,8 +210,6 @@
                 <h1>CashLand</h1>
                 <input type="button" value="Voltar" id="botao-Voltar" onclick="location.href='/login'">
             </div>
-
-
             <form id="meuForm">
                 <h4>Cadastro de usuario</h4>
                 <div class="input-dados">
@@ -245,7 +255,7 @@
 
         function MostrarErro(id, mensagem) {
             document.getElementById(id).innerHTML = `
-            <h5 style="color: rgb(160, 2, 2); margin-left: 80px;">${mensagem}</h5> `;
+            <h5 style="color: rgb(160, 2, 2); margin-left: 80px; font-size:13px">${mensagem}</h5> `;
         }
         function MostrarResultado_Overlay(tipo, mensagem) {
             if (tipo == 1) {
@@ -361,10 +371,17 @@
 
         document.getElementById("meuForm-confirmar-cadastro").addEventListener("submit", async (e) => {
             e.preventDefault();
-            let codigoDigitado = document.getElementById("input-codigo").value;
-            solicitacaoCodigo_overlay.style.display = "none"
-
+            const codigoDigitado = document.getElementById("input-codigo").value.trim();
+            
+            if (!/^\d{6}$/.test(codigoDigitado)) {
+                MostrarErro("erro-codigo", "ERRO: O código deve ter exatamente 6 números");
+                return;
+            } else {
+                MostrarErro("erro-codigo", "");
+            }
+            
             try {
+                solicitacaoCodigo_overlay.style.display = "none"
                 loading.style.display = "flex";
 
                 const response = await fetch('/confirmar-cadastro', {

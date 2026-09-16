@@ -1,17 +1,12 @@
-# RF-002 — Cadastro de Novo Usuário
-
 ## 🎯 1. Identificação do Requisito
 
-| Campo                  | Valor                                                |
-| ---------------------- | ---------------------------------------------------- |
-| **ID**                 | RF-002                                               |
-| **Título**             | Cadastro de Novo Usuário no Sistema                  |
-| **Tipo**               | Requisito Funcional                                  |
-| **Prioridade**         | ALTA (bloqueia os demais requisitos, exceto o RF-01) |
-| **Complexidade**       | MÉDIA (estimado 5 story points)                      |
-| **Status**             | Concluído                                            |
-| **Data de Criação**    | 08/09/2026                                           |
-| **Última Atualização** | 14/09/2026                                           |
+ **ID**: RF-002
+ **Título**: Cadastro de Novo Usuário no Sistema |
+ **Tipo**: Requisito Funcional
+ **Prioridade**: ALTA (bloqueia os demais requisitos, exceto o RF-01)
+ **Complexidade**: MÉDIA (estimado 5 story points)
+ **Data de Criação**: 08/09/2026
+ **Última Atualização**: 15/09/2026
 
 **Breve Descrição:**
 O sistema deve permitir que o usuário crie um novo cadastro informando nome, email e senha. Antes da criação da conta, o sistema envia um código de verificação de 6 dígitos para o email informado. O cadastro só é concluído após a confirmação desse código, e a senha é armazenada de forma criptografada (hash).
@@ -100,7 +95,7 @@ O sistema precisa saber quem está logado para mostrar os dados referentes ao us
 13. O backend retorna HTTP 200 com a mensagem "Codigo enviado para o email!".
 14. O frontend fecha o carregamento e abre o overlay para digitação do código.
 15. Usuário digita o código de 6 dígitos e clica em "Confirmar".
-16. O frontend envia `POST /confirmar-cadastro` com `{ nome, email, senha, codigoDigitado }`.
+16. O frontend verifica se o código contém exatamente seis números; se válido, envia `POST /confirmar-cadastro` com `{ nome, email, senha, codigoDigitado }`.
 17. O backend valida se nome, email, senha e código foram informados, se o email contém `@` e `.com` e se a senha possui pelo menos 10 caracteres.
 18. O backend valida o código associado ao email.
 19. Se o código for válido, ele é removido da memória para impedir reutilização.
@@ -208,206 +203,248 @@ O sistema precisa saber quem está logado para mostrar os dados referentes ao us
 
 ### Regras de Negócio (RN)
 
-| ID        | Regra                               | Descrição                                                                                                                                                                     |
-| --------- | ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **RN-01** | Email não pode estar cadastrado     | Antes do envio do código, o backend consulta `usuarios`; se encontrar o email, retorna HTTP 409                                                                               |
-| **RN-02** | Senha válida                        | A senha deve ter no mínimo 10 caracteres; a regra é validada no frontend e novamente em `/confirmar-cadastro`                                                               |
-| **RN-03** | Nome informado                      | O usuário deve informar o nome; as rotas `/solicitar-codigo` e `/confirmar-cadastro` rejeitam nome ausente                                                                  |
-| **RN-04** | Senha nunca em texto puro           | A senha é convertida em hash bcrypt antes do `insert`; o texto original não é salvo no banco                                                                                  |
-| **RN-05** | Mensagem de erro contextual         | Erros locais de nome, email e senha são exibidos abaixo do campo; erros retornados pelo servidor e erros de código são exibidos em overlay                                   |
-| **RN-06** | Bloqueio durante processamento      | Durante as requisições, o sistema exibe overlay de carregamento enquanto aguarda a resposta                                                                                   |
-| **RN-07** | Verificação por código              | A criação da conta depende da validação de um código de 6 dígitos enviado ao email informado                                                                                 |
-| **RN-08** | Expiração do código                 | O código de verificação expira 10 minutos após ser gerado                                                                                                                     |
-| **RN-09** | Código de uso único                 | Após uma validação bem-sucedida, o código é removido do armazenamento temporário e não pode ser reutilizado                                                                   |
-| **RN-10** | Armazenamento temporário em memória | Os códigos pendentes são mantidos em um `Map` no processo do Node.js                                                                                                          |
-| **RN-11** | Email de boas-vindas                | Após a criação do usuário, o backend tenta enviar um email de boas-vindas; se o envio falhar, retorna HTTP 201 informando que o usuário já foi criado                        |
-| **RN-12** | Validação antes do `insert`         | `/confirmar-cadastro` valida os campos obrigatórios e o código antes de executar a criação do usuário                                                                         |
+| ID        | Regra                               | Descrição                                                                                                                                             |
+| --------- | ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **RN-01** | Email não pode estar cadastrado     | Antes do envio do código, o backend consulta `usuarios`; se encontrar o email, retorna HTTP 409                                                       |
+| **RN-02** | Senha válida                        | A senha deve ter no mínimo 10 caracteres; a regra é validada no frontend e novamente em `/confirmar-cadastro`                                         |
+| **RN-03** | Nome informado                      | O usuário deve informar o nome; as rotas `/solicitar-codigo` e `/confirmar-cadastro` rejeitam nome ausente                                            |
+| **RN-04** | Senha nunca em texto puro           | A senha é convertida em hash bcrypt antes do `insert`; o texto original não é salvo no banco                                                          |
+| **RN-05** | Mensagem de erro contextual         | Erros locais de nome, email e senha são exibidos abaixo do campo; erros retornados pelo servidor e erros de código são exibidos em overlay            |
+| **RN-06** | Bloqueio durante processamento      | Durante as requisições, o sistema exibe overlay de carregamento enquanto aguarda a resposta                                                           |
+| **RN-07** | Verificação por código              | A criação da conta depende da validação de um código de 6 dígitos enviado ao email informado                                                          |
+| **RN-08** | Expiração do código                 | O código de verificação expira 10 minutos após ser gerado                                                                                             |
+| **RN-09** | Código de uso único                 | Após uma validação bem-sucedida, o código é removido do armazenamento temporário e não pode ser reutilizado                                           |
+| **RN-10** | Armazenamento temporário em memória | Os códigos pendentes são mantidos em um `Map` no processo do Node.js                                                                                  |
+| **RN-11** | Email de boas-vindas                | Após a criação do usuário, o backend tenta enviar um email de boas-vindas; se o envio falhar, retorna HTTP 201 informando que o usuário já foi criado |
+| **RN-12** | Validação antes do `insert`         | `/confirmar-cadastro` valida os campos obrigatórios e o código antes de executar a criação do usuário                                                 |
 
 ### Requisitos Não-Funcionais (RNF)
 
-| ID         | Atributo             | Requisito                                                        | Métrica/Verificação                                                    | Justificativa                                                              |
-| ---------- | -------------------- | ---------------------------------------------------------------- | ---------------------------------------------------------------------- | -------------------------------------------------------------------------- |
-| **RNF-01** | Performance          | Resposta rápida em condições normais, exceto dependências externas | Tempo observado nas rotas e no envio da Brevo                          | Evita percepção de travamento durante o cadastro                           |
-| **RNF-02** | Segurança de dados   | Senha armazenada apenas como hash, nunca em texto puro            | Verificação do valor salvo em `usuarios.senha_hash`                    | Protege as credenciais armazenadas                                         |
-| **RNF-03** | Disponibilidade      | Serviço acessível publicamente via Render                         | Serviço web disponível pela URL publicada                              | Permite acesso remoto sem instalação local                                 |
-| **RNF-04** | Usabilidade          | Feedback visual de validação e resultado                          | Mensagem sob campos + overlays de carregamento, erro, código e sucesso | Orienta o usuário em cada etapa                                             |
-| **RNF-05** | Integração externa   | Envio de email através da API da Brevo                            | Resposta HTTP da API `/v3/smtp/email`                                  | Necessário para envio do código e do email de boas-vindas                  |
-| **RNF-06** | Expiração de segredo | Código temporário válido por no máximo 10 minutos                 | `TEMPO_EXPIRACAO_MS = 10 * 60 * 1000`                                 | Define o período de validade do código enviado                             |
-| **RNF-07** | Validação no servidor | Dados de criação validados no backend antes do `insert`          | Resposta HTTP 400 para dados obrigatórios inválidos/incompletos        | Garante aplicação das regras também em chamadas diretas à API              |
+| ID         | Atributo              | Requisito                                                          | Métrica/Verificação                                                    | Justificativa                                                 |
+| ---------- | --------------------- | ------------------------------------------------------------------ | ---------------------------------------------------------------------- | ------------------------------------------------------------- |
+| **RNF-01** | Performance           | Resposta rápida em condições normais, exceto dependências externas | Tempo observado nas rotas e no envio da Brevo                          | Evita percepção de travamento durante o cadastro              |
+| **RNF-02** | Segurança de dados    | Senha armazenada apenas como hash, nunca em texto puro             | Verificação do valor salvo em `usuarios.senha_hash`                    | Protege as credenciais armazenadas                            |
+| **RNF-03** | Disponibilidade       | Serviço acessível publicamente via Render                          | Serviço web disponível pela URL publicada                              | Permite acesso remoto sem instalação local                    |
+| **RNF-04** | Usabilidade           | Feedback visual de validação e resultado                           | Mensagem sob campos + overlays de carregamento, erro, código e sucesso | Orienta o usuário em cada etapa                               |
+| **RNF-05** | Integração externa    | Envio de email através da API da Brevo                             | Resposta HTTP da API `/v3/smtp/email`                                  | Necessário para envio do código e do email de boas-vindas     |
+| **RNF-06** | Expiração de segredo  | Código temporário válido por no máximo 10 minutos                  | `TEMPO_EXPIRACAO_MS = 10 * 60 * 1000`                                  | Define o período de validade do código enviado                |
+| **RNF-07** | Validação no servidor | Dados de criação validados no backend antes do `insert`            | Resposta HTTP 400 para dados obrigatórios inválidos/incompletos        | Garante aplicação das regras também em chamadas diretas à API |
 
 ---
 
 ## 🎨 4. Protótipo Funcional — Mockups das Telas
 
-**Mockup - Tela 1: Formulário Vazio (Estado Inicial)**
+Mockups textuais baseados na [tela de cadastro implementada](../../src/rf-002-Cadastro_usuario/public/index.html), incluindo a validação local do código de confirmação.
 
-```
-┌────────────────────────────────────────────────┐
-│  CashLand                          [ Voltar ]   │
-├────────────────────────────────────────────────┤
-│  Cadastro de usuario                            │
-│                                                │
-│  Nome:  [_________________________]            │
-│                                                │
-│  Email: [_________________________]            │
-│                                                │
-│  Senha: [_________________________]            │
-│                                                │
-│              [ Enviar ]                        │
-└────────────────────────────────────────────────┘
-```
+### Estilo visual implementado
 
-**Mockup - Tela 2: Formulário Preenchido**
+- Fundo da página `#cadaf2`; fonte Arial, com título e labels em negrito.
+- Cartão branco de 420px, padding de 50px, cantos de 12px e sombra `0 4px 12px rgba(0, 0, 0, 0.1)`.
+- Campos com altura de 40px, borda de 1px `#ccc` e cantos de 8px; botão “Enviar” de 100 × 50px.
+- Overlays com fundo preto a 50% de opacidade e caixa branca de 400px com padding de 50px. Os botões da janela medem 100 × 40px.
+- Mensagens de erro em `rgb(160, 2, 2)` e de sucesso em `rgb(103, 198, 40)`.
 
-```
-┌────────────────────────────────────────────────┐
-│  CashLand                          [ Voltar ]   │
-├────────────────────────────────────────────────┤
-│  Cadastro de usuario                            │
-│                                                │
-│  Nome:  [Daniel Souza              ]            │
-│                                                │
-│  Email: [daniel@gmail.com          ]            │
-│                                                │
-│  Senha: [••••••••••••              ]            │
-│                                                │
-│              [ Enviar ]                        │
-└────────────────────────────────────────────────┘
+### Mockup - Tela 1: Cadastro inicial
+
+```text
+┌────────────────────────────────────────────────────────────┐
+│ CashLand                                      [ Voltar ]   │
+│ Cadastro de usuario                                        │
+│                                                            │
+│ Nome:  [Ex: Daniel________________________]                │
+│                                                            │
+│ Email: [Ex: Daniel@gmail.com______________]                │
+│                                                            │
+│ Senha: [Ex: Dani@wpm#0*7__________________]                │
+│                                                            │
+│                        [ Enviar ]                          │
+└────────────────────────────────────────────────────────────┘
 ```
 
-**Mockup - Tela 3: Carregando**
+Os textos dos campos são placeholders. O formulário `#meuForm` usa `#Nome`, `#Email` e `#Senha`; “Voltar” abre `/login`.
 
-```
-┌────────────────────────────────────────────────┐
-│                                                │
-│        ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓  │
-│        ▓                                  ▓    │
-│        ▓     Carregando...     ◌          ▓    │
-│        ▓                                  ▓    │
-│        ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓  │
-│                                                │
-└────────────────────────────────────────────────┘
-```
+### Mockup - Tela 2: Cadastro preenchido
 
-> Implementação real: `#loading-overlay` cobre a tela inteira com fundo escurecido (`rgba(0,0,0,0.5)`) e exibe uma caixa branca com o texto "Carregando..." e uma roda animada (`.spinning-wheel`).
-
-**Mockup - Tela 4: Erro de Validação (por campo)**
-
-```
-┌────────────────────────────────────────────────┐
-│  CashLand                          [ Voltar ]   │
-├────────────────────────────────────────────────┤
-│  Cadastro de usuario                            │
-│                                                │
-│  Nome:  [_________________________]            │
-│  ERRO: O nome não pode estar vazio             │
-│                                                │
-│  Email: [danielgmail.com           ]            │
-│  ERRO: insira um email valido                  │
-│                                                │
-│  Senha: [123                       ]            │
-│  ERRO: A senha deve ter no minimo 10 caracteres │
-│                                                │
-│              [ Enviar ]                        │
-└────────────────────────────────────────────────┘
+```text
+┌────────────────────────────────────────────────────────────┐
+│ CashLand                                      [ Voltar ]   │
+│ Cadastro de usuario                                        │
+│                                                            │
+│ Nome:  [Daniel____________________________]                │
+│                                                            │
+│ Email: [daniel@gmail.com__________________]                │
+│                                                            │
+│ Senha: [••••••••••••______________________]                │
+│                                                            │
+│                        [ Enviar ]                          │
+└────────────────────────────────────────────────────────────┘
 ```
 
-> A implementação mostra mensagens de erro em texto vermelho abaixo dos campos.
+“Enviar” valida os campos localmente e, quando válidos, solicita o código por `POST /solicitar-codigo`. A senha permanece oculta no campo.
 
-**Mockup - Tela 5: Confirmação do Código**
+### Mockup - Tela 3: Erros locais no cadastro
 
-```
-┌────────────────────────────────────────────────┐
-│                                                │
-│       Digite o código enviado para o seu email │
-│                                                │
-│                    [ 000000 ]                  │
-│                                                │
-│             [ Confirmar ] [ Cancelar ]         │
-│                                                │
-└────────────────────────────────────────────────┘
-```
-
-> O campo aceita até 6 caracteres e possui `pattern="\d{6}"`, `required` e placeholder `000000`.
-
-**Mockup - Tela 6: Resultado de Sucesso**
-
-```
-┌────────────────────────────────────────────────┐
-│                                                │
-│      Cadastro realizado com sucesso,           │
-│      prossiga para o login!                    │
-│                                                │
-│                 [ Continuar ]                  │
-│                                                │
-└────────────────────────────────────────────────┘
+```text
+┌────────────────────────────────────────────────────────────┐
+│ CashLand                                      [ Voltar ]   │
+│ Cadastro de usuario                                        │
+│                                                            │
+│ Nome:  [__________________________________]                │
+│        ERRO: O nome não pode estar vazio                   │
+│                                                            │
+│ Email: [daniel____________________________]                │
+│        ERRO: insira um email valido                        │
+│                                                            │
+│ Senha: [•••_______________________________]                │
+│        ERRO: A senha deve ter no minimo 10 caracteres      │
+│                                                            │
+│                        [ Enviar ]                          │
+└────────────────────────────────────────────────────────────┘
 ```
 
-> O frontend exibe `#resultado-overlay`; ao clicar em "Continuar", o usuário é redirecionado para `/login`.
+`MostrarErro` escreve as mensagens vermelhas abaixo dos campos em `#erro-nome`, `#erro-email` e `#erro-senha`. Nome vazio, email sem `@` ou `.com` e senha com menos de 10 caracteres impedem a solicitação do código.
 
-**Mockup - Tela 7: Usuário Criado com Falha no Email de Boas-vindas**
+### Mockup - Tela 4: Carregamento
 
-```
-┌────────────────────────────────────────────────┐
-│                                                │
-│   Usuario criado, mas o email de confirmação   │
-│   não foi enviado                              │
-│                                                │
-│                 [ Continuar ]                  │
-│                                                │
-└────────────────────────────────────────────────┘
-```
-
-> Esse estado corresponde à resposta HTTP 201 da rota `/confirmar-cadastro`. O cadastro já foi inserido no Supabase e o frontend trata o retorno como criação concluída.
-
-**Mockup - Tela 8: Resultado de Erro**
-
-```
-┌────────────────────────────────────────────────┐
-│                                                │
-│          [ Mensagem de erro retornada ]        │
-│                                                │
-│                 [ Continuar ]                  │
-│                                                │
-└────────────────────────────────────────────────┘
+```text
+┌──────────────────────────────────────────────────────────────┐
+│ Página ao fundo escurecida                                   │
+│                                                              │
+│ ┌────────────────────────────────────────────────────────┐   │
+│ │                                                        │   │
+│ │                  Carregando...  ⟳                      │   │
+│ │                                                        │   │
+│ └────────────────────────────────────────────────────────┘   │
+│                                                              │
+└──────────────────────────────────────────────────────────────┘
 ```
 
-> Erros de email duplicado, falha no envio do código, dados inválidos, falha no `insert` e falhas na confirmação do código são exibidos nesse overlay. Quando a confirmação do código retorna HTTP 401, o sistema configura a reabertura da janela de código depois que o usuário fecha a mensagem.
+O `#loading-overlay` aparece durante a solicitação e a confirmação do código. A caixa `.loading-box` exibe o indicador `.spinning-wheel`.
 
-**Descrição de Estados:**
+### Mockup - Tela 5: Confirmação do código
 
-- **Estado Normal:** campos em branco, botão habilitado
-- **Estado Preenchido:** campos preenchidos
-- **Estado Erro Local:** mensagem vermelha abaixo do campo específico
-- **Estado Loading:** overlay de tela cheia com texto e spinner
-- **Estado Aguardando Código:** overlay com campo de 6 dígitos e botões Confirmar/Cancelar
-- **Estado Erro do Servidor:** overlay com mensagem e botão Continuar
-- **Estado Sucesso:** overlay com mensagem de confirmação e botão Continuar
-- **Estado Criado sem Email de Boas-vindas:** overlay correspondente ao HTTP 201, seguido de retorno ao login
+```text
+┌──────────────────────────────────────────────────────────────┐
+│ Página ao fundo escurecida                                   │
+│                                                              │
+│ ┌────────────────────────────────────────────────────────┐   │
+│ │        Digite o código enviado para o seu email        │   │
+│ │                                                        │   │
+│ │                   Código: [ 000000 ]                   │   │
+│ │                                                        │   │
+│ │              [ Confirmar ] [ Cancelar ]                │   │
+│ └────────────────────────────────────────────────────────┘   │
+│                                                              │
+└──────────────────────────────────────────────────────────────┘
+```
 
-**Fluxo de Navegação:**
+A resposta HTTP 200 de `/solicitar-codigo` abre `#solicitacaoCodigo-overlay`. O formulário `#meuForm-confirmar-cadastro` contém `#input-codigo`, com `maxlength="6"`, `inputmode="numeric"`, `pattern="\d{6}"`, `required` e `autocomplete="one-time-code"`. “Cancelar” fecha essa janela e mantém o formulário de cadastro.
 
-1. Usuário chega em `/login` e acessa o cadastro.
-2. Abre `/cadastro-usuario`.
-3. Preenche nome, email e senha.
-4. Clica em "Enviar".
-5. Se a validação local falhar, o sistema mostra erro abaixo do campo e não faz a requisição.
-6. Se a validação passar, exibe loading e envia `POST /solicitar-codigo`.
-7. Se o email já existir, os dados forem inválidos ou ocorrer falha no envio, exibe overlay de erro.
-8. Se o código for enviado, abre o overlay de confirmação.
-9. Usuário informa o código e clica em "Confirmar".
-10. Frontend envia `POST /confirmar-cadastro`.
-11. Se a validação dos dados falhar, exibe erro HTTP 400.
-12. Se a validação do código falhar, exibe erro HTTP 401 e permite retornar à janela do código.
-13. Se o `insert` falhar, exibe erro HTTP 500.
-14. Se o usuário for criado e o email de boas-vindas também for enviado, exibe o resultado HTTP 200.
-15. Se o usuário for criado, mas o email de boas-vindas falhar, exibe o resultado HTTP 201.
-16. Nos resultados de criação concluída, o usuário clica em "Continuar" e é levado para `/login`.
+### Mockup - Tela 6: Código inválido no frontend
 
-**Responsividade:**
+```text
+┌──────────────────────────────────────────────────────────────┐
+│ Página ao fundo escurecida                                   │
+│                                                              │
+│ ┌────────────────────────────────────────────────────────┐   │
+│ │        Digite o código enviado para o seu email        │   │
+│ │                                                        │   │
+│ │                   Código: [ abc123 ]                   │   │
+│ │        ERRO: O código deve ter exatamente 6 números    │   │
+│ │                                                        │   │
+│ │              [ Confirmar ] [ Cancelar ]                │   │
+│ └────────────────────────────────────────────────────────┘   │
+│                                                              │
+└──────────────────────────────────────────────────────────────┘
+```
 
-- O card principal utiliza largura de `420px` no estilo atual.
-- Em desktop, o card é exibido centralizado.
+O formulário usa `novalidate`: ao clicar em “Confirmar”, o JavaScript verifica `/^\d{6}$/`. Código vazio, incompleto ou com caracteres não numéricos gera mensagem vermelha em `#erro-codigo`, abaixo do input. A janela permanece aberta e o `return` impede `POST /confirmar-cadastro`. Ao enviar um código no formato correto, a mensagem é limpa e a requisição prossegue.
+
+### Mockup - Tela 7: Erro retornado pela API
+
+```text
+┌──────────────────────────────────────────────────────────────┐
+│ Página ao fundo escurecida                                   │
+│                                                              │
+│ ┌────────────────────────────────────────────────────────┐   │
+│ │                                                        │   │
+│ │              Esse email já está cadastrado             │   │
+│ │                                                        │   │
+│ │                    [ Continuar ]                       │   │
+│ │                                                        │   │
+│ └────────────────────────────────────────────────────────┘   │
+│                                                              │
+└──────────────────────────────────────────────────────────────┘
+```
+
+Exemplo de HTTP 409 em `/solicitar-codigo`. O mesmo `#resultado-overlay` apresenta em vermelho as mensagens de dados inválidos, falha no envio do email ou falha ao criar o usuário. Quando `/confirmar-cadastro` retorna HTTP 401, exibe a mensagem do código (por exemplo, **“codigo incorreto”**) e “Continuar” reabre a janela de confirmação.
+
+### Mockup - Tela 8: Cadastro concluído
+
+```text
+┌──────────────────────────────────────────────────────────────┐
+│ Página ao fundo escurecida                                   │
+│                                                              │
+│ ┌────────────────────────────────────────────────────────┐   │
+│ │                                                        │   │
+│ │           Cadastro realizado com sucesso,              │   │
+│ │                  prossiga para o login!                │   │
+│ │                                                        │   │
+│ │                    [ Continuar ]                       │   │
+│ │                                                        │   │
+│ └────────────────────────────────────────────────────────┘   │
+│                                                              │
+└──────────────────────────────────────────────────────────────┘
+```
+
+A resposta HTTP 200 de `/confirmar-cadastro` aparece em verde. “Continuar” fecha o resultado e redireciona para `/login`.
+
+### Mockup - Tela 9: Cadastro criado sem email de boas-vindas
+
+```text
+┌──────────────────────────────────────────────────────────────┐
+│ Página ao fundo escurecida                                   │
+│                                                              │
+│ ┌────────────────────────────────────────────────────────┐   │
+│ │                                                        │   │
+│ │      Usuario criado, mas o email de confirmação        │   │
+│ │                     não foi enviado                    │   │
+│ │                                                        │   │
+│ │                    [ Continuar ]                       │   │
+│ │                                                        │   │
+│ └────────────────────────────────────────────────────────┘   │
+│                                                              │
+└──────────────────────────────────────────────────────────────┘
+```
+
+Esse estado corresponde a HTTP 201 de `/confirmar-cadastro`. O frontend o apresenta como sucesso, em verde, pois a conta foi criada. “Continuar” redireciona para `/login`.
+
+### Estados e navegação
+
+| Situação                             | Apresentação                       | Ação seguinte                                   |
+| ------------------------------------ | ---------------------------------- | ----------------------------------------------- |
+| Formulário inicial ou preenchido     | Nome, email e senha no cartão      | “Enviar” valida os campos                       |
+| Dados locais inválidos               | Mensagem vermelha abaixo do campo  | Corrigir e enviar novamente                     |
+| Requisição em andamento              | Overlay de carregamento            | Aguardar a resposta                             |
+| Código enviado                       | Overlay de confirmação do código   | Informar seis números e confirmar               |
+| Código fora do formato               | Mensagem vermelha abaixo do código | Corrigir na mesma janela; nenhuma chamada à API |
+| Erro da API ao solicitar código      | Overlay de resultado               | “Continuar” fecha a mensagem                    |
+| Código rejeitado pela API (HTTP 401) | Overlay de erro                    | “Continuar” reabre a confirmação                |
+| Confirmação cancelada                | Fecha o overlay de código          | Formulário principal permanece preenchido       |
+| Cadastro criado (HTTP 200 ou 201)    | Overlay de sucesso                 | “Continuar” abre `/login`                       |
+
+### Elementos e funções utilizados
+
+- `MostrarErro(id, mensagem)`: erros locais do formulário e do código.
+- `MostrarResultado_Overlay(tipo, mensagem)`: resultado da API em `#resultado-funcao`, dentro de `#resultado-overlay`.
+- `FechaResultado_overlay(1)`: fecha o resultado e reabre o código ou retorna ao login, conforme o estado.
+- `FechaResultado_overlay(2)`: fecha a janela de código.
+- `.input-dados`, `#id-Titulo`, `#botao-Voltar` e `#input-submit`: organização do formulário principal.
+- `.loading-overlay`, `.loading-box` e `.spinning-wheel`: estrutura das janelas e do carregamento.
+
+### Responsividade
+
+O cartão principal tem largura fixa de 420px e fica centralizado. As caixas de overlay têm largura de 400px. O CSS atual do cadastro não define media queries para reduzir essas medidas em telas menores.
 
 ---
 
@@ -476,6 +513,7 @@ O sistema precisa saber quem está logado para mostrar os dados referentes ao us
 **Contexto:** Os dados utilizados na criação do usuário precisam ser validados antes do `insert`.
 
 **Decisão observada na implementação:**
+
 - O frontend valida nome, email (`@` e `.com`) e senha mínima de 10 caracteres antes de solicitar o código.
 - `/solicitar-codigo` valida nome e email no backend.
 - `/confirmar-cadastro` valida nome, email (`@` e `.com`), senha mínima de 10 caracteres e presença de `codigoDigitado` antes de validar o código e executar o `insert`.
@@ -534,15 +572,15 @@ O sistema precisa saber quem está logado para mostrar os dados referentes ao us
 
 ### Tecnologias Escolhidas
 
-| Camada/Finalidade        | Tecnologia / Serviço      | Justificativa                                                       |
-| ------------------------ | ------------------------- | ------------------------------------------------------------------- |
-| Backend                  | Express                   | Utilizado pelo módulo de login e pelas rotas do sistema             |
-| Banco de Dados           | Supabase (PostgreSQL)     | Armazena os usuários e seus hashes de senha                         |
-| Hash                     | bcrypt                    | Função `gerarHashSenha` reutilizada do RF-01                        |
-| Email transacional       | Brevo API                 | Envio do código de verificação e do email de boas-vindas            |
-| Armazenamento temporário | JavaScript `Map`          | Mantém os códigos pendentes e seus horários de expiração            |
-| Documentação de API      | swagger-ui-express        | Interface disponível em `/api-docs`                                 |
-| Hospedagem               | Render                    | Serviço web público, com `PORT` fornecida pelo ambiente             |
+| Camada/Finalidade        | Tecnologia / Serviço  | Justificativa                                            |
+| ------------------------ | --------------------- | -------------------------------------------------------- |
+| Backend                  | Express               | Utilizado pelo módulo de login e pelas rotas do sistema  |
+| Banco de Dados           | Supabase (PostgreSQL) | Armazena os usuários e seus hashes de senha              |
+| Hash                     | bcrypt                | Função `gerarHashSenha` reutilizada do RF-01             |
+| Email transacional       | Brevo API             | Envio do código de verificação e do email de boas-vindas |
+| Armazenamento temporário | JavaScript `Map`      | Mantém os códigos pendentes e seus horários de expiração |
+| Documentação de API      | swagger-ui-express    | Interface disponível em `/api-docs`                      |
+| Hospedagem               | Render                | Serviço web público, com `PORT` fornecida pelo ambiente  |
 
 ### Fluxo de Dados
 
@@ -557,7 +595,7 @@ O sistema precisa saber quem está logado para mostrar os dados referentes ao us
 9. Em sucesso, `/solicitar-codigo` retorna HTTP 200.
 10. Frontend abre o overlay de confirmação.
 11. Usuário informa o código.
-12. Frontend envia `POST /confirmar-cadastro` com `{ nome, email, senha, codigoDigitado }`.
+12. Frontend valida os seis dígitos do código e, se válido, envia `POST /confirmar-cadastro` com `{ nome, email, senha, codigoDigitado }`.
 13. Backend valida nome, email, senha e presença do código.
 14. Backend chama `validarCodigo(email, codigoDigitado)`.
 15. Código válido é removido do `Map`.
@@ -691,14 +729,3 @@ if (registro.codigo !== codigoDigitado) {
 codigosPendentes.delete(email);
 return { valido: true, motivo: "" };
 ```
-
-**Controles presentes:**
-
-- Código de 6 dígitos.
-- Validade de 10 minutos.
-- Associação do código ao email.
-- Remoção do código após validação bem-sucedida.
-- Remoção do código expirado quando ocorre uma tentativa de validação.
-- Validação dos dados obrigatórios antes da confirmação do cadastro.
-- Verificação do resultado do `insert` antes da resposta de sucesso.
-

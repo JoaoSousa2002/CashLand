@@ -199,7 +199,7 @@ app.post('/confirmar-cadastro', async (req, res) => {
 // Sistema de rate limiting simples para rotas de reset de senha
 const tentativasResetSenha = new Map();
 const LIMITE_TENTATIVAS = 3;
-const TEMPO_BLOQUEIO_MS = 15 * 60 * 1000; // 15 minutos
+const TEMPO_BLOQUEIO_MS = 5 * 60 * 1000; // 5 minutos
 
 function verificarRateLimitResetSenha(email) {
     const agora = Date.now();
