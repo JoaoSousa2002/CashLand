@@ -3,7 +3,7 @@
   "info": {
     "title": "CashLand API",
     "version": "1.0.0",
-    "description": "API de autenticação e gerenciamento do CashLand"
+    "description": "API de autenticação e gerenciamento do CashLand. A sessão usa o cookie HttpOnly token. Login: 5 requisições por IP a cada 5 minutos. Confirmação de cadastro: 5 requisições por IP a cada 15 minutos. Logout, solicitação de código, solicitação e confirmação de redefinição de senha e listagem de usuários compartilham um limite de 5 requisições por IP a cada 15 minutos. Páginas HTML e a interface /api-docs não são operações desta API."
   },
   "servers": [
     {
@@ -19,6 +19,7 @@
     "/login": {
       "post": {
         "summary": "Autentica um usuário",
+        "description": "Define o cookie token com HttpOnly, SameSite=Strict e validade de 2 horas. Em produção, o cookie também usa Secure.",
         "tags": [
           "Autenticação"
         ],
@@ -48,13 +49,49 @@
         },
         "responses": {
           "200": {
-            "description": "Login realizado com sucesso"
+            "description": "Login realizado com sucesso",
+            "headers": {
+              "Set-Cookie": {
+                "description": "Cookie token contendo o JWT da sessão.",
+                "schema": { "type": "string" }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "mensagem": { "type": "string", "example": "Login realizado com sucesso" },
+                    "usuario": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "type": "integer", "example": 1 },
+                        "nome": { "type": "string" },
+                        "tipo": { "type": "string", "example": "Admin" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Email e senha são obrigatórios"
           },
           "401": {
             "description": "Email ou senha inválidos"
           },
+          "403": {
+            "description": "Conta inativa. Contate o administrador.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Erro" },
+                "example": { "erro": "Conta inativa. Contate o administrador." }
+              }
+            }
+          },
           "429": {
-            "description": "Muitas tentativas realizadas para esta operação. Tente novamente em 15 minutos"
+            "description": "Muitas tentativas de login realizadas. Tente novamente em 5 minutos."
           }
         }
       }
@@ -74,7 +111,8 @@
                 "required": [
                   "nome",
                   "email",
-                  "senha"
+                  "senha",
+                  "codigoDigitado"
                 ],
                 "properties": {
                   "nome": {
@@ -87,6 +125,7 @@
                   },
                   "senha": {
                     "type": "string",
+                    "minLength": 10,
                     "example": "minhaSenha123"
                   },
                   "codigoDigitado": {
@@ -112,7 +151,7 @@
             "description": "-Erro de codigo (Incorreto, expirado ou não solicitado)"
           },
           "429": {
-            "description": "Muitas tentativas realizadas para esta operação. Tente novamente em 15 minutos"
+            "description": "Muitas tentativas de cadastro realizadas. Tente novamente em 15 minutos."
           },
           "500": {
             "description": "Erro ao cadastrar usuário"
@@ -208,7 +247,7 @@
             "description": "Muitas tentativas realizadas para esta operação. Tente novamente em 15 minutos"
           },
           "500": {
-            "description": "Não foi possível enviar o código"
+            "description": "Erro ao consultar usuário ou não foi possível enviar o código"
           }
         }
       }
@@ -241,6 +280,7 @@
                   },
                   "novaSenha": {
                     "type": "string",
+                    "minLength": 10,
                     "example": "minhaNovaSenha123",
                     "description": "Mínimo de 10 caracteres"
                   }
@@ -263,7 +303,219 @@
             "description": "Muitas tentativas realizadas para esta operação. Tente novamente em 15 minutos"
           },
           "500": {
-            "description": "Erro ao atualizar senha"
+            "description": "Erro ao atualizar senha ou erro ao processar sua solicitação"
+          }
+        }
+      }
+    },
+    "/me": {
+      "get": {
+        "summary": "Consulta o usuário autenticado",
+        "description": "Revalida o usuário no banco. Retorna 401 se a consulta falhar ou se o usuário estiver inativo.",
+        "tags": ["Autenticação"],
+        "security": [{ "cookieAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Dados atuais do usuário autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id_usuario": { "type": "integer", "example": 1 },
+                    "nome": { "type": "string" },
+                    "tipo": { "type": "string", "example": "Admin" }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado, token inválido ou expirado, ou sessão inválida",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Mensagem" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/logout": {
+      "post": {
+        "summary": "Encerra a sessão",
+        "description": "Remove o cookie token. Não exige autenticação.",
+        "tags": ["Autenticação"],
+        "responses": {
+          "200": {
+            "description": "Logout realizado",
+            "headers": {
+              "Set-Cookie": {
+                "description": "Expira o cookie token.",
+                "schema": { "type": "string" }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Mensagem" },
+                "example": { "mensagem": "Logout realizado" }
+              }
+            }
+          },
+          "429": { "$ref": "#/components/responses/LimiteCodigo" }
+        }
+      }
+    },
+    "/tela-admin/listar-usuarios": {
+      "get": {
+        "summary": "Lista ou pesquisa usuários (Admin)",
+        "description": "O handler JSON exige tipo Admin no token. Sem pesquisa ou com pesquisa vazia, lista todos os usuários. Pesquisa por parte do nome, sem diferenciar maiúsculas e minúsculas, e também por ID exato quando o termo é numérico. Atenção: no Servidor.js atual, Express.static está registrado antes deste handler no mesmo caminho e serve listar_usuarios.html quando o arquivo existe, inclusive com parâmetros de pesquisa. Nesse caso a resposta é HTML e os middlewares de autenticação, autorização e limite desta operação não são executados.",
+        "tags": ["Administração de usuários"],
+        "security": [{ "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "pesquisa",
+            "in": "query",
+            "required": false,
+            "description": "Nome parcial ou ID do usuário.",
+            "schema": { "type": "string" },
+            "example": "Joao"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Página HTML servida pelo middleware estático ou lista JSON quando o handler da API é alcançado. A lista pode estar vazia.",
+            "headers": {
+              "Cache-Control": {
+                "description": "O handler JSON define no-store; não se aplica à resposta do middleware estático.",
+                "schema": { "type": "string", "example": "no-store" }
+              }
+            },
+            "content": {
+              "text/html": { "schema": { "type": "string" } },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/UsuarioAdministrativo" }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/NaoAutenticado" },
+          "403": { "$ref": "#/components/responses/SomenteAdmin" },
+          "429": { "$ref": "#/components/responses/LimiteCodigo" },
+          "500": {
+            "description": "Erro na consulta ao banco de dados",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/Erro" } }
+            }
+          }
+        }
+      }
+    },
+    "/tela-admin/deletar-usuario": {
+      "delete": {
+        "summary": "Exclui permanentemente um usuário (Admin)",
+        "description": "Exige tipo Admin no token. Recebe o ID pela query string. Retorna sucesso mesmo quando nenhum usuário corresponde ao ID informado.",
+        "tags": ["Administração de usuários"],
+        "security": [{ "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "id_usuario",
+            "in": "query",
+            "required": true,
+            "description": "ID do usuário a excluir permanentemente.",
+            "schema": { "type": "integer" },
+            "example": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operação com sucesso, usuario deletado permanentemente",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Mensagem" },
+                "example": { "mensagem": "Operação com sucesso, usuario deletado permanentemente" }
+              }
+            }
+          },
+          "400": {
+            "description": "Backend não recebeu o id",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Mensagem" },
+                "example": { "mensagem": "Backend não recebeu o id" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/NaoAutenticado" },
+          "403": { "$ref": "#/components/responses/SomenteAdmin" },
+          "500": {
+            "description": "Erro ao deletar o usuario, verifique o banco de dados",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Mensagem" },
+                "example": { "mensagem": "Erro ao deletar o usuario, verifique o banco de dados" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "cookieAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "token",
+        "description": "JWT definido pelo POST /login em cookie HttpOnly. As rotas administrativas exigem tipo Admin no token."
+      }
+    },
+    "schemas": {
+      "Mensagem": {
+        "type": "object",
+        "properties": { "mensagem": { "type": "string" } }
+      },
+      "Erro": {
+        "type": "object",
+        "properties": { "erro": { "type": "string" } }
+      },
+      "UsuarioAdministrativo": {
+        "type": "object",
+        "properties": {
+          "id_usuario": { "type": "integer", "example": 1 },
+          "nome": { "type": "string" },
+          "email": { "type": "string" },
+          "tipo": { "type": "string", "example": "Admin" },
+          "status_usuario": { "type": "string", "example": "Ativo" },
+          "data_criacao": { "type": "string", "format": "date-time" },
+          "data_inativacao": { "type": "string", "format": "date-time", "nullable": true }
+        }
+      }
+    },
+    "responses": {
+      "NaoAutenticado": {
+        "description": "Não autenticado ou token inválido ou expirado",
+        "content": {
+          "application/json": { "schema": { "$ref": "#/components/schemas/Mensagem" } }
+        }
+      },
+      "SomenteAdmin": {
+        "description": "Acesso restrito a administradores",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Erro" },
+            "example": { "erro": "Acesso restrito a administradores" }
+          }
+        }
+      },
+      "LimiteCodigo": {
+        "description": "Limite compartilhado de 5 requisições por IP a cada 15 minutos atingido",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Mensagem" },
+            "example": { "mensagem": "Muitas tentativas de realizadas para esta operação. Tente novamente em 15 minutos." }
           }
         }
       }

@@ -130,12 +130,13 @@
         <div id="div-superior">
             <div id="div-nome-usuario">
                 <div>
-                    <h1>Olá, <span id="nome-usuario"></span><span style="color: red; font-size: 15px;">(admin)</span></h1>
+                    <h1>Olá, <span id="nome-usuario"></span><span style="color: red; font-size: 15px;">(admin)</span>
+                    </h1>
                 </div>
             </div>
             <div id="div-nav">
                 <nav>
-                    <a href="/listar-usuarios">Usuarios</a>
+                    <a href="/tela-admin/listar-usuarios">Usuarios</a>
                 </nav>
             </div>
             <div id="form-logout">
@@ -152,6 +153,7 @@
 
     <script>
         let retonarLogin = false;
+        let retonarTelaPrincipal = false;
         const loading = document.getElementById("loading-overlay");
         const resultado_overlay = document.getElementById("resultado-overlay");
 
@@ -181,12 +183,14 @@
             }
         }
         function FechaResultado_overlay() {
-            if (!retonarLogin) {
-                resultado_overlay.style.display = "none"
-            } else if (retonarLogin) {
+            resultado_overlay.style.display = "none"
+            if (retonarLogin) {
                 window.location.href = "/login"
+            } else if (retonarTelaPrincipal) {
+                window.location.href = '/tela-principal';
             }
         }
+       
         async function protegerPagina(tipoExigido = null) {
 
             try {
@@ -209,8 +213,10 @@
                 }
 
                 if (tipoExigido && usuario.tipo !== tipoExigido) {
-                    window.location.href = '/tela-principal'; // logado, mas sem permissão
-                    return;
+                    console.log("Acesso negado")
+                    resultado_overlay.style.display = "flex";
+                    MostrarResultado_Overlay(0, "Acesso restrito a administradores!")
+                    retonarTelaPrincipal = true;
                 }
 
                 return usuario; // devolve os dados pra página usar (ex: mostrar nome)
@@ -220,7 +226,7 @@
             }
         }
 
-        protegerPagina().then(usuario => {
+        protegerPagina("Admin").then(usuario => {
             document.getElementById('nome-usuario').textContent = usuario.nome;
         });
 

@@ -164,7 +164,6 @@
                         <th scope="col" style="width: 150px;">status</th>
                         <th scope="col" style="width: 150px;">data criação</th>
                         <th scope="col" style="width: 80px;">data desativação</th>
-                        <th scope="col" style="width: 80px;">Opções</th>
                     </tr>
 
                 </thead>
@@ -177,9 +176,7 @@
 
 
     <script>
-        let retornarLogin = false;
-        let retornarTelaPrincipal = false;
-        let recarregarPagina = false
+        let retonarLogin = false;
         const loading = document.getElementById("loading-overlay");
         const resultado_overlay = document.getElementById("resultado-overlay");
 
@@ -209,13 +206,10 @@
             }
         }
         function FechaResultado_overlay() {
-            resultado_overlay.style.display = "none"
-            if (retornarLogin) {
+            if (!retonarLogin) {
+                resultado_overlay.style.display = "none"
+            } else if (retonarLogin) {
                 window.location.href = "/login"
-            } else if (retornarTelaPrincipal) {
-                window.location.href = '/tela-principal';
-            } else if (recarregarPagina) {
-                location.reload();
             }
         }
         async function protegerPagina(tipoExigido = null) {
@@ -234,16 +228,14 @@
                         resultado_overlay.style.display = "flex";
                         MostrarResultado_Overlay(0, usuario.mensagem)
                         console.log(usuario.mensagem)
-                        retornarLogin = true;
+                        retonarLogin = true;
                     default:
                         break;
                 }
 
                 if (tipoExigido && usuario.tipo !== tipoExigido) {
-                    console.log("Acesso negado")
-                    resultado_overlay.style.display = "flex";
-                    MostrarResultado_Overlay(0, "Acesso restrito a administradores!")
-                    retornarTelaPrincipal = true;
+                    window.location.href = '/tela-principal'; // logado, mas sem permissão
+                    return;
                 }
 
                 return usuario; // devolve os dados pra página usar (ex: mostrar nome)
@@ -253,32 +245,10 @@
             }
         }
 
-
-
-        protegerPagina("Admin").then(usuario => {
+        protegerPagina().then(usuario => {
             document.getElementById('nome-usuario').textContent = usuario.nome;
         });
-
-        async function excluir(id) {
-            const response = await fetch(`/tela-admin/deletar-usuario/?id_usuario=${id}`, {
-                method: 'DELETE',
-                credentials: 'include'
-            })
-            const data = await response.json()
-
-            if (response.status === 200) {
-                resultado_overlay.style.display = "flex";
-                MostrarResultado_Overlay(1, data.mensagem)
-                recarregarPagina = true;
-                console.log(data.mensagem)
-            } else {
-                resultado_overlay.style.display = "flex";
-                MostrarResultado_Overlay(2, data.mensagem)
-                console.log(data.mensagem)
-            }
-        }
         //  GET /logout
-
         document.getElementById("meuForm-Logout").addEventListener("submit", async (e) => {
             e.preventDefault();
             resposta = await fetch('/logout', {
@@ -332,7 +302,7 @@
                 default:
                     break;
             }
-
+        
         })
     </script>
 </body>

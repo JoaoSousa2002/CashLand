@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { enviarEmail, gerarCodigo, salvarCodigo, validarCodigo } from '../rf-002-Cadastro_usuario/Email.js';
 import { gerarHashSenha, validarSenha, gerarToken, verificarToken } from './Autenticacao.js'
-import Express from 'express'
+import Express, { response } from 'express'
 import cors from 'cors'
 import ws from 'ws'
 import path from 'path'
@@ -75,7 +75,7 @@ app.use('/cadastro-usuario', Express.static(path.join(__dirname, '../rf-002-Cada
 app.use('/resetar-senha', Express.static(path.join(__dirname, 'public/reset_senha.html')))
 app.use('/tela-principal', Express.static(path.join(__dirname, 'public/tela_principal.html')))
 app.use('/tela-admin', Express.static(path.join(__dirname, 'public/tela_admin.html')))
-app.use('/listar-usuarios', Express.static(path.join(__dirname, '../rf-002-Cadastro_usuario/public/listar_usuarios.html')))
+app.use('/tela-admin/listar-usuarios', Express.static(path.join(__dirname, '../rf-002-Cadastro_usuario/public/listar_usuarios.html')))
 
 
 const supabase = createClient(
@@ -413,7 +413,7 @@ app.post('/confirmar-reset-senha', limitadorCodigo, async (req, res) => {
 
 // ROTAS DE ACESSO RESTRITO (Admin)
 
-app.get('/listar-usuarios', autenticar, somenteAdmin, limitadorCodigo, async (req, res) => {
+app.get('/tela-admin/listar-usuarios', autenticar, somenteAdmin, limitadorCodigo, async (req, res) => {
     res.set('Cache-Control', 'no-store');
     const { pesquisa } = req.query;
 
@@ -440,6 +440,24 @@ app.get('/listar-usuarios', autenticar, somenteAdmin, limitadorCodigo, async (re
     if (error) return res.status(500).json({ erro: error.message });
     return res.status(200).json(data);
 });
+
+app.delete('/tela-admin/deletar-usuario', autenticar, somenteAdmin, async (req, res) => {
+    const {id_usuario} = req.query
+    if (!id_usuario) {
+        return res.status(400).json({mensagem: "Backend não recebeu o id"})
+    }
+
+    const { error } = await supabase
+    .from('usuarios')
+    .delete()
+    .eq('id_usuario', id_usuario)
+
+    if (error) {
+        return res.status(500).json({mensagem: "Erro ao deletar o usuario, verifique o banco de dados"})
+    } 
+
+    return res.status(200).json({mensagem: "Operação com sucesso, usuario deletado permanentemente"})
+})
 
 // O Render (e a maioria dos provedores de hospedagem) define a porta
 // dinamicamente via variável de ambiente PORT. Localmente, cai no 3000.
