@@ -52,6 +52,9 @@
           },
           "401": {
             "description": "Email ou senha inválidos"
+          },
+          "429": {
+            "description": "Muitas tentativas realizadas para esta operação. Tente novamente em 15 minutos"
           }
         }
       }
@@ -85,8 +88,8 @@
                   "senha": {
                     "type": "string",
                     "example": "minhaSenha123"
-                  }, 
-                  "codigoDigitado":{
+                  },
+                  "codigoDigitado": {
                     "type": "string",
                     "example": "123456"
                   }
@@ -103,10 +106,13 @@
             "description": "Usuario criado, mas o email de confirmação não foi enviado, erro"
           },
           "400": {
-            "description": "Dados inválidos ou incompletos" 
+            "description": "Dados inválidos ou incompletos"
           },
           "401": {
             "description": "-Erro de codigo (Incorreto, expirado ou não solicitado)"
+          },
+          "429": {
+            "description": "Muitas tentativas realizadas para esta operação. Tente novamente em 15 minutos"
           },
           "500": {
             "description": "Erro ao cadastrar usuário"
@@ -154,6 +160,9 @@
           "409": {
             "description": "Esse email já está cadastrado"
           },
+          "429": {
+            "description": "Muitas tentativas realizadas para esta operação. Tente novamente em 15 minutos"
+          },
           "500": {
             "description": "O envio de email falhou: erro"
           }
@@ -196,7 +205,7 @@
             "description": "Email não cadastrado"
           },
           "429": {
-            "description": "Muitas tentativas. Tente novamente mais tarde"
+            "description": "Muitas tentativas realizadas para esta operação. Tente novamente em 15 minutos"
           },
           "500": {
             "description": "Não foi possível enviar o código"
@@ -251,7 +260,7 @@
             "description": "Usuário não encontrado"
           },
           "429": {
-            "description": "Muitas tentativas. Tente novamente mais tarde"
+            "description": "Muitas tentativas realizadas para esta operação. Tente novamente em 15 minutos"
           },
           "500": {
             "description": "Erro ao atualizar senha"

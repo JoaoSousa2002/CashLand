@@ -254,14 +254,24 @@
                 const resultado = await response.json();
                 loading.style.display = "none";
 
-                if (response.status === 200) {
-                    resultado_overlay.style.display = "flex";
-                    MostrarResultado_Overlay(1, resultado.mensagem)
-                    console.log(resultado.mensagem)
-                } else if (response.status === 401) {
-                    resultado_overlay.style.display = "flex";
-                    MostrarResultado_Overlay(0, resultado.mensagem)
-                    console.log(resultado.mensagem)
+                switch (response.status) {
+                    case 200:
+                        resultado_overlay.style.display = "flex";
+                        MostrarResultado_Overlay(1, resultado.mensagem)
+                        console.log(resultado.mensagem)
+                        break;
+                    case 401:
+                        resultado_overlay.style.display = "flex";
+                        MostrarResultado_Overlay(0, resultado.mensagem)
+                        console.log(resultado.mensagem)
+                        break;
+                    case 429:
+                        resultado_overlay.style.display = "flex";
+                        MostrarResultado_Overlay(0, resultado.mensagem)
+                        console.log(resultado.mensagem)
+                        break;
+                    default:
+                        break;
                 }
             }
 

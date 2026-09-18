@@ -155,6 +155,7 @@
             transform: rotate(360deg);
         }
     }
+
     .campo-senha {
         position: relative;
         display: inline-block;
@@ -208,16 +209,6 @@
                         inputmode="numeric" pattern="\d{6}" placeholder="000000" autocomplete="one-time-code" required>
                     <div id="erro-codigo"></div>
                 </div>
-
-                <!-- <label for="input-codigo" style="font-size: 0.83em; font-weight: bold;">Código:</label>
-                    <input id="input-codigo" style="width: 150px; text-align: center;" type="text" maxlength="6"
-                        inputmode="numeric" pattern="\d{6}" placeholder="000000" autocomplete="one-time-code" required>
-                    <div id="erro-codigo"></div> -->
-
-                <!-- <div style="display: flex; align-items: center; justify-content: center;">
-                    <input id="input-codigo" style="width: 150px; text-align: center;" type="text" maxlength="6" pattern="\d{6}" placeholder="000000" required>
-                </div>
-                <div id="erro-codigo"></div> -->
                 <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
                     <input style="width: 100px;" type="submit" value="Confirmar">
                     <input style="width: 100px;" type="button" onclick="FechaResultado_overlay(2)" value="Cancelar">
@@ -337,6 +328,7 @@
                 mostrarSenha.textContent = "👁";
             }
         });
+
         document.getElementById("meuForm").addEventListener("submit", async (e) => {
             e.preventDefault();
 
@@ -395,12 +387,16 @@
                             resultado_overlay.style.display = "flex";;
                             MostrarResultado_Overlay(2, resultado.mensagem)
                             console.log(resultado.mensagem)
+                        case 429:
+                            resultado_overlay.style.display = "flex";;
+                            MostrarResultado_Overlay(2, resultado.mensagem)
+                            console.log(resultado.mensagem)
                         default:
                             break;
                     }
                 } catch (error) {
                     resultado_overlay.style.display = "flex";
-                    MostrarResultado_Overlay(1, "Ocorreu um erro, por favor tente mais tarde")
+                    MostrarResultado_Overlay(2, "Ocorreu um erro, por favor tente mais tarde")
                     console.log("Erro desconhecido: ", error)
                 }
 
@@ -410,14 +406,14 @@
         document.getElementById("meuForm-confirmar-cadastro").addEventListener("submit", async (e) => {
             e.preventDefault();
             const codigoDigitado = document.getElementById("input-codigo").value.trim();
-            
+
             if (!/^\d{6}$/.test(codigoDigitado)) {
                 MostrarErro("erro-codigo", "ERRO: O código deve ter exatamente 6 números");
                 return;
             } else {
                 MostrarErro("erro-codigo", "");
             }
-            
+
             try {
                 solicitacaoCodigo_overlay.style.display = "none"
                 loading.style.display = "flex";
@@ -454,7 +450,10 @@
                         MostrarResultado_Overlay(2, resultado.mensagem)
                         reabrirJanelaCodigo = true;
                         break;
-
+                    case 429: FechaResultado_overlay
+                        resultado_overlay.style.display = "flex";;
+                        MostrarResultado_Overlay(2, resultado.mensagem)
+                        console.log(resultado.mensagem)
                     case 500:
                         // solicitacaoCodigo_overlay.style.display = "none"
                         resultado_overlay.style.display = "flex"

@@ -9,6 +9,41 @@ import { fileURLToPath } from 'url'
 import 'dotenv/config'
 import swaggerUi from 'swagger-ui-express';
 import { readFileSync } from 'fs';
+import rateLimit from 'express-rate-limit';
+import 'dotenv/config';
+
+const limitadorLogin = rateLimit({
+  windowMs: 5 * 60 * 1000,
+  max: 5, // só 5 tentativas de login por IP a cada 5 min
+    handler: (req, res) => {
+    console.log(`Rate limit atingido pelo IP: ${req.ip}`);
+    res.status(429).json({ mensagem: 'Muitas tentativas de login realizadas. Tente novamente em 5 minutos.' });
+  }
+});
+const limitadorCadastro = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5, // só 5 tentativas de login por IP a cada 15 min
+    handler: (req, res) => {
+    console.log(`Rate limit atingido pelo IP: ${req.ip}`);
+    res.status(429).json({ mensagem: 'Muitas tentativas de cadastro realizadas. Tente novamente em 15 minutos.' });
+  }
+});
+const limitadorCodigo = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5, // só 5 tentativas de login por IP a cada 15 min
+    handler: (req, res) => {
+    console.log(`Rate limit atingido pelo IP: ${req.ip}`);
+    res.status(429).json({ mensagem: 'Muitas tentativas de realizadas para esta operação. Tente novamente em 15 minutos.' });
+  }
+});
+
+// Array com as CORS local
+let origemAutorizada = [];
+if (process.env.ORIGEM_AUTORIZADA) {
+  origemAutorizada = process.env.ORIGEM_AUTORIZADA.split(',').map(origin => origin.trim());
+}
+
+
 
 // __dirname não existe nativamente em ES Modules, então recriamos aqui.
 // Isso garante que o Express.static funcione independente de onde o
@@ -20,7 +55,8 @@ const __dirname = path.dirname(__filename);
 
 // Cors para autorizar acesso local para a porta 5500 (Padrão do live server)
 const app = Express()
-app.use(cors({ origin: 'http://127.0.0.1:5500' }));
+app.set('trust proxy', 1)
+app.use(cors({ origin: origemAutorizada }));
 app.use(Express.json())
 const swaggerSpec = JSON.parse(
     readFileSync(new URL('../../docs/api/API-SWAGGER.json', import.meta.url))
@@ -63,7 +99,7 @@ async function testarConexao() {
 } testarConexao();
 
 // Rotas da api
-app.post('/login', async (req, res) => {
+app.post('/login', limitadorLogin, async (req, res) => {
     const { email, senha } = req.body;
 
 
@@ -100,7 +136,7 @@ app.post('/login', async (req, res) => {
 })
 
 // ROTA PARA VERIFICAR SE O EMAIL EXISTE
-app.post('/solicitar-codigo', async (req, res) => {
+app.post('/solicitar-codigo', limitadorCodigo, async (req, res) => {
     const { nome, email } = req.body;
 
 
@@ -147,7 +183,7 @@ app.post('/solicitar-codigo', async (req, res) => {
 
 // ROTA PARA CRIAR O CADASTRO
 
-app.post('/confirmar-cadastro', async (req, res) => {
+app.post('/confirmar-cadastro', limitadorCadastro, async (req, res) => {
     const { nome, email, senha, codigoDigitado } = req.body;
 
     if (!nome || !email || !email.includes('@') || !email.includes(".com") || !senha || senha.length < 10 || !codigoDigitado) {
@@ -196,56 +232,14 @@ app.post('/confirmar-cadastro', async (req, res) => {
 
 // ===== ROTAS PARA RECUPERAÇÃO DE SENHA (RF-001) =====
 
-// Sistema de rate limiting simples para rotas de reset de senha
-const tentativasResetSenha = new Map();
-const LIMITE_TENTATIVAS = 3;
-const TEMPO_BLOQUEIO_MS = 5 * 60 * 1000; // 5 minutos
-
-function verificarRateLimitResetSenha(email) {
-    const agora = Date.now();
-    const registro = tentativasResetSenha.get(email);
-
-    if (!registro) {
-        tentativasResetSenha.set(email, { tentativas: 1, bloqueioAte: null });
-        return { permitido: true, motivo: '' };
-    }
-
-    if (registro.bloqueioAte && agora < registro.bloqueioAte) {
-        const tempoRestante = Math.ceil((registro.bloqueioAte - agora) / 1000);
-        return { permitido: false, motivo: `Muitas tentativas. Tente novamente em ${tempoRestante} segundos` };
-    }
-
-    if (registro.bloqueioAte && agora >= registro.bloqueioAte) {
-        tentativasResetSenha.delete(email);
-        tentativasResetSenha.set(email, { tentativas: 1, bloqueioAte: null });
-        return { permitido: true, motivo: '' };
-    }
-
-    if (registro.tentativas >= LIMITE_TENTATIVAS) {
-        registro.bloqueioAte = agora + TEMPO_BLOQUEIO_MS;
-        return { permitido: false, motivo: `Muitas tentativas. Tente novamente em ${Math.ceil(TEMPO_BLOQUEIO_MS / 1000)} segundos` };
-    }
-
-    registro.tentativas++;
-    return { permitido: true, motivo: '' };
-}
-
 // ROTA 1 - Solicitar reset de senha
-app.post('/solicitar-reset-senha', async (req, res) => {
+app.post('/solicitar-reset-senha', limitadorCodigo, async (req, res) => {
     const { email } = req.body;
 
     // Validação do email
     if (!email || !email.includes('@')) {
         return res.status(400).json({
             mensagem: 'Email inválido ou não informado'
-        });
-    }
-
-    // Verificar rate limit
-    const verificacaoRateLimit = verificarRateLimitResetSenha(email);
-    if (!verificacaoRateLimit.permitido) {
-        return res.status(429).json({
-            mensagem: verificacaoRateLimit.motivo
         });
     }
 
@@ -305,21 +299,13 @@ app.post('/solicitar-reset-senha', async (req, res) => {
 });
 
 // ROTA 2 - Confirmar reset de senha
-app.post('/confirmar-reset-senha', async (req, res) => {
+app.post('/confirmar-reset-senha', limitadorCodigo, async (req, res) => {
     const { email, codigoDigitado, novaSenha } = req.body;
 
     // Validações
     if (!email || !codigoDigitado || !novaSenha || novaSenha.length < 10) {
         return res.status(400).json({
             mensagem: 'Dados inválidos ou incompletos'
-        });
-    }
-
-    // Verificar rate limit
-    const verificacaoRateLimit = verificarRateLimitResetSenha(email);
-    if (!verificacaoRateLimit.permitido) {
-        return res.status(429).json({
-            mensagem: verificacaoRateLimit.motivo
         });
     }
 
@@ -359,9 +345,6 @@ app.post('/confirmar-reset-senha', async (req, res) => {
             });
         }
 
-        // Limpar tentativas de rate limit após sucesso
-        tentativasResetSenha.delete(email);
-
         return res.status(200).json({
             mensagem: 'Senha alterada com sucesso!'
         });
@@ -376,7 +359,7 @@ app.post('/confirmar-reset-senha', async (req, res) => {
 
 // O Render (e a maioria dos provedores de hospedagem) define a porta
 // dinamicamente via variável de ambiente PORT. Localmente, cai no 3000.
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT ||  3000;
 app.listen(PORT, () => {
     console.log(`Servidor rodando na porta ${PORT}`);
 });

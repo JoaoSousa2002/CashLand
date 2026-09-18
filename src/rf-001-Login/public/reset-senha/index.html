@@ -5,178 +5,182 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Redefinir Senha</title>
-<style>
-    * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-        font-family: Arial, sans-serif;
-    }
-
-    .container {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        min-height: 100vh;
-        padding: 20px;
-        background-color: #cadaf2;
-    }
-
-    #div-Login {
-            background-color: #ffffff;
-        border-radius: 12px;
-        padding: 50px;
-        width: 420px;
-        max-width: 100%;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    }
-
-    #div-Login form {
-        display: flex;
-        flex-direction: column;
-        gap: 5px;
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
         }
 
-    .input-dados label {
-        font-weight: bold;
-        margin-bottom: 5px;
-        display: block;
-        }
-
-    #botao-Voltar {
-        width: 100px;
-        height: 20px;
-        margin-left: 100px;
-        border: 1px solid #ccc;
-        border-radius: 8px;
-        justify-content: center;
-    }
-
-
-    .input-dados {
+        .container {
             display: flex;
-        align-items: center;
-        gap: 5px;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            background-color: #cadaf2;
+        }
 
-        input {
-            height: 40px;
-            width: 100%;
-            min-width: 0;
-            padding: 5px;
+        #div-Login {
+            background-color: #ffffff;
+            border-radius: 12px;
+            padding: 50px;
+            width: 420px;
+            max-width: 100%;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        #div-Login form {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .input-dados label {
+            font-weight: bold;
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        #botao-Voltar {
+            width: 100px;
+            height: 20px;
+            margin-left: 100px;
             border: 1px solid #ccc;
             border-radius: 8px;
+            justify-content: center;
         }
 
-    }
 
-    #input-submit {
-        display: flex;
-        justify-content: center;
+        .input-dados {
+            display: flex;
+            align-items: center;
+            gap: 5px;
 
             input {
-            height: 50px;
-            width: 100px;
-            margin-top: 12px;
-            padding: 5px;
-            border: 1px solid #ccc;
-            border-radius: 8px;
+                height: 40px;
+                width: 100%;
+                min-width: 0;
+                padding: 5px;
+                border: 1px solid #ccc;
+                border-radius: 8px;
+            }
+
         }
-    }
 
-    #id-Titulo {
-        display: inline-flex;
-            width: 100%;
-    }
+        #input-submit {
+            display: flex;
+            justify-content: center;
 
-    .loading-overlay {
-        display: none;
-
-        position: fixed;
-        top: 0;
-        left: 0;
-
-        width: 100vw;
-        height: 100vh;
-
-        background-color: rgba(0, 0, 0, 0.5);
-
-        z-index: 9999;
-
-        justify-content: center;
-        align-items: center;
-    }
-
-    .loading-box {
-        display: flex;
-        justify-content: center;
-        background-color: #ffffff;
-        border-radius: 12px;
-        padding: 50px;
-        width: 400px;
-        max-width: calc(100vw - 40px);
-        max-height: calc(100vh - 40px);
-        overflow: auto;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        font-size: 20px;
-
-        input {
-            height: 40px;
-            width: 100%;
-            min-width: 0;
-            padding: 5px;
-            border: 1px solid #ccc;
-            border-radius: 8px;
+            input {
+                height: 50px;
+                width: 100px;
+                margin-top: 12px;
+                padding: 5px;
+                border: 1px solid #ccc;
+                border-radius: 8px;
+            }
         }
-    }
 
-    .spinning-wheel {
+        #id-Titulo {
+            display: inline-flex;
+            width: 100%;
+        }
+
+        .loading-overlay {
+            display: none;
+
+            position: fixed;
+            top: 0;
+            left: 0;
+
+            width: 100vw;
+            height: 100vh;
+
+            background-color: rgba(0, 0, 0, 0.5);
+
+            z-index: 9999;
+
+            justify-content: center;
+            align-items: center;
+        }
+
+        .loading-box {
+            display: flex;
+            justify-content: center;
+            background-color: #ffffff;
+            border-radius: 12px;
+            padding: 50px;
+            width: 400px;
+            max-width: calc(100vw - 40px);
+            max-height: calc(100vh - 40px);
+            overflow: auto;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            font-size: 20px;
+
+            input {
+                height: 40px;
+                width: 100%;
+                min-width: 0;
+                padding: 5px;
+                border: 1px solid #ccc;
+                border-radius: 8px;
+            }
+        }
+
+        .spinning-wheel {
             width: 30px;
-        height: 30px;
-        border-radius: 50%;
+            height: 30px;
+            border-radius: 50%;
 
             border: 4px solid #f3f3f3;
-        border-top: 4px solid #000000;
+            border-top: 4px solid #000000;
 
             animation: spin 1s linear infinite;
 
-        margin-left: 20px;
-    }
-
-    @keyframes spin {
-        from {
-            transform: rotate(0deg);
+            margin-left: 20px;
         }
 
-        to {
-            transform: rotate(360deg);
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
         }
-    }
-    @media (max-width: 440px) {
-        #div-Login, .loading-box {
-            padding: 25px;
+
+        @media (max-width: 440px) {
+
+            #div-Login,
+            .loading-box {
+                padding: 25px;
+            }
         }
-    }
-    .campo-senha {
-        position: relative;
-        display: inline-block;
-    }
 
-    .campo-senha input {
-        padding-right: 40px;
-    }
+        .campo-senha {
+            position: relative;
+            display: inline-block;
+        }
 
-    .campo-senha button {
-        position: absolute;
-        right: 8px;
-        top: 50%;
-        transform: translateY(-50%);
+        .campo-senha input {
+            padding-right: 40px;
+        }
 
-        border: none;
-        background: none;
-        cursor: pointer;
-        font-size: 18px;
-    }
-</style>
+        .campo-senha button {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 18px;
+        }
+    </style>
 </head>
 
 <body>
@@ -299,6 +303,7 @@
         // Sistema para mostrar a senha
         const campoSenha = document.getElementById("Senha");
         const mostrarSenha = document.getElementById("mostrar-senha");
+
         mostrarSenha.addEventListener("click", () => {
             if (campoSenha.type === "password") {
                 campoSenha.type = "text";
@@ -308,6 +313,7 @@
                 mostrarSenha.textContent = "👁";
             }
         });
+
         document.getElementById("meuForm").addEventListener("submit", async (e) => {
             e.preventDefault();
             email = document.getElementById("Email").value.trim();
@@ -327,18 +333,46 @@
                     });
                     const resultado = await response.json();
 
-                    if (response.status === 200) {
-                        document.getElementById("meuForm-confirmar-reset").reset();
-                        MostrarErro("erro-codigo", "");
-                        MostrarErro("erro-senha", "");
-                        solicitacaoCodigo_overlay.style.display = "flex";
-                    } else {
-                        if (resultado && resultado.mensagem) {
-                            MostrarResultado_Overlay(2, resultado.mensagem);
-                        } else {
-                            MostrarResultado_Overlay(2, "Erro ao solicitar código. Tente novamente.");
-                        }
+                    switch (response.status) {
+                        case 200:
+                            solicitacaoCodigo_overlay.style.display = "flex";
+                            console.log(resultado.mensagem)
+                            break;
+                        case 400:
+                            resultado_overlay.style.display = "flex";
+                            MostrarResultado_Overlay(0, resultado.mensagem)
+                            console.log(resultado.mensagem)
+                            break;
+                        case 404:
+                            resultado_overlay.style.display = "flex";
+                            MostrarResultado_Overlay(0, resultado.mensagem)
+                            console.log(resultado.mensagem)
+                            break;
+                        case 429:
+                            resultado_overlay.style.display = "flex";
+                            MostrarResultado_Overlay(0, resultado.mensagem)
+                            console.log(resultado.mensagem)
+                            break;
+                        case 500:
+                            resultado_overlay.style.display = "flex";
+                            MostrarResultado_Overlay(0, resultado.mensagem)
+                            console.log(resultado.mensagem)
+                            break;
+                        default:
+                            break;
                     }
+                    // if (response.status === 200) {
+                    //     document.getElementById("meuForm-confirmar-reset").reset();
+                    //     MostrarErro("erro-codigo", "");
+                    //     MostrarErro("erro-senha", "");
+                    //     solicitacaoCodigo_overlay.style.display = "flex";
+                    // } else {
+                    //     if (resultado && resultado.mensagem) {
+                    //         MostrarResultado_Overlay(2, resultado.mensagem);
+                    //     } else {
+                    //         MostrarResultado_Overlay(2, "Erro ao solicitar código. Tente novamente.");
+                    //     }
+                    // }
                 } catch (error) {
                     MostrarResultado_Overlay(2, "Ocorreu um erro, por favor tente mais tarde");
                 } finally {
@@ -375,21 +409,51 @@
                     });
                     const resultado = await response.json();
 
-                    if (response.status === 200) {
-                        retonarLogin = true;
-                        if (resultado && resultado.mensagem) {
-                            MostrarResultado_Overlay(1, resultado.mensagem);
-                        } else {
-                            MostrarResultado_Overlay(1, "Senha alterada com sucesso!");
-                        }
-                    } else {
-                        reabrirJanelaCodigo = true;
-                        if (resultado && resultado.mensagem) {
-                            MostrarResultado_Overlay(2, resultado.mensagem);
-                        } else {
-                            MostrarResultado_Overlay(2, "Erro ao alterar senha. Tente novamente.");
-                        }
+                    switch (response.status) {
+                        case 200:
+                            retonarLogin = true;
+                            resultado_overlay.style.display = "flex";
+                            MostrarResultado_Overlay(1, resultado.mensagem)
+                            console.log(resultado.mensagem)
+                            break;
+                        case 400:
+                            reabrirJanelaCodigo = true;
+                            resultado_overlay.style.display = "flex";
+                            MostrarResultado_Overlay(2, resultado.mensagem)
+                            console.log(resultado.mensage)
+                        case 404:
+                            reabrirJanelaCodigo = true;
+                            resultado_overlay.style.display = "flex";
+                            MostrarResultado_Overlay(2, resultado.mensagem)
+                            console.log(resultado.mensage)
+                        case 429:
+                            reabrirJanelaCodigo = true;
+                            resultado_overlay.style.display = "flex";
+                            MostrarResultado_Overlay(2, resultado.mensagem)
+                            console.log(resultado.mensagem)
+                        case 500:
+                            reabrirJanelaCodigo = true;
+                            resultado_overlay.style.display = "flex";
+                            MostrarResultado_Overlay(2, resultado.mensagem)
+                            console.log(resultado.mensage)
+                        default:
+                            break;
                     }
+                    // if (response.status === 200) {
+                    //     retonarLogin = true;
+                    //     if (resultado && resultado.mensagem) {
+                    //         MostrarResultado_Overlay(1, resultado.mensagem);
+                    //     } else {
+                    //         MostrarResultado_Overlay(1, "Senha alterada com sucesso!");
+                    //     }
+                    // } else {
+                    //     reabrirJanelaCodigo = true;
+                    //     if (resultado && resultado.mensagem) {
+                    //         MostrarResultado_Overlay(2, resultado.mensagem);
+                    //     } else {
+                    //         MostrarResultado_Overlay(2, "Erro ao alterar senha. Tente novamente.");
+                    //     }
+                    // }
                 } catch (error) {
                     reabrirJanelaCodigo = true;
                     MostrarResultado_Overlay(2, "Ocorreu um erro, por favor tente mais tarde");
