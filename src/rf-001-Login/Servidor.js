@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { enviarEmail, gerarCodigo, salvarCodigo, validarCodigo } from '../rf-002-Cadastro_usuario/Email.js';
-import { gerarHashSenha, validarSenha, } from './Autenticacao.js'
+import { gerarHashSenha, validarSenha, gerarToken, verificarToken } from './Autenticacao.js'
 import Express from 'express'
 import cors from 'cors'
 import ws from 'ws'
@@ -11,36 +11,37 @@ import swaggerUi from 'swagger-ui-express';
 import { readFileSync } from 'fs';
 import rateLimit from 'express-rate-limit';
 import 'dotenv/config';
+import cookieParser from 'cookie-parser';
 
 const limitadorLogin = rateLimit({
-  windowMs: 5 * 60 * 1000,
-  max: 5, // só 5 tentativas de login por IP a cada 5 min
+    windowMs: 5 * 60 * 1000,
+    max: 5, // só 5 tentativas de login por IP a cada 5 min
     handler: (req, res) => {
-    console.log(`Rate limit atingido pelo IP: ${req.ip}`);
-    res.status(429).json({ mensagem: 'Muitas tentativas de login realizadas. Tente novamente em 5 minutos.' });
-  }
+        console.log(`Rate limit atingido pelo IP: ${req.ip}`);
+        res.status(429).json({ mensagem: 'Muitas tentativas de login realizadas. Tente novamente em 5 minutos.' });
+    }
 });
 const limitadorCadastro = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 5, // só 5 tentativas de login por IP a cada 15 min
+    windowMs: 15 * 60 * 1000,
+    max: 5, // só 5 tentativas de login por IP a cada 15 min
     handler: (req, res) => {
-    console.log(`Rate limit atingido pelo IP: ${req.ip}`);
-    res.status(429).json({ mensagem: 'Muitas tentativas de cadastro realizadas. Tente novamente em 15 minutos.' });
-  }
+        console.log(`Rate limit atingido pelo IP: ${req.ip}`);
+        res.status(429).json({ mensagem: 'Muitas tentativas de cadastro realizadas. Tente novamente em 15 minutos.' });
+    }
 });
 const limitadorCodigo = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 5, // só 5 tentativas de login por IP a cada 15 min
+    windowMs: 15 * 60 * 1000,
+    max: 5, // só 5 tentativas de login por IP a cada 15 min
     handler: (req, res) => {
-    console.log(`Rate limit atingido pelo IP: ${req.ip}`);
-    res.status(429).json({ mensagem: 'Muitas tentativas de realizadas para esta operação. Tente novamente em 15 minutos.' });
-  }
+        console.log(`Rate limit atingido pelo IP: ${req.ip}`);
+        res.status(429).json({ mensagem: 'Muitas tentativas de realizadas para esta operação. Tente novamente em 15 minutos.' });
+    }
 });
 
 // Array com as CORS local
 let origemAutorizada = [];
 if (process.env.ORIGEM_AUTORIZADA) {
-  origemAutorizada = process.env.ORIGEM_AUTORIZADA.split(',').map(origin => origin.trim());
+    origemAutorizada = process.env.ORIGEM_AUTORIZADA.split(',').map(origin => origin.trim());
 }
 
 
@@ -53,11 +54,13 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 
-// Cors para autorizar acesso local para a porta 5500 (Padrão do live server)
+
 const app = Express()
+// Autoriza o acesso por proxy, necessario para funcionar no render
 app.set('trust proxy', 1)
-app.use(cors({ origin: origemAutorizada }));
+app.use(cors({ origin: origemAutorizada, credentials: true }));
 app.use(Express.json())
+app.use(cookieParser());
 const swaggerSpec = JSON.parse(
     readFileSync(new URL('../../docs/api/API-SWAGGER.json', import.meta.url))
 );
@@ -67,11 +70,12 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // rotas de URL para direcionar o front-end
 app.get('/', (req, res) => res.redirect('/login'));
-app.use('/login', Express.static(path.join(__dirname, 'public')))
-
-// Esse é o modelo para as proximas RFs - nome da rota e o caminho dela (até a pasta public, não precisa especificar o index.html)
-app.use('/cadastro-usuario', Express.static(path.join(__dirname, '../rf-002-Cadastro_usuario/public')))
-app.use('/resetar-senha', Express.static(path.join(__dirname, 'public/reset-senha')))
+app.use('/login', Express.static(path.join(__dirname, 'public/tela_login.html')))
+app.use('/cadastro-usuario', Express.static(path.join(__dirname, '../rf-002-Cadastro_usuario/public/cadastrar_usuario.html')))
+app.use('/resetar-senha', Express.static(path.join(__dirname, 'public/reset_senha.html')))
+app.use('/tela-principal', Express.static(path.join(__dirname, 'public/tela_principal.html')))
+app.use('/tela-admin', Express.static(path.join(__dirname, 'public/tela_admin.html')))
+app.use('/listar-usuarios', Express.static(path.join(__dirname, '../rf-002-Cadastro_usuario/public/listar_usuarios.html')))
 
 
 const supabase = createClient(
@@ -98,43 +102,93 @@ async function testarConexao() {
     }
 } testarConexao();
 
-// Rotas da api
+function autenticar(req, res, next) {
+    const token = req.cookies.token;
+    if (!token) {
+        return res.status(401).json({ mensagem: 'Não autenticado' });
+    }
+    try {
+        req.usuario = verificarToken(token);
+        next();
+    } catch {
+        return res.status(401).json({ mensagem: 'Token inválido ou expirado' });
+    }
+}
+
+function somenteAdmin(req, res, next) {
+    if (req.usuario.tipo !== 'Admin') {
+        return res.status(403).json({ erro: 'Acesso restrito a administradores' });
+    }
+    next();
+}
+
+app.get('/me', autenticar, async (req, res) => {
+    // req.usuario já vem do middleware, mas revalida contra o banco
+    // pra pegar dados atualizados (ex: se foi inativado depois do token ser emitido)
+    const { data, error } = await supabase
+        .from('usuarios')
+        .select('id_usuario, nome, email, tipo, status_usuario')
+        .eq('id_usuario', req.usuario.id_usuario)
+        .single();
+
+    if (error || data.status_usuario === 'Inativo') {
+        console.log("Usuario não existe ou inativo")
+        return res.status(401).json({ mensagem: 'Sessão inválida' });
+    }
+    console.log("Deu certo o /me")
+    return res.status(200).json({ id_usuario: data.id_usuario, nome: data.nome, tipo: data.tipo });
+});
+
+// ROTA DE LOGIN
 app.post('/login', limitadorLogin, async (req, res) => {
     const { email, senha } = req.body;
 
-
-    // Verifica se email ou senha estão vazios
     if (!email || !senha) {
         return res.status(400).json({ mensagem: 'Email e senha são obrigatórios' });
     }
 
     const { data: usuario, error } = await supabase
         .from('usuarios')
-        .select('id_usuario, nome, senha_hash')
+        .select('id_usuario, nome, senha_hash, status_usuario, tipo') // adicionado tipo
         .eq('email', email)
         .single();
 
-    // Erro se o email não estiver cadastrado
-    if (error) {
-        // Log só do erro técnico no servidor (nunca a senha do usuário).
-        console.log('Erro ao buscar usuário:', error.message);
+    // Erro OU usuário não encontrado — checa isso PRIMEIRO
+    if (error || !usuario) {
+        console.log('Erro ao buscar usuário:', error?.message);
         return res.status(401).json({ mensagem: 'Email ou senha inválidos' });
     }
 
-    // Compara a senha digitada com a senha hash do banco, retorna true ou false
+    // Só chega aqui se usuario existir de verdade
+    if (usuario.status_usuario === 'Inativo') {
+        return res.status(403).json({ erro: 'Conta inativa. Contate o administrador.' });
+    }
+
     const senhaCorreta = await validarSenha(senha, usuario.senha_hash);
     if (!senhaCorreta) {
         return res.status(401).json({ mensagem: 'Email ou senha inválidos' });
-    } else {
-        res.status(200).json({
-            mensagem: 'Login realizado com sucesso',
-            usuario: { id: usuario.id_usuario, nome: usuario.nome }
-        });
-
     }
 
-})
+    const token = gerarToken(usuario);
+    res.cookie('token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 2 * 60 * 60 * 1000
+    });
 
+    return res.status(200).json({
+        mensagem: 'Login realizado com sucesso',
+        usuario: { id: usuario.id_usuario, nome: usuario.nome, tipo: usuario.tipo }
+    });
+});
+
+// ROTA DE LOGOUT
+app.post('/logout', limitadorCodigo, (req, res) => {
+    res.clearCookie('token');
+    console.log('Logout realizado')
+    return res.status(200).json({ mensagem: 'Logout realizado' });
+});
 // ROTA PARA VERIFICAR SE O EMAIL EXISTE
 app.post('/solicitar-codigo', limitadorCodigo, async (req, res) => {
     const { nome, email } = req.body;
@@ -182,7 +236,6 @@ app.post('/solicitar-codigo', limitadorCodigo, async (req, res) => {
 });
 
 // ROTA PARA CRIAR O CADASTRO
-
 app.post('/confirmar-cadastro', limitadorCadastro, async (req, res) => {
     const { nome, email, senha, codigoDigitado } = req.body;
 
@@ -357,9 +410,40 @@ app.post('/confirmar-reset-senha', limitadorCodigo, async (req, res) => {
     }
 });
 
+
+// ROTAS DE ACESSO RESTRITO (Admin)
+
+app.get('/listar-usuarios', autenticar, somenteAdmin, limitadorCodigo, async (req, res) => {
+    res.set('Cache-Control', 'no-store');
+    const { pesquisa } = req.query;
+
+    if (!pesquisa || pesquisa === "") {
+        const { data, error } = await supabase
+            .from('usuarios')
+            .select('id_usuario, nome, email, tipo, status_usuario, data_criacao, data_inativacao')
+
+        if (error) return res.status(500).json({ erro: error.message });
+        return res.status(200).json(data);
+    }
+
+    const condicoes = [`nome.ilike.%${pesquisa}%`];
+    // só tenta buscar por ID se o termo for um número válido
+    if (!isNaN(pesquisa)) {
+        condicoes.push(`id_usuario.eq.${pesquisa}`);
+    }
+
+    const { data, error } = await supabase
+        .from('usuarios')
+        .select('id_usuario, nome, email, tipo, status_usuario, data_criacao, data_inativacao')
+        .or(condicoes.join(','));
+
+    if (error) return res.status(500).json({ erro: error.message });
+    return res.status(200).json(data);
+});
+
 // O Render (e a maioria dos provedores de hospedagem) define a porta
 // dinamicamente via variável de ambiente PORT. Localmente, cai no 3000.
-const PORT = process.env.PORT ||  3000;
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Servidor rodando na porta ${PORT}`);
 });

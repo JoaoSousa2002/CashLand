@@ -180,6 +180,7 @@
         </div>
     </div>
     <script>
+        let liberarAcesso = false;
         const loading = document.getElementById("loading-overlay");
         const resultado_overlay = document.getElementById("resultado-overlay");
         function MostrarErro(id, mensagem) {
@@ -212,9 +213,14 @@
             }
         }
         function FechaResultado_overlay() {
-            resultado_overlay.style.display = "none"
+            if (liberarAcesso) {
+                console.log("Acesso liberado")
+                window.location.href = localStorage.getItem('tipo') === 'Admin' ? '/tela-admin' : '/tela-principal';
+                resultado_overlay.style.display = "none"
+            } else {
+                resultado_overlay.style.display = "none"
+            }
         }
-
         // Sistema para mostrar a senha
         const senha = document.getElementById("Senha");
         const mostrarSenha = document.getElementById("mostrar-senha");
@@ -248,6 +254,7 @@
                 loading.style.display = "flex"
                 const response = await fetch(`/login`, {
                     method: 'POST',
+                    credentials: 'include',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, senha })
                 });
@@ -255,11 +262,17 @@
                 loading.style.display = "none";
 
                 switch (response.status) {
+                    // SUCESSO
                     case 200:
                         resultado_overlay.style.display = "flex";
                         MostrarResultado_Overlay(1, resultado.mensagem)
                         console.log(resultado.mensagem)
+
+                        localStorage.setItem('tipo', resultado.usuario.tipo); // só o tipo, pra decidir UI — o token não passa mais por aqui
+                        liberarAcesso = true;
                         break;
+
+                    // ERROS:
                     case 401:
                         resultado_overlay.style.display = "flex";
                         MostrarResultado_Overlay(0, resultado.mensagem)

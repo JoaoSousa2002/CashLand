@@ -3,11 +3,13 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.109.0",
     "bcrypt": "^6.0.0",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "express-rate-limit": "^8.7.0",
     "jose": "^6.2.12",
+    "jsonwebtoken": "^9.0.3",
     "swagger-ui-express": "^5.0.1",
     "ws": "^8.21.3"
   }

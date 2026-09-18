@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: Arial, sans-serif;
+    }
+
+    .loading-overlay {
+        display: none;
+
+        position: fixed;
+        top: 0;
+        left: 0;
+
+        width: 100vw;
+        height: 100vh;
+
+        background-color: rgba(0, 0, 0, 0.5);
+
+        z-index: 9999;
+
+        justify-content: center;
+        align-items: center;
+    }
+
+    .loading-box {
+        display: flex;
+        justify-content: center;
+        background-color: #ffffff;
+        border-radius: 12px;
+        padding: 50px;
+        width: 400px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        font-size: 20px;
+
+        input {
+            height: 40px;
+            width: 400px;
+            padding: 5px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+        }
+    }
+
+    .spinning-wheel {
+        /* Create a perfect circle */
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+
+        /* Create the wheel track (light gray) and the spinning indicator (blue) */
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #000000;
+
+        /* Link to the animation: 1 second duration, smooth linear pace, loops forever */
+        animation: spin 1s linear infinite;
+
+        margin-left: 20px;
+    }
+
+    @keyframes spin {
+        from {
+            transform: rotate(0deg);
+        }
+
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    #div-superior {
+        border: 2px solid black;
+        display: flex;
+        flex-direction: row;
+        justify-content: center;
+        align-items: center;
+        width: 100vw;
+        height: 100px;
+
+
+        div {
+            border: 2px solid rgb(255, 0, 0);
+        }
+    }
+
+    #div-nome-usuario {
+        display: flex;
+        justify-content: left;
+        align-items: center;
+        width: fit-content;
+        width: 700px;
+        height: 100%
+    }
+
+    #div-nav {
+        width: 500px;
+        height: 100%
+    }
+
+    #form-logout {
+        width: 200px;
+        height: 100%
+    }
+</style>
+
+<body>
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="loading-box">
+            <div style="margin: auto 0;">
+                <p>Carregando... </p>
+            </div>
+            <div class="spinning-wheel"></div>
+        </div>
+    </div>
+
+    <div class="loading-overlay" id="resultado-overlay">
+        <div class="loading-box" id="resultado-funcao">
+        </div>
+    </div>
+    <div id="container">
+        <div id="div-superior">
+            <div id="div-nome-usuario">
+                <div>
+                    <h1>Olá, <span id="nome-usuario"></span><span style="color: red; font-size: 15px;">(admin)</span></h1>
+                </div>
+            </div>
+            <div id="div-nav">
+                <nav>
+                    <a href="/listar-usuarios">Usuarios</a>
+                </nav>
+            </div>
+            <div id="form-logout">
+                <form id="meuForm-Logout">
+                    <input type="submit" value="Log out">
+                </form>
+            </div>
+
+
+
+        </div>
+    </div>
+
+
+    <script>
+        let retonarLogin = false;
+        const loading = document.getElementById("loading-overlay");
+        const resultado_overlay = document.getElementById("resultado-overlay");
+
+        function MostrarResultado_Overlay(tipo, mensagem) {
+            if (tipo == 1) {
+                document.getElementById("resultado-funcao").innerHTML =
+                    `<div id="div-resultado-overlay"
+                    style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 20px;">
+                    <div>
+                        <h5 style="color: rgb(103, 198, 40); margin: 0;">${mensagem}</h5>
+                    </div>
+                    <div style="display: flex; align-items: center; justify-content: center;">
+                     <input style="width: 100px;" type="button" onclick="FechaResultado_overlay()" value="Continuar">
+                    </div>
+                </div>`
+            } else {
+                document.getElementById("resultado-funcao").innerHTML =
+                    `<div id="div-resultado-overlay"
+                    style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center gap: 20px;">
+                    <div>
+                        <h5 style="color: rgb(160, 2, 2); margin: 0;">${mensagem}</h5>
+                    </div>
+                    <div style="display: flex; align-items: center; justify-content: center;">
+                     <input style="width: 100px;" type="button" onclick="FechaResultado_overlay()" value="Continuar">
+                    </div>
+                </div>`
+            }
+        }
+        function FechaResultado_overlay() {
+            if (!retonarLogin) {
+                resultado_overlay.style.display = "none"
+            } else if (retonarLogin) {
+                window.location.href = "/login"
+            }
+        }
+        async function protegerPagina(tipoExigido = null) {
+
+            try {
+                const resposta = await fetch('/me', {
+                    method: 'GET',
+                    credentials: 'include',
+                });
+                const usuario = await resposta.json();
+                switch (resposta.status) {
+                    case 200:
+                        console.log("Usuario autenticado")
+                        break;
+                    case 401:
+                        resultado_overlay.style.display = "flex";
+                        MostrarResultado_Overlay(0, usuario.mensagem)
+                        console.log(usuario.mensagem)
+                        retonarLogin = true;
+                    default:
+                        break;
+                }
+
+                if (tipoExigido && usuario.tipo !== tipoExigido) {
+                    window.location.href = '/tela-principal'; // logado, mas sem permissão
+                    return;
+                }
+
+                return usuario; // devolve os dados pra página usar (ex: mostrar nome)
+            } catch {
+                localStorage.removeItem('tipo');
+                window.location.href = '/login';
+            }
+        }
+
+        protegerPagina().then(usuario => {
+            document.getElementById('nome-usuario').textContent = usuario.nome;
+        });
+
+        document.getElementById("meuForm-Logout").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            resposta = await fetch('/logout', {
+                method: 'POST',
+                credentials: 'include'
+            });
+            console.log(resposta.mensagem)
+
+            localStorage.removeItem('tipo');
+            window.location.href = '/login';
+        });
+    </script>
+</body>
+
+</html>
