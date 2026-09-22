@@ -68,6 +68,24 @@
             text-align: center;
         }
 
+        #td-button {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 10px;
+
+            /* Centraliza horizontalmente */
+            button {
+                display: flex;
+                align-items: center;
+                /* Centraliza verticalmente */
+                justify-content: center;
+                /* Centraliza horizontalmente */
+                height: 10px;
+                
+            }
+        }
+
         td {
             padding: 0.6rem 0.5px;
             border-bottom: 1px solid #e8e8e8;
@@ -77,6 +95,7 @@
             text-overflow: ellipsis;
             white-space: nowrap;
         }
+
 
         td:last-of-type {
             text-align: center;
@@ -129,7 +148,9 @@
                 <h3><span id="nome-usuario"></span></h3>
             </div>
             <div id="div-usuario">
-                <img src="/User_icon_black.png" alt="icone usuario">
+                <a onclick="redirecionaTela()">
+                    <img src="/User_icon_black.png" alt="icone usuario">
+                </a>
             </div>
             <div id="form-logout">
                 <form id="meuForm-Logout">
@@ -144,7 +165,6 @@
                     <input type="text" id="id-ou-nome">
                 </label>
                 <input type="submit" value="Pesquisar">
-                <input type="button" onclick="location.href='AdicionarObjetivo.html'" value="Adicionar objetivo">
             </form>
         </div>
         <div id="div-tabela">
@@ -226,11 +246,19 @@
                     <div>
                         <h5 style="color: rgb(160, 2, 2); margin: 0;">Tem certeza que deseja deletar esse usuario?</h5>
                     </div>
-                    <div style="display: flex; align-items: center; justify-content: center;">
+                    <div style="display: flex; align-items: center; justify-content: center; gap:10px">
                      <input style="width: 100px;" type="button" onclick="excluir(${id})" value="Continuar">
                      <input style="width: 100px;" type="button" onclick="resultado_overlay.style.display = 'none'" value="Cancelar">
                     </div>
                 </div>`
+        }
+        async function redirecionaTela() {
+            const data = await protegerPagina()
+            if (data.tipo === 'Comum') {
+                window.location.href = '/tela-principal/editar-usuario'
+            } else if (data.tipo === 'Admin') {
+                window.location.href = `/tela-admin/editar-usuarios?id=${data.id_usuario}`
+            }
         }
         async function protegerPagina(tipoExigido = null) {
 
@@ -338,10 +366,9 @@
                         <td>${c.status_usuario}</td>
                         <td>${c.data_criacao ? new Date(c.data_criacao).toLocaleDateString('pt-BR') : '---'}</td>
                         <td>${c.data_inativacao ? new Date(c.data_inativacao).toLocaleDateString('pt-BR') : '---'}</td>
-                        <td>
-                            <button onclick="editar(${c.id_usuario})">Editar</button>
-                        <br>
-                            <button onclick="confirmarDelete(${c.id_usuario})">Excluir</button>
+                        <td id="td-button">
+                            <button style="font-weight: bold;" onclick="editar(${c.id_usuario})">Editar</button>
+                            <button style="background-color: rgb(250, 176, 176); font-weight: bold;" onclick="confirmarDelete(${c.id_usuario})">Excluir</button>
                         </td>
                         </tr>
                 `).join("");

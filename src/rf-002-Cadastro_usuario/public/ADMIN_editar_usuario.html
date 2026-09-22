@@ -7,6 +7,7 @@
     <title>Editar usuario</title>
     <link rel="stylesheet" href="/template.css">
 </head>
+
 <body>
     <div class="loading-overlay" id="loading-overlay">
         <div class="loading-box">
@@ -42,7 +43,9 @@
                 <h3><span id="nome-usuario"></span></h3>
             </div>
             <div id="div-usuario">
-                <img src="/User_icon_black.png" alt="icone usuario">
+                <a onclick="redirecionaAdminEditar()">
+                    <img src="/User_icon_black.png" alt="icone usuario">
+                </a>
             </div>
             <div id="form-logout">
                 <form id="meuForm-Logout">
@@ -74,27 +77,23 @@
                     <div class="input-dados">
                         <label for="senha">Senha </label><br>
                         <div id="campo-senha" class="campo-senha campo-senha-reset">
-                            <input type="text" name="senha" id="senha"
-                                value="•••••••••••" disabled>
+                            <input type="text" name="senha" id="senha" value="•••••••••••" disabled>
                             <button type="button" onclick="confirmarResetSenha()">Resetar senha</button>
                         </div>
                     </div>
 
                     <div class="input-dados">
                         <label for="Email">Status: </label><br>
-                        <input type="text" name="status"
-                            id="status" disabled>
+                        <input type="text" name="status" id="status" disabled>
                     </div>
 
                     <div class="input-dados">
                         <label for="data-criacao">data criacao: </label><br>
-                        <input type="text" name="data-criacao"
-                            id="data-criacao" disabled>
+                        <input type="text" name="data-criacao" id="data-criacao" disabled>
                     </div>
                     <div class="input-dados">
                         <label for="data-inativacao">data inativação: </label><br>
-                        <input type="text"
-                            name="data-inativacao" id="data-inativacao" disabled>
+                        <input type="text" name="data-inativacao" id="data-inativacao" disabled>
                     </div>
 
                     <div id="input-submit">
@@ -311,6 +310,10 @@
             }
 
         };
+        async function redirecionaAdminEditar() {
+            const resultado = await protegerPagina()
+            window.location.href = `/tela-admin/editar-usuarios?id=${resultado.id_usuario}`
+        }
         async function protegerPagina(tipoExigido = null) {
             try {
                 const resposta = await fetch('/me', {

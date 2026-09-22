@@ -40,7 +40,9 @@
                 <h3><span id="nome-usuario"></span></h3>
             </div>
             <div id="div-usuario">
-                <img src="/User_icon_black.png" alt="icone usuario">
+                <a onclick="redirecionaAdminEditar()">
+                    <img src="/User_icon_black.png" alt="icone usuario">
+                </a>
             </div>
             <div id="form-logout">
                 <form id="meuForm-Logout">
@@ -94,8 +96,11 @@
 
         }
 
+        async function redirecionaAdminEditar(){
+            const resultado = await protegerPagina()
+            window.location.href = `/tela-admin/editar-usuarios?id=${resultado.id_usuario}`
+        }
         async function protegerPagina(tipoExigido = null) {
-
             try {
                 const resposta = await fetch('/me', {
                     method: 'GET',

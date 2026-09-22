@@ -11,3 +11,6 @@ create table usuarios (
   data_inativacao timestamptz
 );
 
+alter table usuarios
+add column status_reset_senha boolean not null default false;
+

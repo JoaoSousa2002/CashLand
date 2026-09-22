@@ -175,8 +175,8 @@ app.get('/me', autenticar, async (req, res) => {
             console.log("/me: Usuario não existe ou inativo")
             return res.status(401).json({ mensagem: 'Sessão inválida' });
         }
-        console.log("/me: Retornado o status do usuario " + data.status_usuario)
-        return res.status(200).json({ status_usuario: data.status_usuario });
+        console.log("/me: Retornado o status do usuario " + data.nome)
+        return res.status(200).json({ status_usuario: data.status_usuario, tipo: data.tipo });
     }
 
     // req.usuario já vem do middleware, mas revalida contra o banco
@@ -222,8 +222,8 @@ app.post('/login', limitadorLogin, async (req, res) => {
     }
 
     if (usuario.status_reset_senha) {
-        console.log("/login: >>>>> Reset de senha solicitado")        
-        return res.status(203).json({mensagem: "Reset de senha solicitado por um adminstrador"})                           
+        console.log("/login: >>>>> Reset de senha solicitado")
+        return res.status(203).json({ mensagem: "Reset de senha solicitado por um adminstrador" })
     }
 
     const senhaCorreta = await validarSenha(senha, usuario.senha_hash);
@@ -565,7 +565,7 @@ app.get('/admin/listar-usuarios', autenticar, somenteAdmin, async (req, res) => 
         const { data, error } = await supabase
             .from('usuarios')
             .select('id_usuario, nome, email, tipo, status_usuario, data_criacao, data_inativacao')
-
+            .order('id_usuario', { ascending: true })
         if (error) {
             console.log("/admin/listar-usuarios: Erro ao retornar as mensagens do banco de dados: " + error.message)
             return res.status(500).json({ erro: error.message });
@@ -583,6 +583,7 @@ app.get('/admin/listar-usuarios', autenticar, somenteAdmin, async (req, res) => 
     const { data, error } = await supabase
         .from('usuarios')
         .select('id_usuario, nome, email, tipo, status_usuario, data_criacao, data_inativacao')
+        .order('id_usuario', { ascending: true })
         .or(condicoes.join(','));
 
     if (error) {
@@ -609,6 +610,19 @@ app.get('/admin/usuario', autenticar, somenteAdmin, async (req, res) => {
             return res.status(401).json({ mensagem: 'Usuario não existe ou inativo' });
         }
         console.log("/usuario: todos os dados do id: " + id + " retornados")
+        return res.status(200).json(data);
+    } else {
+        const { data, error } = await supabase
+            .from('usuarios')
+            .select('id_usuario, nome, email, status_usuario, data_criacao, data_inativacao')
+            .eq('id_usuario', req.usuario.id_usuario)
+            .single();
+
+        if (error) {
+            console.log("/usuario: Usuario não existe ou inativo")
+            return res.status(401).json({ mensagem: 'Usuario não existe ou inativo' });
+        }
+        console.log("/usuario: todos os dados do id: " + req.usuario.id_usuario + " retornados")
         return res.status(200).json(data);
     }
 })
@@ -661,6 +675,7 @@ app.patch('/admin/resetar-senha', autenticar, somenteAdmin, async (req, res) => 
     return res.status(200).json({ mensagem: "Solicitação de reset da senha realizada" })
 
 })
+
 app.patch('/admin/reativar-usuario', autenticar, somenteAdmin, async (req, res) => {
     const { id } = req.body
     const { data: consulta } = await supabase
@@ -690,34 +705,46 @@ app.patch('/admin/reativar-usuario', autenticar, somenteAdmin, async (req, res) 
 })
 
 app.patch('/admin/desativar-usuario', autenticar, somenteAdmin, async (req, res) => {
-    const { id } = req.body
-    // Verifica se o usuario já está desativado
-    const { data: consulta } = await supabase
+    const { id } = req.body || {};
+
+    if (!id) {
+        return res.status(400).json({ mensagem: "Informe o id do usuário" });
+    }
+
+    const { data: consulta, error: erroConsulta } = await supabase
         .from('usuarios')
-        .select('status_usuario, nome')
+        .select('status_usuario, nome, tipo')
         .eq('id_usuario', id)
-        .single()
+        .single();
+
+    if (erroConsulta || !consulta) {
+        console.log("/admin/desativar-usuario: Usuário não encontrado");
+        return res.status(404).json({ mensagem: "Usuário não encontrado" });
+    }
+    console.log(consulta)
+
+    if (consulta.tipo === 'Admin') {
+        console.log("/admin/desativar-usuario: >>>>> Admin não pode desativar própria conta ou de outro admin");
+        return res.status(403).json({ mensagem: "Admin não pode desativar própria conta ou de outro admin" });
+    }
 
     if (consulta.status_usuario === 'Inativo') {
-        console.log("/usuario/desativar-usuario: Usuario já está desativado")
-        return res.status(400).json({ mensagem: "Usuario já está desativado" })
-    } else if (!consulta) {
-        console.log("Nada retornado")
-        return res.status(401).json({ mensagem: "Nada retornado" })
+        console.log("/admin/desativar-usuario: Usuario já está desativado");
+        return res.status(400).json({ mensagem: "Usuario já está desativado" });
     }
-    // Desativa o usuario
+
     const { error } = await supabase
         .from('usuarios')
         .update({ status_usuario: 'Inativo', data_inativacao: new Date().toISOString() })
-        .eq('id_usuario', id)
+        .eq('id_usuario', id);
 
     if (error) {
-        console.log("/admin/desativar-usuario: Usuario não existe, inativo ou sessao invalida")
-        return res.status(401).json({ mensagem: 'Erro ao desativar a conta, tente novamente mais tarde' });
+        console.log("/admin/desativar-usuario: Erro ao desativar - " + error.message);
+        return res.status(500).json({ mensagem: 'Erro ao desativar a conta, tente novamente mais tarde' });
     }
-    console.log("/usuario/desativar-conta: Usuario " + consulta.nome + " desativado")
-    return res.status(200).json({ mensagem: "Usuario desativado com sucesso" })
 
+    console.log("/admin/desativar-usuario: Usuario " + consulta.nome + " desativado");
+    return res.status(200).json({ mensagem: "Usuario desativado com sucesso" });
 })
 
 app.delete('/admin/deletar-usuario', autenticar, somenteAdmin, async (req, res) => {

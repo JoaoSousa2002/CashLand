@@ -40,7 +40,7 @@
                 <h3><span id="nome-usuario"></span></h3>
             </div>
             <div id="div-usuario">
-                <a href="/tela-principal/editar-usuario">
+                <a onclick="redirecionaTela()">
                     <img src="/User_icon_black.png" alt="icone usuario">
                 </a>
             </div>
@@ -129,6 +129,14 @@
             }
         }
 
+        async function redirecionaTela(){
+            const data = await protegerPagina()
+            if (data.tipo === 'Comum') {
+                window.location.href = '/tela-principal/editar-usuario'
+            } else if (data.tipo === 'Admin') {
+                window.location.href = `/tela-admin/editar-usuarios?id=${data.id_usuario}`
+            }
+        }
         protegerPagina().then(usuario => {
             document.getElementById('nome-usuario').textContent = usuario.nome.slice(0, 8);
         });

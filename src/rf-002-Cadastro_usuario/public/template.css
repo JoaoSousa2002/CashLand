@@ -43,7 +43,7 @@ body {
     flex: 1;
 }
 
-#container-conteudo > div {
+#container-conteudo>div {
     max-width: 100%;
 }
 
@@ -75,12 +75,25 @@ body {
     margin-bottom: 20px;
 }
 
-h1 { font-size: 32px; }
-h2 { font-size: 24px; }
-h3 { font-size: 18px; }
+h1 {
+    font-size: 32px;
+}
 
-a { color: #285f9d; }
-a:hover { color: #1b426e; }
+h2 {
+    font-size: 24px;
+}
+
+h3 {
+    font-size: 18px;
+}
+
+a {
+    color: #285f9d;
+}
+
+a:hover {
+    color: #1b426e;
+}
 
 label {
     display: block;
@@ -94,7 +107,9 @@ label {
     gap: 5px;
 }
 
-.cartao form br { display: none; }
+.cartao form br {
+    display: none;
+}
 
 input,
 button,
@@ -142,7 +157,9 @@ button:hover {
     background-color: #e4edf9;
 }
 
-#botao-Voltar { padding: 6px 12px; }
+#botao-Voltar {
+    padding: 6px 12px;
+}
 
 #input-submit {
     display: flex;
@@ -152,15 +169,20 @@ button:hover {
     margin-top: 12px;
 }
 
-#input-submit input { min-width: 100px; }
+#input-submit input {
+    min-width: 100px;
+}
 
 .campo-senha {
     position: relative;
     width: 100%;
     min-width: 0;
+    /* bottom: 10px; */
 }
 
-.campo-senha input { padding-right: 44px; }
+.campo-senha input {
+    padding-right: 44px;
+}
 
 .campo-senha button {
     position: absolute;
@@ -173,13 +195,23 @@ button:hover {
     font-size: 18px;
 }
 
-.campo-senha-reset input { padding-right: 124px; }
+.campo-senha-reset input {
+    padding-right: 124px;
+}
 
 .campo-senha-reset button {
     border: 1px solid var(--borda);
     background-color: #f3f3f3;
     padding: 5px 8px;
     font-size: 13px;
+}
+
+.campo-senha-reset button:hover {
+    background-color: #e4edf9;
+}
+
+.campo-senha-reset button:active {
+    background-color: #cadaf2;
 }
 
 /* Os erros são inseridos pelos scripts com margens próprias. */
@@ -199,15 +231,51 @@ button:hover {
     box-shadow: var(--sombra);
 }
 
-#div-nome-sistema { flex-shrink: 0; }
-#div-nome-sistema a { color: inherit; text-decoration: none; }
-#div-nav { flex: 1; min-width: 0; }
-#div-nav nav { display: flex; flex-wrap: wrap; gap: 16px; }
-#div-nome-usuario { overflow-wrap: anywhere; min-width: 0; }
-#div-usuario { display: flex; align-items: center; }
-#div-usuario a { display: flex; }
-#div-usuario img { width: 40px; height: 40px; object-fit: contain; }
-#form-logout { display: flex; align-items: center; }
+#div-nome-sistema {
+    flex-shrink: 0;
+}
+
+#div-nome-sistema a {
+    color: inherit;
+    text-decoration: none;
+}
+
+#div-nav {
+    flex: 1;
+    min-width: 0;
+}
+
+#div-nav nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+#div-nome-usuario {
+    overflow-wrap: anywhere;
+    min-width: 0;
+}
+
+#div-usuario {
+    display: flex;
+    align-items: center;
+}
+
+#div-usuario a {
+    display: flex;
+    cursor: pointer;
+}
+
+#div-usuario img {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+}
+
+#form-logout {
+    display: flex;
+    align-items: center;
+}
 
 .loading-overlay {
     display: none;
@@ -232,8 +300,15 @@ button:hover {
     overflow-wrap: anywhere;
 }
 
-.loading-box > * { min-width: 0; max-width: 100%; }
-#div-resultado-overlay { text-align: center; gap: 20px; }
+.loading-box>* {
+    min-width: 0;
+    max-width: 100%;
+}
+
+#div-resultado-overlay {
+    text-align: center;
+    gap: 20px;
+}
 
 .spinning-wheel {
     flex-shrink: 0;
@@ -247,17 +322,46 @@ button:hover {
 }
 
 @keyframes spin {
-    to { transform: rotate(360deg); }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
-.cartao-erro { text-align: center; }
-.cartao-erro p { margin: 16px 0; }
+.cartao-erro {
+    text-align: center;
+}
+
+.cartao-erro p {
+    margin: 16px 0;
+}
 
 @media (max-width: 600px) {
-    .container, #container-conteudo { padding: 16px; }
-    .cartao, .loading-box { padding: 24px; }
-    #div-superior { padding: 12px 16px; gap: 12px; }
-    #div-nav { flex-basis: 100%; order: 1; }
-    #div-nav:has(nav:empty) { display: none; }
-    #div-nome-usuario { flex: 1; }
+
+    .container,
+    #container-conteudo {
+        padding: 16px;
+    }
+
+    .cartao,
+    .loading-box {
+        padding: 24px;
+    }
+
+    #div-superior {
+        padding: 12px 16px;
+        gap: 12px;
+    }
+
+    #div-nav {
+        flex-basis: 100%;
+        order: 1;
+    }
+
+    #div-nav:has(nav:empty) {
+        display: none;
+    }
+
+    #div-nome-usuario {
+        flex: 1;
+    }
 }
