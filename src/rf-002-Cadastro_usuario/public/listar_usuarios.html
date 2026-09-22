@@ -1,12 +1,102 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-br">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gerir cadastro</title>
     <link rel="stylesheet" href="/template.css">
+    <style>
+        #div-form-tabela,
+        #div-tabela {
+            background-color: var(--superficie);
+            border-radius: 12px;
+            box-shadow: var(--sombra);
+        }
+
+        #div-form-tabela,
+        #div-tabela {
+            width: calc(100% - 20px);
+            max-width: 1800px;
+            margin: 24px auto 0;
+            padding: 24px;
+        }
+
+        #form-listar-usuarios {
+            display: flex;
+            align-items: flex-end;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        #form-listar-usuarios label {
+            flex: 1 1 240px;
+        }
+
+        #form-listar-usuarios label input {
+            margin-top: 5px;
+        }
+
+        #div-tabela {
+            overflow-x: auto;
+            margin-bottom: 24px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.83rem;
+            letter-spacing: 0.01em;
+            table-layout: fixed;
+        }
+
+        thead tr {
+            border-bottom: 2px solid #111;
+        }
+
+        th {
+            padding: 0.6rem 1px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #444;
+        }
+
+        #th-opcoes {
+            text-align: center;
+        }
+
+        td {
+            padding: 0.6rem 0.5px;
+            border-bottom: 1px solid #e8e8e8;
+            color: #111;
+            max-width: 150px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        td:last-of-type {
+            text-align: center;
+        }
+
+        tbody tr:hover {
+            background-color: #f7f7f7;
+        }
+
+        @media (max-width: 600px) {
+
+            #div-form-tabela,
+            #div-tabela {
+                width: calc(100% - 32px);
+                padding: 16px;
+            }
+        }
+    </style>
 </head>
+
 <body>
     <div class="loading-overlay" id="loading-overlay">
         <div class="loading-box">
@@ -23,10 +113,9 @@
     </div>
     <div id="container">
         <div id="div-superior">
-            <div id="div-superior">
 
             <div id="div-nome-sistema">
-                <a href="/tela-principal">
+                <a href="/tela-admin">
                     <h1>CashLand</h1>
                 </a>
             </div>
@@ -47,7 +136,7 @@
                     <input type="submit" value="Sair">
                 </form>
             </div>
-        </div>
+
         </div>
         <div id="div-form-tabela">
             <form id="form-listar-usuarios">
@@ -69,7 +158,7 @@
                         <th scope="col" style="width: 150px;">status</th>
                         <th scope="col" style="width: 150px;">data criação</th>
                         <th scope="col" style="width: 80px;">data desativação</th>
-                        <th scope="col" style="width: 80px;">Opções</th>
+                        <th id="th-opcoes" scope="col" style="width: 80px;">Opções</th>
                     </tr>
 
                 </thead>
@@ -79,7 +168,6 @@
             </table>
         </div>
     </div>
-
 
     <script>
         let retornarLogin = false;
@@ -133,7 +221,7 @@
         function confirmarDelete(id) {
             resultado_overlay.style.display = "flex";
             document.getElementById("resultado-funcao").innerHTML =
-                    `<div id="div-resultado-overlay"
+                `<div id="div-resultado-overlay"
                     style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 20px;">
                     <div>
                         <h5 style="color: rgb(160, 2, 2); margin: 0;">Tem certeza que deseja deletar esse usuario?</h5>
@@ -251,7 +339,7 @@
                         <td>${c.data_criacao ? new Date(c.data_criacao).toLocaleDateString('pt-BR') : '---'}</td>
                         <td>${c.data_inativacao ? new Date(c.data_inativacao).toLocaleDateString('pt-BR') : '---'}</td>
                         <td>
-                            <button onclick="editar(${c.id_usuario})">Ver/Editar</button>
+                            <button onclick="editar(${c.id_usuario})">Editar</button>
                         <br>
                             <button onclick="confirmarDelete(${c.id_usuario})">Excluir</button>
                         </td>

@@ -5,142 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login</title>
+    <link rel="stylesheet" href="/template.css">
 </head>
-<style>
-    * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-        font-family: Arial, sans-serif;
-    }
-
-    .container {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        height: 100vh;
-        background-color: #cadaf2;
-    }
-
-    #div-Login {
-        background-color: #ffffff;
-        border-radius: 12px;
-        padding: 40px;
-        width: 320px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    }
-
-    #div-Login form {
-        display: flex;
-        flex-direction: column;
-        gap: 5px;
-    }
-
-    #div-Login label {
-        font-weight: bold;
-        margin-bottom: 5px;
-        display: block;
-    }
-
-    #div-Login input {
-        width: 100%;
-        padding: 10px;
-        border: 1px solid #ccc;
-        border-radius: 8px;
-        font-size: 14px;
-    }
-
-    #div-Login input:focus {
-        outline: none;
-        border-color: #4a90d9;
-        box-shadow: 0 0 0 2px rgba(74, 144, 217, 0.2);
-    }
-
-    .loading-overlay {
-        display: none;
-
-        position: fixed;
-        top: 0;
-        left: 0;
-
-        width: 100vw;
-        height: 100vh;
-
-        background-color: rgba(0, 0, 0, 0.5);
-
-        z-index: 9999;
-
-        justify-content: center;
-        align-items: center;
-    }
-
-    .loading-box {
-        display: flex;
-        justify-content: center;
-        background-color: #ffffff;
-        border-radius: 12px;
-        padding: 50px;
-        width: 400px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        font-size: 20px;
-
-        input {
-            height: 40px;
-            width: 400px;
-            padding: 5px;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-        }
-    }
-
-    .spinning-wheel {
-        /* Create a perfect circle */
-        width: 30px;
-        height: 30px;
-        border-radius: 50%;
-
-        /* Create the wheel track (light gray) and the spinning indicator (blue) */
-        border: 4px solid #f3f3f3;
-        border-top: 4px solid #000000;
-
-        /* Link to the animation: 1 second duration, smooth linear pace, loops forever */
-        animation: spin 1s linear infinite;
-
-        margin-left: 20px;
-    }
-
-    @keyframes spin {
-        from {
-            transform: rotate(0deg);
-        }
-
-        to {
-            transform: rotate(360deg);
-        }
-    }
-
-    .campo-senha {
-        position: relative;
-        display: inline-block;
-    }
-
-    .campo-senha input {
-        padding-right: 40px;
-    }
-
-    .campo-senha button {
-        position: absolute;
-        right: 8px;
-        top: 50%;
-        transform: translateY(-50%);
-
-        border: none;
-        background: none;
-        cursor: pointer;
-        font-size: 18px;
-    }
-</style>
-
 <body>
     <div class="loading-overlay" id="loading-overlay">
         <div class="loading-box">
@@ -157,7 +23,7 @@
     </div>
 
     <div class="container">
-        <div id="div-Login">
+        <div id="div-Login" class="cartao">
             <div id="id-Titulo">
                 <h1>CashLand</h1>
             </div>

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-br">
 
 <head>
     <meta charset="UTF-8">
@@ -7,121 +7,6 @@
     <title>Editar usuario</title>
     <link rel="stylesheet" href="/template.css">
 </head>
-<style>
-    #container-conteudo {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        height: 100vh;
-        background-color: #cadaf2;
-        border: 2px solid black;
-    }
-
-    #div-Cadastro {
-        /* border: 2px solid black; */
-        background-color: #ffffff;
-        border-radius: 12px;
-        padding: 50px;
-        width: 420px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    }
-
-    #div-Cadastro form {
-        display: flex;
-        flex-direction: column;
-        gap: 5px;
-        /* border: 2px solid black; */
-    }
-
-    .input-dados label {
-        font-weight: bold;
-        margin-bottom: 5px;
-        display: block;
-        /* border: 2px solid green; */
-    }
-
-
-    .input-dados {
-        display: flex;
-        align-items: center;
-        gap: 5px;
-
-        input {
-            height: 40px;
-            width: 400px;
-            padding: 5px;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-        }
-
-    }
-
-    #id-Titulo {
-        display: inline-flex;
-        /* border: 2px solid black; */
-        width: 100%;
-        padding-bottom: 20px;
-    }
-
-    #botao-Voltar {
-        width: 100px;
-        height: 20px;
-        margin-left: 30px;
-        border: 1px solid #ccc;
-        border-radius: 8px;
-        justify-content: center;
-    }
-
-    #input-submit {
-        display: flex;
-        justify-content: center;
-        gap: 10px;
-
-        /* border: 2px solid black; */
-        input {
-            height: 50px;
-            width: 100px;
-            margin-top: 12px;
-            padding: 5px;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-        }
-    }
-
-
-    #campo-senha {
-        position: relative;
-        display: inline-block;
-        flex: 1;
-        min-width: 0;
-    }
-
-    #campo-senha input {
-        width: 100%;
-        padding-right: 40px;
-    }
-
-    #campo-senha button {
-        position: absolute;
-        right: 8px;
-        top: 50%;
-        transform: translateY(-50%);
-
-        /* background-color: #2563eb; */
-        color: rgb(0, 0, 0);
-        border: 1px solid #ccc;
-        border-radius: 6px;
-        padding: 6px 10px;
-        cursor: pointer;
-        font-size: 13px;
-        font-family: Arial, sans-serif;
-
-        height: 30px;
-        width: fit-content;
-        border-radius: 8px;
-    }
-</style>
-
 <body>
     <div class="loading-overlay" id="loading-overlay">
         <div class="loading-box">
@@ -138,10 +23,9 @@
     </div>
     <div class="loading-overlay" id="confirmar-senha-overlay">
     </div>
-    </div>
     <div id="container">
         <div id="div-superior">
-            <div id="div-nome-usuario">
+            <div id="div-nome-sistema">
                 <div>
                     <a href="/tela-admin">
                         <h1>CashLand</h1>
@@ -154,7 +38,7 @@
                     <!-- <a href="/Usuarios">Usuarios</a> -->
                 </nav>
             </div>
-            <div>
+            <div id="div-nome-usuario">
                 <h3><span id="nome-usuario"></span></h3>
             </div>
             <div id="div-usuario">
@@ -168,7 +52,7 @@
         </div>
 
         <div id="container-conteudo">
-            <div id="div-Cadastro">
+            <div id="div-Cadastro" class="cartao">
                 <form id="meuForm-editar-cadastro">
                     <div id="id-Titulo">
                         <h2>Atualizar dados</h2>
@@ -189,8 +73,8 @@
 
                     <div class="input-dados">
                         <label for="senha">Senha </label><br>
-                        <div id="campo-senha">
-                            <input style="background-color: #c4c4c4;" type="text" name="senha" id="senha"
+                        <div id="campo-senha" class="campo-senha campo-senha-reset">
+                            <input type="text" name="senha" id="senha"
                                 value="•••••••••••" disabled>
                             <button type="button" onclick="confirmarResetSenha()">Resetar senha</button>
                         </div>
@@ -198,18 +82,18 @@
 
                     <div class="input-dados">
                         <label for="Email">Status: </label><br>
-                        <input style="background-color: #c4c4c4; color: rgb(0, 0, 0);" type="text" name="status"
+                        <input type="text" name="status"
                             id="status" disabled>
                     </div>
 
                     <div class="input-dados">
                         <label for="data-criacao">data criacao: </label><br>
-                        <input style="background-color: #c4c4c4; color: rgb(0, 0, 0);" type="text" name="data-criacao"
+                        <input type="text" name="data-criacao"
                             id="data-criacao" disabled>
                     </div>
                     <div class="input-dados">
                         <label for="data-inativacao">data inativação: </label><br>
-                        <input style="background-color: #c4c4c4; color: rgb(0, 0, 0);" type="text"
+                        <input type="text"
                             name="data-inativacao" id="data-inativacao" disabled>
                     </div>
 

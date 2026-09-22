@@ -1,144 +1,263 @@
-    * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-        font-family: Arial, sans-serif;
-    }
+:root {
+    --fundo: #cadaf2;
+    --superficie: #ffffff;
+    --borda: #ccc;
+    --foco: #4a90d9;
+    --sombra: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
 
-    .loading-overlay {
-        display: none;
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+}
 
-        position: fixed;
-        top: 0;
-        left: 0;
+body {
+    background-color: var(--fundo);
+    color: #222;
+    min-height: 100vh;
+    line-height: 1.5;
+}
 
-        width: 100vw;
-        height: 100vh;
+.container,
+#container-conteudo {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 24px;
+    min-width: 0;
+}
 
-        background-color: rgba(0, 0, 0, 0.5);
+.container,
+#container {
+    min-height: 100vh;
+}
 
-        z-index: 9999;
+#container {
+    display: flex;
+    flex-direction: column;
+}
 
-        justify-content: center;
-        align-items: center;
-    }
+#container-conteudo {
+    flex: 1;
+}
 
-    .loading-box {
-        display: flex;
-        justify-content: center;
-        background-color: #ffffff;
-        border-radius: 12px;
-        padding: 50px;
-        width: 400px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        font-size: 20px;
+#container-conteudo > div {
+    max-width: 100%;
+}
 
-        input {
-            height: 40px;
-            width: 400px;
-            padding: 5px;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-        }
-    }
+.cartao,
+.loading-box {
+    background-color: var(--superficie);
+    border-radius: 12px;
+    box-shadow: var(--sombra);
+}
 
-    .spinning-wheel {
-        /* Create a perfect circle */
-        width: 30px;
-        height: 30px;
-        border-radius: 50%;
+.cartao {
+    padding: 40px;
+    width: 420px;
+    max-width: 100%;
+}
 
-        /* Create the wheel track (light gray) and the spinning indicator (blue) */
-        border: 4px solid #f3f3f3;
-        border-top: 4px solid #000000;
+.cartao form {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
 
-        /* Link to the animation: 1 second duration, smooth linear pace, loops forever */
-        animation: spin 1s linear infinite;
+#id-Titulo {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 20px;
+}
 
-        margin-left: 20px;
-    }
+h1 { font-size: 32px; }
+h2 { font-size: 24px; }
+h3 { font-size: 18px; }
 
-    @keyframes spin {
-        from {
-            transform: rotate(0deg);
-        }
+a { color: #285f9d; }
+a:hover { color: #1b426e; }
 
-        to {
-            transform: rotate(360deg);
-        }
-    }
+label {
+    display: block;
+    font-weight: bold;
+}
 
-    #div-superior {
-        background-color: #4a6b9fc5;
-        border: 2px solid black;
-        display: flex;
-        flex-direction: row;
-        justify-content: center;
-        align-items: center;
-        width: 100vw;
-        height: 50px;
+.input-dados {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 5px;
+}
 
+.cartao form br { display: none; }
 
-        div {
-            /* border: 2px solid rgb(99, 147, 93); */
-        }
-    }
+input,
+button,
+select {
+    min-width: 0;
+    max-width: 100%;
+    padding: 10px;
+    border: 1px solid var(--borda);
+    border-radius: 8px;
+    font-size: 14px;
+    color: inherit;
+}
 
-    #div-nome-sistema {
-        width: 200px;
-    }
+input:not([type="submit"]):not([type="button"]),
+select {
+    width: 100%;
+    background-color: var(--superficie);
+}
 
-    #div-nome-usuario {
-        display: flex;
-        justify-content: left;
-        align-items: center;
-        width: fit-content;
-        width: 100px;
-        height: 100%;
-        gap: 40px;
-    }
+input:disabled {
+    background-color: #eee !important;
+    color: #555;
+}
 
-    #div-nav {
-        width: 1200px;
-        height: 100%
-    }
+input:focus,
+button:focus-visible,
+select:focus,
+a:focus-visible {
+    outline: 2px solid var(--foco);
+    outline-offset: 2px;
+    border-color: var(--foco);
+    box-shadow: 0 0 0 2px rgba(74, 144, 217, 0.2);
+}
 
-    #form-logout {
-        width: 100px;
-        height: 100%;
-        display: flex;
-        justify-content: flex-end;
-        padding-top: 2px;
-        padding-right: 10px;
+input[type="submit"],
+input[type="button"],
+button {
+    background-color: #f3f3f3;
+    cursor: pointer;
+}
 
-        input {
-            height: 40px;
-            width: 60px;
-            border-radius: 10px;
-        }
-    }
+input[type="submit"]:hover,
+input[type="button"]:hover,
+button:hover {
+    background-color: #e4edf9;
+}
 
-    #div-usuario {
-        display: flex;
-        align-items: center;
-        gap: 10px;
+#botao-Voltar { padding: 6px 12px; }
 
-        a {
-            cursor: pointer;
-        }
-    }
+#input-submit {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 12px;
+}
 
-    #div-usuario img {
-        width: 45px;
-        height: 45px;
-        object-fit: contain;
-    }
+#input-submit input { min-width: 100px; }
 
-    #container-conteudo {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        height: 100vh;
-        background-color: #cadaf2;
-        border: 2px solid black;
-    }
+.campo-senha {
+    position: relative;
+    width: 100%;
+    min-width: 0;
+}
+
+.campo-senha input { padding-right: 44px; }
+
+.campo-senha button {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    border: none;
+    background: none;
+    padding: 2px;
+    font-size: 18px;
+}
+
+.campo-senha-reset input { padding-right: 124px; }
+
+.campo-senha-reset button {
+    border: 1px solid var(--borda);
+    background-color: #f3f3f3;
+    padding: 5px 8px;
+    font-size: 13px;
+}
+
+/* Os erros são inseridos pelos scripts com margens próprias. */
+[id^="erro-"] h5 {
+    margin-left: 0 !important;
+    overflow-wrap: anywhere;
+}
+
+#div-superior {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+    width: 100%;
+    padding: 12px 24px;
+    background-color: var(--superficie);
+    box-shadow: var(--sombra);
+}
+
+#div-nome-sistema { flex-shrink: 0; }
+#div-nome-sistema a { color: inherit; text-decoration: none; }
+#div-nav { flex: 1; min-width: 0; }
+#div-nav nav { display: flex; flex-wrap: wrap; gap: 16px; }
+#div-nome-usuario { overflow-wrap: anywhere; min-width: 0; }
+#div-usuario { display: flex; align-items: center; }
+#div-usuario a { display: flex; }
+#div-usuario img { width: 40px; height: 40px; object-fit: contain; }
+#form-logout { display: flex; align-items: center; }
+
+.loading-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    padding: 20px;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 9999;
+    justify-content: center;
+    align-items: center;
+}
+
+.loading-box {
+    display: flex;
+    justify-content: center;
+    padding: 40px;
+    width: 400px;
+    max-width: 100%;
+    max-height: calc(100dvh - 40px);
+    overflow: auto;
+    font-size: 20px;
+    overflow-wrap: anywhere;
+}
+
+.loading-box > * { min-width: 0; max-width: 100%; }
+#div-resultado-overlay { text-align: center; gap: 20px; }
+
+.spinning-wheel {
+    flex-shrink: 0;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: 4px solid #f3f3f3;
+    border-top-color: #000;
+    animation: spin 1s linear infinite;
+    margin-left: 20px;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.cartao-erro { text-align: center; }
+.cartao-erro p { margin: 16px 0; }
+
+@media (max-width: 600px) {
+    .container, #container-conteudo { padding: 16px; }
+    .cartao, .loading-box { padding: 24px; }
+    #div-superior { padding: 12px 16px; gap: 12px; }
+    #div-nav { flex-basis: 100%; order: 1; }
+    #div-nav:has(nav:empty) { display: none; }
+    #div-nome-usuario { flex: 1; }
+}
