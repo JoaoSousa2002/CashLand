@@ -361,18 +361,6 @@
                         default:
                             break;
                     }
-                    // if (response.status === 200) {
-                    //     document.getElementById("meuForm-confirmar-reset").reset();
-                    //     MostrarErro("erro-codigo", "");
-                    //     MostrarErro("erro-senha", "");
-                    //     solicitacaoCodigo_overlay.style.display = "flex";
-                    // } else {
-                    //     if (resultado && resultado.mensagem) {
-                    //         MostrarResultado_Overlay(2, resultado.mensagem);
-                    //     } else {
-                    //         MostrarResultado_Overlay(2, "Erro ao solicitar código. Tente novamente.");
-                    //     }
-                    // }
                 } catch (error) {
                     MostrarResultado_Overlay(2, "Ocorreu um erro, por favor tente mais tarde");
                 } finally {
@@ -417,43 +405,16 @@
                             console.log(resultado.mensagem)
                             break;
                         case 400:
-                            reabrirJanelaCodigo = true;
-                            resultado_overlay.style.display = "flex";
-                            MostrarResultado_Overlay(2, resultado.mensagem)
-                            console.log(resultado.mensage)
                         case 404:
-                            reabrirJanelaCodigo = true;
-                            resultado_overlay.style.display = "flex";
-                            MostrarResultado_Overlay(2, resultado.mensagem)
-                            console.log(resultado.mensage)
                         case 429:
-                            reabrirJanelaCodigo = true;
-                            resultado_overlay.style.display = "flex";
-                            MostrarResultado_Overlay(2, resultado.mensagem)
-                            console.log(resultado.mensagem)
                         case 500:
                             reabrirJanelaCodigo = true;
                             resultado_overlay.style.display = "flex";
                             MostrarResultado_Overlay(2, resultado.mensagem)
-                            console.log(resultado.mensage)
+                            console.log(resultado.mensagem)
                         default:
                             break;
                     }
-                    // if (response.status === 200) {
-                    //     retonarLogin = true;
-                    //     if (resultado && resultado.mensagem) {
-                    //         MostrarResultado_Overlay(1, resultado.mensagem);
-                    //     } else {
-                    //         MostrarResultado_Overlay(1, "Senha alterada com sucesso!");
-                    //     }
-                    // } else {
-                    //     reabrirJanelaCodigo = true;
-                    //     if (resultado && resultado.mensagem) {
-                    //         MostrarResultado_Overlay(2, resultado.mensagem);
-                    //     } else {
-                    //         MostrarResultado_Overlay(2, "Erro ao alterar senha. Tente novamente.");
-                    //     }
-                    // }
                 } catch (error) {
                     reabrirJanelaCodigo = true;
                     MostrarResultado_Overlay(2, "Ocorreu um erro, por favor tente mais tarde");

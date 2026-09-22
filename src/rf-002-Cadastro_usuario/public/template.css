@@ -1,0 +1,144 @@
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: Arial, sans-serif;
+    }
+
+    .loading-overlay {
+        display: none;
+
+        position: fixed;
+        top: 0;
+        left: 0;
+
+        width: 100vw;
+        height: 100vh;
+
+        background-color: rgba(0, 0, 0, 0.5);
+
+        z-index: 9999;
+
+        justify-content: center;
+        align-items: center;
+    }
+
+    .loading-box {
+        display: flex;
+        justify-content: center;
+        background-color: #ffffff;
+        border-radius: 12px;
+        padding: 50px;
+        width: 400px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        font-size: 20px;
+
+        input {
+            height: 40px;
+            width: 400px;
+            padding: 5px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+        }
+    }
+
+    .spinning-wheel {
+        /* Create a perfect circle */
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+
+        /* Create the wheel track (light gray) and the spinning indicator (blue) */
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #000000;
+
+        /* Link to the animation: 1 second duration, smooth linear pace, loops forever */
+        animation: spin 1s linear infinite;
+
+        margin-left: 20px;
+    }
+
+    @keyframes spin {
+        from {
+            transform: rotate(0deg);
+        }
+
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    #div-superior {
+        background-color: #4a6b9fc5;
+        border: 2px solid black;
+        display: flex;
+        flex-direction: row;
+        justify-content: center;
+        align-items: center;
+        width: 100vw;
+        height: 50px;
+
+
+        div {
+            /* border: 2px solid rgb(99, 147, 93); */
+        }
+    }
+
+    #div-nome-sistema {
+        width: 200px;
+    }
+
+    #div-nome-usuario {
+        display: flex;
+        justify-content: left;
+        align-items: center;
+        width: fit-content;
+        width: 100px;
+        height: 100%;
+        gap: 40px;
+    }
+
+    #div-nav {
+        width: 1200px;
+        height: 100%
+    }
+
+    #form-logout {
+        width: 100px;
+        height: 100%;
+        display: flex;
+        justify-content: flex-end;
+        padding-top: 2px;
+        padding-right: 10px;
+
+        input {
+            height: 40px;
+            width: 60px;
+            border-radius: 10px;
+        }
+    }
+
+    #div-usuario {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+
+        a {
+            cursor: pointer;
+        }
+    }
+
+    #div-usuario img {
+        width: 45px;
+        height: 45px;
+        object-fit: contain;
+    }
+
+    #container-conteudo {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        background-color: #cadaf2;
+        border: 2px solid black;
+    }

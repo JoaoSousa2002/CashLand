@@ -181,6 +181,7 @@
     </div>
     <script>
         let liberarAcesso = false;
+        let resetSolicitado = false;
         const loading = document.getElementById("loading-overlay");
         const resultado_overlay = document.getElementById("resultado-overlay");
         function MostrarErro(id, mensagem) {
@@ -217,7 +218,12 @@
                 console.log("Acesso liberado")
                 window.location.href = localStorage.getItem('tipo') === 'Admin' ? '/tela-admin' : '/tela-principal';
                 resultado_overlay.style.display = "none"
-            } else {
+            } else if (resetSolicitado) {
+                resetSolicitado = false;
+                resultado_overlay.style.display = "none"
+                window.location.href = '/resetar-senha'
+            }
+            else {
                 resultado_overlay.style.display = "none"
             }
         }
@@ -268,16 +274,17 @@
                         MostrarResultado_Overlay(1, resultado.mensagem)
                         console.log(resultado.mensagem)
 
-                        localStorage.setItem('tipo', resultado.usuario.tipo); // só o tipo, pra decidir UI — o token não passa mais por aqui
+                        localStorage.setItem('tipo', resultado.usuario.tipo);
                         liberarAcesso = true;
                         break;
-
-                    // ERROS:
-                    case 401:
+                    case 203:
                         resultado_overlay.style.display = "flex";
                         MostrarResultado_Overlay(0, resultado.mensagem)
                         console.log(resultado.mensagem)
-                        break;
+                        resetSolicitado = true;
+                    // ERROS:
+                    case 401:
+                    case 403:
                     case 429:
                         resultado_overlay.style.display = "flex";
                         MostrarResultado_Overlay(0, resultado.mensagem)

@@ -4,113 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Admin</title>
+    <link rel="stylesheet" href="/template.css">
 </head>
-<style>
-    * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-        font-family: Arial, sans-serif;
-    }
-
-    .loading-overlay {
-        display: none;
-
-        position: fixed;
-        top: 0;
-        left: 0;
-
-        width: 100vw;
-        height: 100vh;
-
-        background-color: rgba(0, 0, 0, 0.5);
-
-        z-index: 9999;
-
-        justify-content: center;
-        align-items: center;
-    }
-
-    .loading-box {
-        display: flex;
-        justify-content: center;
-        background-color: #ffffff;
-        border-radius: 12px;
-        padding: 50px;
-        width: 400px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        font-size: 20px;
-
-        input {
-            height: 40px;
-            width: 400px;
-            padding: 5px;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-        }
-    }
-
-    .spinning-wheel {
-        /* Create a perfect circle */
-        width: 30px;
-        height: 30px;
-        border-radius: 50%;
-
-        /* Create the wheel track (light gray) and the spinning indicator (blue) */
-        border: 4px solid #f3f3f3;
-        border-top: 4px solid #000000;
-
-        /* Link to the animation: 1 second duration, smooth linear pace, loops forever */
-        animation: spin 1s linear infinite;
-
-        margin-left: 20px;
-    }
-
-    @keyframes spin {
-        from {
-            transform: rotate(0deg);
-        }
-
-        to {
-            transform: rotate(360deg);
-        }
-    }
-
-    #div-superior {
-        border: 2px solid black;
-        display: flex;
-        flex-direction: row;
-        justify-content: center;
-        align-items: center;
-        width: 100vw;
-        height: 100px;
-
-
-        div {
-            border: 2px solid rgb(255, 0, 0);
-        }
-    }
-
-    #div-nome-usuario {
-        display: flex;
-        justify-content: left;
-        align-items: center;
-        width: fit-content;
-        width: 700px;
-        height: 100%
-    }
-
-    #div-nav {
-        width: 500px;
-        height: 100%
-    }
-
-    #form-logout {
-        width: 200px;
-        height: 100%
-    }
-</style>
 
 <body>
     <div class="loading-overlay" id="loading-overlay">
@@ -128,21 +24,33 @@
     </div>
     <div id="container">
         <div id="div-superior">
-            <div id="div-nome-usuario">
-                <div>
-                    <h1>Olá, <span id="nome-usuario"></span><span style="color: red; font-size: 15px;">(admin)</span>
-                    </h1>
-                </div>
+            <div id="div-superior">
+
+                <div id="div-superior">
+
+            <div id="div-nome-sistema">
+                <a href="/tela-principal">
+                    <h1>CashLand</h1>
+                </a>
             </div>
+
             <div id="div-nav">
                 <nav>
-                    <a href="/tela-admin/listar-usuarios">Usuarios</a>
+                    <!-- <a href="/Usuarios">Usuarios</a> -->
                 </nav>
+            </div>
+            <div id="div-nome-usuario">
+                <h3><span id="nome-usuario"></span></h3>
+            </div>
+            <div id="div-usuario">
+                <img src="/User_icon_black.png" alt="icone usuario">
             </div>
             <div id="form-logout">
                 <form id="meuForm-Logout">
-                    <input type="submit" value="Log out">
+                    <input type="submit" value="Sair">
                 </form>
+            </div>
+        </div>
             </div>
 
 
@@ -156,6 +64,8 @@
         let retonarTelaPrincipal = false;
         const loading = document.getElementById("loading-overlay");
         const resultado_overlay = document.getElementById("resultado-overlay");
+
+        loading.style.display = 'flex'
 
         function MostrarResultado_Overlay(tipo, mensagem) {
             if (tipo == 1) {
@@ -189,8 +99,9 @@
             } else if (retonarTelaPrincipal) {
                 window.location.href = '/tela-principal';
             }
+
         }
-       
+
         async function protegerPagina(tipoExigido = null) {
 
             try {
@@ -202,8 +113,10 @@
                 switch (resposta.status) {
                     case 200:
                         console.log("Usuario autenticado")
+                        loading.style.display = 'none'
                         break;
                     case 401:
+                        loading.style.display = 'none'
                         resultado_overlay.style.display = "flex";
                         MostrarResultado_Overlay(0, usuario.mensagem)
                         console.log(usuario.mensagem)
@@ -213,6 +126,7 @@
                 }
 
                 if (tipoExigido && usuario.tipo !== tipoExigido) {
+                    loading.style.display = 'none'
                     console.log("Acesso negado")
                     resultado_overlay.style.display = "flex";
                     MostrarResultado_Overlay(0, "Acesso restrito a administradores!")
@@ -227,7 +141,7 @@
         }
 
         protegerPagina("Admin").then(usuario => {
-            document.getElementById('nome-usuario').textContent = usuario.nome;
+            document.getElementById('nome-usuario').textContent = usuario.nome.slice(0, 8);
         });
 
         document.getElementById("meuForm-Logout").addEventListener("submit", async (e) => {
