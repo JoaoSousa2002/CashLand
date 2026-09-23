@@ -1,15 +1,15 @@
 ## 🎯 1. Identificação do Requisito
 
  **ID**: RF-002
- **Título**: Cadastro de Novo Usuário no Sistema |
+ **Título**: Cadastro e Gerenciamento de Usuários
  **Tipo**: Requisito Funcional
  **Prioridade**: ALTA (bloqueia os demais requisitos, exceto o RF-01)
  **Complexidade**: MÉDIA (estimado 5 story points)
  **Data de Criação**: 08/09/2026
- **Última Atualização**: 15/09/2026
+ **Última Atualização**: 23/09/2026
 
 **Breve Descrição:**
-O sistema deve permitir que o usuário crie um novo cadastro informando nome, email e senha. Antes da criação da conta, o sistema envia um código de verificação de 6 dígitos para o email informado. O cadastro só é concluído após a confirmação desse código, e a senha é armazenada de forma criptografada (hash).
+O sistema deve permitir que o usuário crie um novo cadastro informando nome, email e senha. Antes da criação da conta, o sistema envia um código de verificação de 6 dígitos para o email informado. O cadastro só é concluído após a confirmação desse código, e a senha é armazenada como hash bcrypt. Usuários autenticados podem consultar e atualizar o próprio perfil e desativar a conta. Administradores podem listar, pesquisar, editar, desativar, reativar e excluir usuários, além de solicitar redefinição de senha.
 
 ---
 
@@ -27,13 +27,19 @@ O sistema precisa saber quem está logado para mostrar os dados referentes ao us
 
 #### Usuário
 
-- **Papel:** Realizar o cadastro e confirmar o email informado.
+- **Papel:** Realizar o cadastro, confirmar o email e gerenciar o próprio perfil após o login.
 - **Responsabilidade:** Inserir nome, email, senha e o código de 6 dígitos recebido por email.
 - **Permissões:**
   - ❌ CREATE direto no banco (a criação é feita pelo backend)
   - ✅ READ indireto (o backend consulta a tabela `usuarios` para verificar duplicidade do email)
-  - ❌ UPDATE (não pode editar dados de outros)
+  - ✅ UPDATE do próprio nome e desativação da própria conta, por meio do backend
   - ❌ DELETE (não pode deletar)
+
+#### Administrador
+
+- **Papel:** Gerenciar os usuários cadastrados, com sessão autenticada de tipo `Admin`.
+- **Responsabilidade:** Consultar a listagem, pesquisar por nome ou ID, editar nome e email, solicitar reset de senha e administrar a situação das contas.
+- **Permissões:** Leitura, atualização, ativação, desativação e exclusão por operações administrativas. A desativação administrativa não permite desativar a própria conta nem outra conta de tipo `Admin`.
 
 #### Sistema (ator automático)
 
@@ -59,6 +65,8 @@ O sistema precisa saber quem está logado para mostrar os dados referentes ao us
 - ✅ Variáveis de ambiente do Supabase configuradas
 - ✅ `BREVO_API_KEY`, `BREVO_SENDER_NAME` e `BREVO_SENDER_EMAIL` configuradas no servidor
 - ✅ Serviço da Brevo disponível para envio dos emails
+- ✅ Para gerenciar o próprio perfil, sessão válida do RF-001
+- ✅ Para gerenciar outros usuários, JWT com tipo `Admin`
 
 ### Pós-Condições (Sucesso)
 
@@ -201,6 +209,84 @@ O sistema precisa saber quem está logado para mostrar os dados referentes ao us
 1a.3. Usuário retorna à tela de login.
 ```
 
+### Fluxo Alternativo A11: Limite de requisições atingido
+
+A solicitação de código compartilha o limite de 5 requisições por IP em 15 minutos com a solicitação e confirmação de reset de senha e o logout. A confirmação de cadastro utiliza um limitador separado de 5 requisições por IP em 15 minutos. Ao exceder o limite, o servidor retorna HTTP 429 antes de processar a operação.
+
+### Fluxo — Consulta e atualização do próprio perfil
+
+1. Na tela principal, o usuário acessa o ícone do perfil e abre a tela de edição.
+2. O frontend consulta a sessão e carrega `id_usuario`, `nome`, `email`, `status_usuario` e `data_criacao` do usuário autenticado.
+3. O nome pode ser alterado; email, status e data de criação são exibidos como campos desabilitados. A senha é representada por um texto mascarado.
+4. Ao clicar em "Atualizar", a interface solicita a senha atual em um overlay com opções de confirmar, cancelar e mostrar/ocultar senha.
+5. O frontend exige pelo menos 10 caracteres e envia a senha para a operação de confirmação do RF-001.
+6. Após HTTP 200 na confirmação, o frontend envia a alteração de nome. O backend identifica a conta pelo JWT e atualiza o campo `nome`.
+7. A interface exibe o resultado em um overlay.
+
+### Fluxo — Desativação da própria conta
+
+1. O usuário clica em "Desativar conta" e confirma a ação no overlay.
+2. O backend consulta a conta identificada pelo JWT e verifica se ela já está inativa.
+3. Para uma conta ativa, define `status_usuario: 'Inativo'` e registra `data_inativacao` com a data e hora atuais.
+4. A interface apresenta o resultado e orienta o retorno ao login. A reativação fica disponível ao administrador.
+
+### Fluxo — Redefinição da própria senha
+
+1. Na edição do perfil, o usuário clica em "Resetar senha" e confirma a ação.
+2. O frontend solicita logout e abre `/resetar-senha`.
+3. O usuário segue o fluxo de código por email e nova senha descrito no [RF-001](rf-001-Login.md).
+
+### Fluxo — Listagem e pesquisa administrativa
+
+1. Um administrador acessa a opção de usuários na tela administrativa.
+2. A interface verifica a sessão; ao enviar o formulário de pesquisa, solicita a lista de usuários.
+3. O backend aplica autenticação e autorização administrativa, consulta os registros e ordena por `id_usuario` crescente.
+4. A lista mostra ID, nome, email, tipo, status, datas de criação e inativação, além das ações "Editar" e "Excluir".
+5. A pesquisa aceita parte do nome, sem diferenciar maiúsculas e minúsculas. Termos numéricos também são comparados ao ID exato.
+6. Sem pesquisa, a resposta é HTTP 200; com pesquisa, HTTP 201. As respostas da listagem recebem `Cache-Control: no-store`.
+
+### Fluxo — Edição administrativa
+
+1. O administrador seleciona "Editar" na listagem; a tela recebe o ID do usuário selecionado.
+2. A interface carrega nome, email, status, data de criação e data de inativação.
+3. O administrador pode alterar nome e email. Status, datas e representação da senha permanecem desabilitados para digitação.
+4. A interface apresenta validações de nome e email e solicita a senha do administrador autenticado para confirmar a edição.
+5. Após confirmar a senha com sucesso, o frontend envia ID, nome e email; o backend atualiza os campos do usuário selecionado.
+6. A interface mostra o resultado em um overlay.
+
+### Fluxo — Ativação e desativação administrativa
+
+1. O administrador clica em "Ativar/Desativar conta".
+2. A interface consulta a situação do usuário selecionado e apresenta a confirmação correspondente.
+3. Na desativação, o backend exige ID, consulta o usuário e impede a desativação da própria conta do administrador ou de outra conta `Admin`.
+4. Uma conta ativa elegível passa a `Inativo`, com `data_inativacao` preenchida.
+5. Na reativação, uma conta inativa passa a `Ativo`, com `data_inativacao: null`.
+6. A interface mostra a resposta em um overlay.
+
+### Fluxo — Solicitação administrativa de reset de senha
+
+1. O administrador clica em "Resetar senha" no perfil selecionado e confirma a ação.
+2. O backend consulta `status_reset_senha`; se já houver solicitação pendente, retorna HTTP 400.
+3. Caso contrário, define `status_reset_senha: true` e retorna HTTP 200.
+4. No próximo login, o usuário recebe a indicação de reset obrigatório e segue para a recuperação por email.
+5. A confirmação da nova senha no RF-001 atualiza o hash e redefine `status_reset_senha` para `false`.
+
+### Fluxo — Exclusão administrativa
+
+1. O administrador clica em "Excluir" na listagem.
+2. A interface apresenta confirmação com "Continuar" e "Cancelar".
+3. Ao continuar, o frontend envia o ID; o backend valida a sessão e o tipo `Admin`, exige o identificador e executa a exclusão permanente na tabela `usuarios`.
+4. O backend retorna HTTP 200 após sucesso, e a interface recarrega a página após o clique em "Continuar".
+
+### Resultados alternativos do gerenciamento
+
+- Sessão ausente, inválida ou expirada: HTTP 401; acesso administrativo sem tipo `Admin`: HTTP 403.
+- Senha incorreta na confirmação de edição: HTTP 400; a interface permite tentar novamente.
+- Conta já desativada ou já ativa na operação correspondente: HTTP 400.
+- Desativação administrativa sem ID: HTTP 400; usuário não encontrado: HTTP 404; tentativa de desativar a própria conta ou outro administrador: HTTP 403.
+- Exclusão sem ID: HTTP 400; falha na exclusão no banco: HTTP 500.
+- Cancelamento de uma confirmação fecha o overlay sem enviar a operação correspondente.
+
 ### Regras de Negócio (RN)
 
 | ID        | Regra                               | Descrição                                                                                                                                             |
@@ -218,6 +304,15 @@ O sistema precisa saber quem está logado para mostrar os dados referentes ao us
 | **RN-11** | Email de boas-vindas                | Após a criação do usuário, o backend tenta enviar um email de boas-vindas; se o envio falhar, retorna HTTP 201 informando que o usuário já foi criado |
 | **RN-12** | Validação antes do `insert`         | `/confirmar-cadastro` valida os campos obrigatórios e o código antes de executar a criação do usuário                                                 |
 
+### Regras de gerenciamento
+
+- O usuário comum é identificado pelo JWT nas operações sobre o próprio perfil; a atualização altera somente `nome`.
+- Operações administrativas exigem autenticação e tipo `Admin` verificado no backend.
+- As telas de edição solicitam confirmação da senha do usuário que está realizando a operação antes de enviar a atualização.
+- Desativar preserva o registro e preenche `data_inativacao`; reativar limpa essa data; excluir remove o registro permanentemente.
+- O administrador altera nome e email e solicita reset de senha; a nova senha é definida pelo usuário no fluxo de recuperação.
+- A solicitação de reset administrativo é registrada em `status_reset_senha` e encerrada na confirmação da nova senha.
+
 ### Requisitos Não-Funcionais (RNF)
 
 | ID         | Atributo              | Requisito                                                          | Métrica/Verificação                                                    | Justificativa                                                 |
@@ -234,15 +329,11 @@ O sistema precisa saber quem está logado para mostrar os dados referentes ao us
 
 ## 🎨 4. Protótipo Funcional — Mockups das Telas
 
-Mockups textuais baseados na [tela de cadastro implementada](../../src/rf-002-Cadastro_usuario/public/index.html), incluindo a validação local do código de confirmação.
+Mockups textuais baseados na [tela de cadastro implementada](../../src/rf-002-Cadastro_usuario/public/cadastrar_usuario.html), incluindo a validação local do código de confirmação.
 
 ### Estilo visual implementado
 
-- Fundo da página `#cadaf2`; fonte Arial, com título e labels em negrito.
-- Cartão branco de 420px, padding de 50px, cantos de 12px e sombra `0 4px 12px rgba(0, 0, 0, 0.1)`.
-- Campos com altura de 40px, borda de 1px `#ccc` e cantos de 8px; botão “Enviar” de 100 × 50px.
-- Overlays com fundo preto a 50% de opacidade e caixa branca de 400px com padding de 50px. Os botões da janela medem 100 × 40px.
-- Mensagens de erro em `rgb(160, 2, 2)` e de sucesso em `rgb(103, 198, 40)`.
+As telas usam [template.css](../../src/rf-002-Cadastro_usuario/public/template.css), compartilhado com o RF-001: fundo `#cadaf2`, fonte Arial, cartões brancos de 420px com largura máxima de 100%, padding de 40px, bordas de 12px e sombra. Os overlays usam fundo preto a 50% de opacidade e caixas de 400px com padding de 40px e rolagem. Campos desabilitados têm fundo cinza. Erros aparecem em vermelho e sucesso em verde.
 
 ### Mockup - Tela 1: Cadastro inicial
 
@@ -442,9 +533,15 @@ Esse estado corresponde a HTTP 201 de `/confirmar-cadastro`. O frontend o aprese
 - `.input-dados`, `#id-Titulo`, `#botao-Voltar` e `#input-submit`: organização do formulário principal.
 - `.loading-overlay`, `.loading-box` e `.spinning-wheel`: estrutura das janelas e do carregamento.
 
+### Telas de gerenciamento
+
+- [Edição do próprio perfil](../../src/rf-002-Cadastro_usuario/public/editar_usuario.html): cabeçalho com usuário e saída; cartão com nome, email, senha mascarada, status e data de criação; ações de atualizar, resetar senha e desativar conta.
+- [Listagem administrativa](../../src/rf-002-Cadastro_usuario/public/listar_usuarios.html): pesquisa por ID ou nome, dados dos usuários e botões de editar e excluir; confirmação antes da exclusão.
+- [Edição administrativa](../../src/rf-002-Cadastro_usuario/public/ADMIN_editar_usuario.html): nome e email editáveis, dados de situação e datas, solicitação de reset e botão de ativação/desativação; overlay de senha para confirmar a atualização.
+
 ### Responsividade
 
-O cartão principal tem largura fixa de 420px e fica centralizado. As caixas de overlay têm largura de 400px. O CSS atual do cadastro não define media queries para reduzir essas medidas em telas menores.
+Cartões e overlays respeitam a largura disponível. As caixas de overlay têm altura máxima de `calc(100dvh - 40px)` e rolagem. Em telas de até 600px, os cartões e overlays usam padding de 24px, os contêineres usam 16px e o cabeçalho reorganiza a navegação.
 
 ---
 
@@ -455,7 +552,7 @@ O cartão principal tem largura fixa de 420px e fica centralizado. As caixas de 
 ```
 ┌─────────────────────────────────────────┐
 │      Frontend (servido pelo Express)    │
-│  • /cadastro-usuario → index.html       │
+│  • cadastrar_usuario.html              │
 │  • Validação local                      │
 │  • Overlays de loading/resultado/código │
 └───────────────────┬─────────────────────┘
@@ -569,6 +666,30 @@ O cartão principal tem largura fixa de 420px e fica centralizado. As caixas de 
 **Decisão:** Após um `insert` sem erro, o backend tenta enviar o email. Se o envio funcionar, retorna HTTP 200. Se o envio falhar, retorna HTTP 201 com mensagem informando que o usuário foi criado, mas o email não foi enviado.
 
 **Consequências:** O frontend trata os dois retornos como estados em que o usuário já foi criado e permite seguir para `/login`.
+
+### ADR-013: Gerenciamento integrado à sessão do RF-001
+
+**Status:** ACEITO
+
+**Decisão:** Centralizar as operações no [Servidor.js](../../src/rf-001-Login/Servidor.js), reutilizando `autenticar` e `somenteAdmin`. As páginas enviam o cookie com `credentials: 'include'` e consultam `/me` para carregar a sessão.
+
+**Consequências:** Operações do próprio perfil usam a identidade do JWT. Operações administrativas recebem o identificador do usuário a ser gerenciado e verificam o tipo do operador no backend.
+
+### ADR-014: Situação da conta e reset administrativo
+
+**Status:** ACEITO
+
+**Decisão:** Representar ativação por `status_usuario`, registrar a desativação em `data_inativacao` e manter a solicitação de reset em `status_reset_senha`.
+
+**Consequências:** Contas inativas são recusadas no login. A reativação limpa a data de inativação. O reset administrativo direciona o usuário à recuperação de senha no próximo login.
+
+### ADR-015: CSS compartilhado e controle de requisições
+
+**Status:** ACEITO
+
+**Decisão:** Reutilizar `template.css` nas telas de autenticação e usuários e aplicar `express-rate-limit` à solicitação de código e à confirmação do cadastro.
+
+**Consequências:** As páginas compartilham estilos e adaptação para telas menores; requisições acima dos limites configurados recebem HTTP 429.
 
 ### Tecnologias Escolhidas
 

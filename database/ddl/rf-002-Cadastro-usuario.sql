@@ -1,16 +1,22 @@
-drop table usuarios;
-
-create table usuarios (
-  id_usuario int generated always as identity primary key,
-  nome varchar(150) not null,
-  email varchar(150) not null unique,
-  senha_hash varchar(255) not null,
-  tipo varchar(10) not null default 'Comum' check (tipo in ('Comum', 'Admin')),
-  status_usuario varchar(10) not null default 'Ativo' check (status_usuario in ('Ativo', 'Inativo')),
-  data_criacao timestamptz not null default now(),
-  data_inativacao timestamptz
-);
-
-alter table usuarios
-add column status_reset_senha boolean not null default false;
-
+create table public.codigos_verificacao (
+  id uuid not null default gen_random_uuid (),
+  email character varying(150) not null,
+  codigo_hash text not null,
+  finalidade character varying(30) not null,
+  criado_em timestamp with time zone not null default now(),
+  expira_em timestamp with time zone not null default (now() + '00:10:00'::interval),
+  constraint codigos_verificacao_pkey primary key (id),
+  constraint codigo_unico_por_finalidade unique (email, finalidade),
+  constraint finalidade_valida check (
+    (
+      (finalidade)::text = any (
+        (
+          array[
+            'cadastro'::character varying,
+            'recuperacao_senha'::character varying
+          ]
+        )::text[]
+      )
+    )
+  )
+) TABLESPACE pg_default;

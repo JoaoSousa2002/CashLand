@@ -1,13 +1,13 @@
 ## 🎯 1. IDENTIFICAÇÃO DO REQUISITO
 
 **ID:** RF-001  
-**Título:** Sistema de Login e Recuperação de Senha  
+**Título:** Sistema de Login, Sessão e Recuperação de Senha<br>
 **Tipo:** Requisito Funcional  
 **Prioridade:** ALTA (É necessário estar autenticado para acessar o sistema e realizar operações vinculadas ao usuário)  
 **Complexidade:** MÉDIA (estimado 5 story points)  
 **Status:** Finalizado  
 **Data de Criação:** 06/09/2026  
-**Última Atualização:** 15/09/2026
+**Última Atualização:** 23/09/2026
 
 **Breve Descrição:**  
 O sistema deve permitir a autenticação de usuários cadastrados por email e senha, além de possibilitar a redefinição da senha por meio de um código de verificação enviado ao email cadastrado.
@@ -62,7 +62,7 @@ Também é necessário disponibilizar um fluxo de recuperação de senha para qu
   - Validar validade e correspondência do código.
   - Gerar o hash da nova senha.
   - Atualizar `senha_hash` no banco após validação.
-  - Controlar tentativas de recuperação por email.
+  - Controlar requisições por IP, emitir e validar JWT e verificar permissões de administrador.
 - **Permissões:**
   - ✅ Operações necessárias sobre a tabela `usuarios`, executadas pelo backend.
 
@@ -93,15 +93,16 @@ Também é necessário disponibilizar um fluxo de recuperação de senha para qu
 
 #### Login
 
-- ✅ Usuário autenticado.
-- ✅ API retorna os dados básicos `id` e `nome` do usuário.
+- ✅ Usuário autenticado, com JWT em cookie `token` válido por 2 horas.
+- ✅ Navegação para a tela administrativa ou principal conforme o tipo de usuário.
+- ✅ API retorna os dados básicos `id`, `nome` e `tipo` do usuário.
 
 #### Recuperação de senha
 
 - ✅ Código de recuperação enviado ao email cadastrado.
 - ✅ Código validado antes da alteração da senha.
 - ✅ Nova senha convertida em hash bcrypt.
-- ✅ Campo `senha_hash` atualizado na tabela `usuarios`.
+- ✅ Campos `senha_hash` e `status_reset_senha` atualizados na tabela `usuarios`; a solicitação administrativa de reset é encerrada.
 - ✅ Senha anterior deixa de ser válida após a atualização.
 - ✅ Usuário pode retornar à tela de login e utilizar a nova senha.
 
@@ -119,21 +120,37 @@ Também é necessário disponibilizar um fluxo de recuperação de senha para qu
 
 ### Fluxo Principal — Login
 
-1. Usuário acessa `/login`.
-2. Usuário insere o email no campo "Email".
-3. Usuário insere a senha no campo "Senha".
-4. Usuário pode alternar a visualização da senha pelo botão com ícone de olho.
-5. Usuário aperta o botão "Enviar".
-6. Frontend valida o formato básico do email e o tamanho mínimo da senha.
-7. Sistema exibe overlay de carregamento.
-8. Sistema envia os dados via `fetch` para `POST /login`.
-9. Servidor verifica se email e senha foram informados.
-10. Servidor consulta `id_usuario`, `nome` e `senha_hash` na tabela `usuarios`, filtrando pelo email.
-11. Servidor recebe os dados do usuário.
-12. Servidor compara a senha digitada com `senha_hash` utilizando `bcrypt.compare`.
-13. Se a senha estiver correta, o servidor retorna HTTP `200`.
-14. Frontend remove o overlay de carregamento.
-15. Frontend exibe mensagem de login realizado com sucesso.
+1. Usuário acessa `/login`, informa email e senha e pode alternar a visualização da senha.
+2. Ao clicar em "Enviar", o frontend verifica se o email contém `@` e se a senha possui pelo menos 10 caracteres.
+3. O frontend exibe carregamento e envia as credenciais com `credentials: 'include'`.
+4. O limitador verifica o limite compartilhado de 5 requisições por IP em 5 minutos para login e confirmação de senha.
+5. O servidor exige email e senha e consulta `id_usuario`, `nome`, `senha_hash`, `status_usuario`, `tipo` e `status_reset_senha` pelo email.
+6. O servidor verifica se a conta existe, está ativa e não possui solicitação administrativa de reset pendente.
+7. `validarSenha()` compara a senha recebida com o hash usando bcrypt.
+8. O servidor gera um JWT com `id_usuario` e `tipo`, assinado com `SEGREDO_JWT` e validade de 2 horas.
+9. O JWT é enviado no cookie `token`, com `httpOnly`, `sameSite: 'strict'`, `secure` em produção e duração de 2 horas.
+10. O servidor retorna HTTP 200, mensagem de sucesso e `usuario: { id, nome, tipo }`.
+11. O frontend fecha o carregamento, grava o tipo em `localStorage` e apresenta o resultado.
+12. Ao clicar em "Continuar", usuários `Admin` seguem para `/tela-admin`; os demais seguem para `/tela-principal`.
+
+---
+
+### Sessão, permissões e saída
+
+- As páginas autenticadas consultam `/me` enviando o cookie. O servidor valida o JWT e consulta o usuário atual no banco, retornando `id_usuario`, `nome` e `tipo`.
+- Token ausente, inválido ou expirado recebe HTTP 401. Na consulta da sessão, usuário inexistente ou inativo também recebe HTTP 401.
+- As telas exibem o nome do usuário e oferecem acesso à edição do perfil e ao botão "Sair". A tela administrativa também oferece a listagem de usuários.
+- As operações administrativas usam `autenticar` e `somenteAdmin`; um token sem tipo `Admin` recebe HTTP 403.
+- Administradores podem consultar `/me` com `id` para obter `status_usuario` e `tipo` de outro usuário. Essa consulta recebe HTTP 403 para usuários comuns.
+- Na saída, o backend limpa o cookie `token`; o frontend remove `tipo` do `localStorage` e retorna ao login.
+- A confirmação de senha usada nas telas de edição compara a senha com o hash do usuário autenticado, retornando HTTP 200 para senha correta e HTTP 400 para senha incorreta.
+- Endereços não reconhecidos exibem a página 404, com link para a tela principal.
+
+### Fluxos alternativos — Situação da conta
+
+- Conta inativa: o login retorna HTTP 403 com "Conta inativa. Contate o administrador.".
+- Reset solicitado por administrador: o login retorna HTTP 203; após a mensagem e o clique em "Continuar", o frontend abre `/resetar-senha`.
+- Limite de login ou confirmação de senha atingido: o servidor retorna HTTP 429 e informa que o usuário deve tentar novamente em 5 minutos.
 
 ---
 
@@ -182,7 +199,7 @@ Também é necessário disponibilizar um fluxo de recuperação de senha para qu
 6. Frontend exibe overlay de carregamento.
 7. Frontend envia `POST /solicitar-reset-senha` com `{ email }`.
 8. Backend valida o email recebido.
-9. Backend verifica o controle de tentativas de recuperação para o email.
+9. A solicitação está sujeita ao limitador compartilhado por IP, executado antes do processamento do corpo da requisição.
 10. Backend consulta `nome` e `email` na tabela `usuarios`.
 11. Backend verifica se o usuário existe.
 12. Backend gera um código aleatório de 6 dígitos utilizando `gerarCodigo()`.
@@ -217,7 +234,7 @@ Também é necessário disponibilizar um fluxo de recuperação de senha para qu
 
 7. Backend valida a presença dos dados e o tamanho mínimo da nova senha.
 
-8. Backend verifica o controle de tentativas para o email.
+8. A confirmação está sujeita ao mesmo limitador por IP da solicitação, executado antes das validações do corpo.
 
 9. Backend converte `codigoDigitado` para string.
 
@@ -229,11 +246,11 @@ Também é necessário disponibilizar um fluxo de recuperação de senha para qu
 
 13. Backend gera o hash da nova senha usando `gerarHashSenha()`.
 
-14. Backend executa `UPDATE` na tabela `usuarios`, alterando apenas `senha_hash` do registro com o email informado.
+14. Backend executa `UPDATE` na tabela `usuarios`, alterando `senha_hash` e definindo `status_reset_senha: false` no registro com o email informado.
 
 15. Backend verifica se algum usuário foi atualizado.
 
-16. Sistema remove o registro de tentativas de recuperação do email.
+16. A solicitação administrativa de reset fica encerrada por `status_reset_senha: false`.
 
 17. Servidor retorna HTTP `200` com a mensagem "Senha alterada com sucesso!".
 
@@ -265,15 +282,12 @@ Também é necessário disponibilizar um fluxo de recuperação de senha para qu
 
 ---
 
-### Fluxo Alternativo A6: Limite de tentativas atingido
+### Fluxo Alternativo A6: Limite de requisições atingido
 
-```text
-9a.1. Sistema detecta que o limite de tentativas do email foi atingido.
-9a.2. Sistema registra bloqueio temporário de 15 minutos.
-9a.3. Requisições durante o bloqueio recebem HTTP 429.
-9a.4. Resposta informa o tempo restante do bloqueio em segundos.
-9a.5. Após o tempo de bloqueio, o contador é reiniciado.
-```
+1. O limitador contabiliza por IP as requisições de solicitação de código de cadastro, solicitação e confirmação de reset e logout.
+2. São permitidas 5 requisições compartilhadas em uma janela de 15 minutos.
+3. Ao exceder o limite, o servidor retorna HTTP 429 antes de executar a operação.
+4. A mensagem orienta tentar novamente em 15 minutos.
 
 ---
 
@@ -334,7 +348,7 @@ Também é necessário disponibilizar um fluxo de recuperação de senha para qu
 | **RN02** | O sistema não retorna `senha_hash` em nenhuma resposta da API.                                                                     |
 | **RN03** | Toda tentativa de login exige `email` e `senha`; faltando algum dos campos, a requisição é rejeitada antes da autenticação.        |
 | **RN04** | Falhas de login por email inexistente ou senha incorreta retornam a mesma mensagem: `"Email ou senha inválidos"`.                  |
-| **RN05** | Login bem-sucedido retorna somente dados básicos do usuário: `id` e `nome`.                                                        |
+| **RN05** | Login bem-sucedido retorna `id`, `nome` e `tipo`, além de definir o cookie de autenticação. |
 | **RN06** | Login depende de usuário previamente cadastrado.                                                                                   |
 | **RN07** | A comparação de senha é realizada exclusivamente no backend usando `bcrypt.compare`.                                               |
 | **RN08** | A recuperação de senha somente prossegue quando o email informado corresponde a um usuário cadastrado.                             |
@@ -343,13 +357,13 @@ Também é necessário disponibilizar um fluxo de recuperação de senha para qu
 | **RN11** | O código é de uso único: após validação bem-sucedida, é removido dos códigos pendentes.                                            |
 | **RN12** | A nova senha deve possuir no mínimo 10 caracteres.                                                                                 |
 | **RN13** | A senha só pode ser atualizada após validação bem-sucedida do código.                                                              |
-| **RN14** | A redefinição altera somente o campo `senha_hash` do usuário correspondente ao email.                                              |
+| **RN14** | A redefinição atualiza `senha_hash` e define `status_reset_senha: false` para o email informado. |
 | **RN15** | A nova senha é convertida em hash bcrypt antes do `UPDATE`.                                                                        |
 | **RN16** | O código digitado é convertido para string no backend antes da comparação.                                                         |
-| **RN17** | O controle de tentativas de reset é mantido por email em memória no processo do servidor.                                          |
-| **RN18** | O limite configurado é de 3 tentativas contabilizadas por email, com bloqueio temporário de 15 minutos quando o limite é atingido. |
+| **RN17** | O controle de requisições usa `express-rate-limit`, por IP, no processo do servidor. |
+| **RN18** | Solicitação de código de cadastro, solicitação e confirmação de reset e logout compartilham 5 requisições por IP em 15 minutos. |
 | **RN19** | Durante o período de bloqueio, novas tentativas recebem HTTP `429`.                                                                |
-| **RN20** | Após alteração bem-sucedida da senha, o registro de tentativas do email é removido.                                                |
+| **RN20** | Login e confirmação de senha compartilham 5 requisições por IP em 5 minutos. |
 
 ---
 
@@ -369,18 +383,11 @@ Também é necessário disponibilizar um fluxo de recuperação de senha para qu
 
 ## 🎨 4. PROTÓTIPO FUNCIONAL — MOCKUPS DAS TELAS
 
-Mockups textuais baseados nos arquivos atuais de [login](../../src/rf-001-Login/public/index.html) e [reset de senha](../../src/rf-001-Login/public/reset-senha/index.html). Os quadros representam a disposição dos elementos; as medidas e cores estão descritas abaixo.
+Mockups textuais baseados nos arquivos atuais de [login](../../src/rf-001-Login/public/tela_login.html) e [reset de senha](../../src/rf-001-Login/public/reset_senha.html). Os quadros representam a disposição dos elementos; as medidas e cores estão descritas abaixo.
 
 ### Estilo visual implementado
 
-| Elemento         | Login                                                                                   | Reset de senha                                          |
-| ---------------- | --------------------------------------------------------------------------------------- | ------------------------------------------------------- |
-| Fonte            | Arial, títulos e labels em negrito                                                      | Arial, títulos e labels em negrito                      |
-| Fundo da página  | `#f0f2f5`                                                                               | `#cadaf2`                                               |
-| Cartão principal | Branco, largura de 320px, padding de 40px                                               | Branco, largura de 420px, padding de 50px               |
-| Bordas e sombra  | Cartão com raio de 12px e sombra; inputs com borda de 1px `#ccc` e raio de 8px          | Mesmo padrão de bordas e sombra                         |
-| Overlays         | Fundo preto com opacidade de 50%; caixa branca de 400px, raio de 12px e padding de 50px | Mesmo padrão, com limites de largura e altura da janela |
-| Mensagens        | Erros em `rgb(160, 2, 2)`; sucesso em `rgb(103, 198, 40)`                               | Mesmas cores                                            |
+As telas utilizam o [CSS compartilhado](../../src/rf-002-Cadastro_usuario/public/template.css): fonte Arial, fundo `#cadaf2`, cartões brancos de 420px com largura máxima de 100%, padding de 40px e bordas de 12px. Os overlays têm fundo preto com opacidade de 50% e caixas de 400px, padding de 40px, altura limitada à janela e rolagem. Mensagens de erro usam `rgb(160, 2, 2)` e de sucesso `rgb(103, 198, 40)`.
 
 ### Mockup - Tela 1: Login
 
@@ -460,7 +467,7 @@ As mensagens aparecem em vermelho abaixo de `#Email` e `#Senha`, nos elementos `
 └──────────────────────────────────────────────────────────────┘
 ```
 
-Em HTTP 200, a mensagem aparece em verde no `#resultado-overlay`. Em HTTP 401, o mesmo overlay exibe **“Email ou senha inválidos”** em vermelho. “Continuar” fecha a janela e mantém o usuário na tela de login.
+Em HTTP 200, a mensagem aparece em verde no `#resultado-overlay`. Em HTTP 401, o mesmo overlay exibe **“Email ou senha inválidos”** em vermelho. Após HTTP 200, “Continuar” abre a tela administrativa ou principal conforme o tipo. Após HTTP 401, fecha a janela e mantém o usuário no login.
 
 ### Mockup - Tela 5: Solicitação de redefinição de senha
 
@@ -568,7 +575,9 @@ A resposta HTTP 200 de `/confirmar-reset-senha` exibe a mensagem em verde. O usu
 | ----------------------------------- | ----------------------------------------------- | ---------------------------------------- |
 | Login com campos inválidos          | Erro vermelho abaixo do campo                   | Corrigir e clicar em “Enviar”            |
 | Login em processamento              | Overlay de carregamento                         | Aguardar a resposta                      |
-| Login com HTTP 200 ou 401           | Overlay de sucesso ou erro                      | “Continuar” fecha o resultado            |
+| Login com HTTP 200 | Overlay de sucesso | “Continuar” abre a tela correspondente ao tipo do usuário |
+| Login com HTTP 401 | Overlay de erro | “Continuar” fecha o resultado |
+| Login com HTTP 203 | Mensagem de reset solicitado | “Continuar” abre a recuperação de senha |
 | Reset com email inválido            | Erro abaixo do email                            | Corrigir e clicar em “Continuar”         |
 | Código de reset enviado             | Overlay de código e nova senha                  | Preencher e clicar em “Confirmar”        |
 | Código ou senha fora do formato     | Erro abaixo do campo no overlay                 | Corrigir sem sair da janela              |
@@ -585,9 +594,7 @@ A resposta HTTP 200 de `/confirmar-reset-senha` exibe a mensagem em verde. O usu
 
 ### Responsividade
 
-- O login usa cartão de largura fixa de 320px, centralizado na página.
-- O reset usa cartão de 420px limitado a `max-width: 100%`, com margem interna de 20px na página.
-- No reset, as caixas de overlay têm largura de 400px, limites de largura/altura da viewport e rolagem quando necessário. Em telas de até 440px, o padding do cartão e das caixas passa para 25px.
+Os cartões e overlays respeitam a largura disponível. Em telas de até 600px, o padding dos cartões e overlays passa para 24px, e o contêiner usa 16px. O cabeçalho permite quebra dos itens e reorganiza a navegação.
 
 ---
 
@@ -619,7 +626,7 @@ A resposta HTTP 200 de `/confirmar-reset-senha` exibe a mensagem em verde. O usu
 │ POST /solicitar-reset-senha                 │
 │ POST /confirmar-reset-senha                 │
 │                                             │
-│ • Rate limit em memória por email           │
+│ • Rate limit por IP           │
 │ • Consulta e UPDATE no Supabase             │
 └───────────────┬────────────────┬────────────┘
                 │                │
@@ -697,11 +704,15 @@ A resposta HTTP 200 de `/confirmar-reset-senha` exibe a mensagem em verde. O usu
 
 **Contexto:** O frontend do login e do reset precisa ser disponibilizado junto da API.
 
-**Decisão:** Utilizar `Express.static`:
+**Decisão:** Entregar as páginas com `sendFile` e os recursos compartilhados com `Express.static`:
 
 ```javascript
-app.use('/login', Express.static(path.join(__dirname, 'public')));
-app.use('/resetar-senha', Express.static(path.join(__dirname, 'public/reset-senha')));
+app.get('/login', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public/tela_login.html'));
+});
+app.get('/resetar-senha', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public/reset_senha.html'));
+});
 ```
 
 **Consequências:** O fluxo de login e recuperação é servido pelo mesmo backend.
@@ -779,46 +790,19 @@ import {
 
 ---
 
-### ADR-008: Rate limit em memória por email no reset de senha
+### ADR-008: Limitação de requisições por IP
 
 **Status:** ACEITO
 
-**Contexto:** As rotas de recuperação precisam controlar tentativas repetidas.
+**Decisão:** Utilizar `express-rate-limit` com três instâncias: login e confirmação de senha compartilham 5 requisições em 5 minutos; confirmação de cadastro permite 5 em 15 minutos; solicitação de código de cadastro, solicitação e confirmação de reset e logout compartilham 5 em 15 minutos.
 
-**Decisão:** Manter um `Map` no processo do servidor:
+**Consequências:** Requisições acima do limite recebem HTTP 429. O Express usa `trust proxy: 1`.
 
-```javascript
-const tentativasResetSenha = new Map();
-const LIMITE_TENTATIVAS = 3;
-const TEMPO_BLOQUEIO_MS = 15 * 60 * 1000;
-```
-
-O controle é consultado tanto em:
-
-```text
-POST /solicitar-reset-senha
-```
-
-quanto em:
-
-```text
-POST /confirmar-reset-senha
-```
-
-**Consequências:**
-
-- Controle associado ao email.
-- Bloqueio temporário de 15 minutos após o limite.
-- Resposta HTTP `429` durante o bloqueio.
-- Registro removido após redefinição bem-sucedida.
-
----
-
-### ADR-009: Atualização somente do hash durante recuperação
+### ADR-009: Atualização da senha e encerramento da solicitação de reset
 
 **Status:** ACEITO
 
-**Contexto:** A recuperação de senha não deve recriar o usuário nem modificar seus outros dados.
+**Contexto:** A recuperação deve atualizar a credencial e encerrar uma eventual solicitação administrativa de reset.
 
 **Decisão:** Executar:
 
@@ -826,14 +810,24 @@ POST /confirmar-reset-senha
 const { data: usuarioAtualizado, error } = await supabase
     .from('usuarios')
     .update({
-        senha_hash: novaSenhaHash
+        senha_hash: novaSenhaHash, status_reset_senha: false
     })
     .eq('email', email)
     .select('id_usuario')
     .maybeSingle();
 ```
 
-**Consequências:** Apenas `senha_hash` é alterado para o usuário correspondente.
+**Consequências:** O usuário passa a usar a nova senha e a solicitação de reset deixa de estar pendente.
+
+---
+
+### ADR-010: Sessão com JWT em cookie
+
+**Status:** ACEITO
+
+**Decisão:** Assinar o token com `SEGREDO_JWT` e validade de 2 horas; usar `cookie-parser` para ler o cookie `token` e `verificarToken()` no middleware de autenticação.
+
+**Consequências:** O cookie é `httpOnly`, `sameSite: 'strict'` e `secure` em produção. O tipo salvo em `localStorage` orienta a navegação; as operações administrativas verificam o tipo no JWT. O CORS aceita credenciais e usa as origens definidas em `ORIGEM_AUTORIZADA`.
 
 ---
 
@@ -846,6 +840,8 @@ const { data: usuarioAtualizado, error } = await supabase
 | Backend               | Node.js               | 20                | Runtime do servidor                          |
 | Backend               | Express               | 5                 | Rotas e arquivos estáticos                   |
 | Banco de dados        | Supabase / PostgreSQL | —                 | Armazenamento dos usuários                   |
+| Sessão                | jsonwebtoken + cookie-parser | JWT de 2 horas | Autenticação por cookie |
+| Controle de requisições | express-rate-limit | Limites por IP | Controle de frequência das operações |
 | Hash                  | bcrypt                | `saltRounds = 10` | Geração e validação de hash                  |
 | Email                 | Brevo API             | HTTPS REST        | Envio dos códigos de verificação             |
 | Documentação API      | swagger-ui-express    | —                 | Disponibilização da interface `/api-docs`    |
@@ -856,42 +852,21 @@ const { data: usuarioAtualizado, error } = await supabase
 
 ---
 
-## Fluxo de Dados — Login
+## Fluxo de Dados — Login e Sessão
 
-1. Frontend envia `POST /login` com `{ email, senha }`.
-2. Express valida presença dos campos.
-3. Backend consulta `usuarios` por email.
-4. Supabase retorna `id_usuario`, `nome` e `senha_hash`.
-5. `validarSenha()` executa `bcrypt.compare`.
-6. Senha incorreta ou usuário inexistente → HTTP `401`.
-7. Senha correta → HTTP `200` com `id` e `nome`.
-
----
+1. O frontend envia email e senha; o limitador por IP verifica a janela de requisições.
+2. O backend consulta o usuário, verifica situação da conta e solicitação de reset, e compara a senha com bcrypt.
+3. Em caso de sucesso, gera o JWT, define o cookie e retorna os dados básicos com o tipo do usuário.
+4. O frontend direciona a navegação conforme o tipo; as páginas consultam `/me` para carregar a sessão.
+5. No logout, o servidor limpa o cookie e o frontend retorna ao login.
 
 ## Fluxo de Dados — Recuperação de Senha
 
-### Solicitação
-
-1. Frontend envia `POST /solicitar-reset-senha`.
-2. Backend valida email.
-3. Rate limit do email é verificado.
-4. Backend consulta o usuário no Supabase.
-5. Backend gera código de 6 dígitos.
-6. `salvarCodigo()` registra o código e a expiração.
-7. `enviarEmail()` chama a API do Brevo.
-8. Backend retorna HTTP `200`.
-
-### Confirmação
-
-1. Frontend envia `POST /confirmar-reset-senha`.
-2. Backend valida os campos.
-3. Rate limit do email é verificado.
-4. `validarCodigo()` confirma código e expiração.
-5. `gerarHashSenha()` cria o novo hash bcrypt.
-6. Supabase executa `UPDATE senha_hash`.
-7. Backend remove o controle de tentativas do email.
-8. Backend retorna HTTP `200`.
-9. Frontend exibe o overlay de sucesso e redireciona para `/login` após o clique em "Continuar".
+1. A solicitação passa pelo limitador por IP e pela validação do email cadastrado.
+2. O backend gera o código, salva sua expiração em memória e envia o email pela Brevo.
+3. Na confirmação, o mesmo limitador é aplicado; o servidor valida os campos e o código, removido após uso válido.
+4. O servidor gera o novo hash e atualiza `senha_hash` e `status_reset_senha: false`.
+5. Após sucesso, o frontend apresenta a confirmação e retorna ao login no clique em "Continuar".
 
 ---
 
@@ -923,7 +898,7 @@ const novaSenhaHash = await gerarHashSenha(novaSenha);
 await supabase
     .from('usuarios')
     .update({
-        senha_hash: novaSenhaHash
+        senha_hash: novaSenhaHash, status_reset_senha: false
     })
     .eq('email', email);
 ```
@@ -952,7 +927,7 @@ senha original não aparece em texto puro na coluna senha_hash.
 **Implementação:**
 
 ```javascript
-if (error) {
+if (error || !usuario) {
     return res.status(401).json({
         mensagem: 'Email ou senha inválidos'
     });
@@ -1003,18 +978,15 @@ Após validação correta, o código é removido:
 codigosPendentes.delete(email);
 ```
 
-O fluxo também possui controle de tentativas:
+O fluxo utiliza `limitadorCodigo`, compartilhado com a solicitação de código de cadastro e o logout:
 
 ```javascript
-const LIMITE_TENTATIVAS = 3;
-const TEMPO_BLOQUEIO_MS = 15 * 60 * 1000;
-```
-
-Durante o bloqueio:
-
-```javascript
-return res.status(429).json({
-    mensagem: verificacaoRateLimit.motivo
+const limitadorCodigo = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 5,
+    handler: (req, res) => {
+        res.status(429).json({ mensagem: 'Muitas tentativas de realizadas para esta operação. Tente novamente em 15 minutos.' });
+    }
 });
 ```
 
@@ -1029,7 +1001,7 @@ return res.status(429).json({
 ```javascript
 const { data: usuario, error } = await supabase
     .from('usuarios')
-    .select('id_usuario, nome, senha_hash')
+    .select('id_usuario, nome, senha_hash, status_usuario, tipo, status_reset_senha')
     .eq('email', email)
     .single();
 ```
@@ -1050,7 +1022,7 @@ const { data: usuario, error } = await supabase
 const { data: usuarioAtualizado, error } = await supabase
     .from('usuarios')
     .update({
-        senha_hash: novaSenhaHash
+        senha_hash: novaSenhaHash, status_reset_senha: false
     })
     .eq('email', email)
     .select('id_usuario')
