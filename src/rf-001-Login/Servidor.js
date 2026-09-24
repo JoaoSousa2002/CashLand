@@ -1,7 +1,27 @@
 import { createClient } from '@supabase/supabase-js'
-import { criarServicoCodigos, enviarEmail, gerarCodigo, normalizarEmail } from '../rf-002-Cadastro_usuario/Email.js';
-import { gerarHashSenha, validarSenha, gerarToken, verificarToken } from './Autenticacao.js'
-import Express, { response } from 'express'
+import {
+    criarServicoCodigos,
+    enviarEmail,
+    gerarCodigo,
+    normalizarEmail
+} from '../rf-002-Cadastro_usuario/Email.js';
+import {
+    gerarHashSenha,
+    validarSenha,
+    gerarToken,
+    verificarToken
+} from './Autenticacao.js'
+import {
+    schemaNome,
+    schemaEmail,
+    schemaSenha,
+    schemaCodigo,
+    schemaId,
+    schemaNovaSenha
+} from "../validacoes/usuario.js";
+
+import { validar } from "../validacoes/validar.js";
+import Express from 'express'
 import cors from 'cors'
 import ws from 'ws'
 import path from 'path'
@@ -12,29 +32,29 @@ import { readFileSync } from 'fs';
 import rateLimit from 'express-rate-limit';
 import 'dotenv/config';
 import cookieParser from 'cookie-parser';
-import { count } from 'console';
+
 
 const limitadorLogin = rateLimit({
     windowMs: 5 * 60 * 1000,
-    max: 5, // só 5 tentativas de login por IP a cada 5 min
+    max: 8, // só 8 tentativas de login por IP a cada 5 min
     handler: (req, res) => {
-        console.log(`Rate limit atingido pelo IP: ${req.ip}`);
+        console.log(`LOGIN: >>>>> Rate limit atingido pelo IP: ${req.ip}`);
         res.status(429).json({ mensagem: 'Muitas tentativas de login realizadas. Tente novamente em 5 minutos.' });
     }
 });
 const limitadorCadastro = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 5, // só 5 tentativas de login por IP a cada 15 min
+    max: 8, // só 5 tentativas de login por IP a cada 15 min
     handler: (req, res) => {
-        console.log(`Rate limit atingido pelo IP: ${req.ip}`);
+        console.log(`CADASTRO: >>>>> Rate limit atingido pelo IP: ${req.ip}`);
         res.status(429).json({ mensagem: 'Muitas tentativas de cadastro realizadas. Tente novamente em 15 minutos.' });
     }
 });
 const limitadorCodigo = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 5, // só 5 tentativas de login por IP a cada 15 min
+    max: 8, // só 5 tentativas de login por IP a cada 15 min
     handler: (req, res) => {
-        console.log(`Rate limit atingido pelo IP: ${req.ip}`);
+        console.log(`CODIGO: >>>>> Rate limit atingido pelo IP: ${req.ip}`);
         res.status(429).json({ mensagem: 'Muitas tentativas de realizadas para esta operação. Tente novamente em 15 minutos.' });
     }
 });
@@ -96,7 +116,7 @@ app.get('/tela-admin', (req, res) => {
 });
 
 app.get('/tela-admin/listar-usuarios', (req, res) => {
-    res.sendFile(path.join(__dirname, '../rf-002-Cadastro_usuario/public/listar_usuarios.html'));
+    res.sendFile(path.join(__dirname, '../rf-002-Cadastro_usuario/public/ADMIN_listar_usuarios.html'));
 });
 
 app.get('/tela-admin/editar-usuarios', (req, res) => {
@@ -154,117 +174,7 @@ app.use(Express.static(path.join(__dirname, 'public')));
 app.use(Express.static(path.join(__dirname, '../rf-002-Cadastro_usuario/public')));
 app.use(Express.static(path.join(__dirname, '../img')));
 
-app.get('/me', autenticar, async (req, res) => {
-    const { id } = req.query
 
-    if (id && req.usuario.tipo !== 'Admin') {
-        console.log("/usuario: Acesso negado - usuário comum tentou acessar outro ID");
-        return res.status(403).json({ mensagem: 'Acesso negado' });
-    }
-    if (id) {
-        const { data, error } = await supabase
-            .from('usuarios')
-            .select('id_usuario, nome, email, tipo, status_usuario')
-            .eq('id_usuario', id)
-            .single();
-
-        if (error) {
-            console.log("/me: Usuario não existe ou inativo")
-            return res.status(401).json({ mensagem: 'Sessão inválida' });
-        }
-        console.log("/me: Retornado o status do usuario " + data.nome)
-        return res.status(200).json({ status_usuario: data.status_usuario, tipo: data.tipo });
-    }
-
-    // req.usuario já vem do middleware, mas revalida contra o banco
-    // pra pegar dados atualizados (ex: se foi inativado depois do token ser emitido)
-    const { data, error } = await supabase
-        .from('usuarios')
-        .select('id_usuario, nome, email, tipo, status_usuario')
-        .eq('id_usuario', req.usuario.id_usuario)
-        .single();
-
-    if (error || data.status_usuario === 'Inativo') {
-        console.log("/me: Usuario não existe ou inativo")
-        return res.status(401).json({ mensagem: 'Sessão inválida' });
-    }
-    console.log("/me: Usuario autenticado")
-    return res.status(200).json({ id_usuario: data.id_usuario, nome: data.nome, tipo: data.tipo });
-});
-
-
-// ROTA DE LOGIN
-app.post('/login', limitadorLogin, async (req, res) => {
-    const { email, senha } = req.body;
-
-    if (!email || !senha) {
-        return res.status(400).json({ mensagem: 'Email e senha são obrigatórios' });
-    }
-
-    const { data: usuario, error } = await supabase
-        .from('usuarios')
-        .select('id_usuario, nome, senha_hash, status_usuario, tipo, status_reset_senha') // adicionado tipo
-        .eq('email', email)
-        .single();
-
-    // Erro OU usuário não encontrado — checa isso PRIMEIRO
-    if (error || !usuario) {
-        console.log('/login: Erro ao buscar usuário:', error.message);
-        return res.status(401).json({ mensagem: 'Email ou senha inválidos' });
-    }
-
-    // Só chega aqui se usuario existir de verdade
-    if (usuario.status_usuario === 'Inativo') {
-        return res.status(403).json({ mensagem: 'Conta inativa. Contate o administrador.' });
-    }
-
-    if (usuario.status_reset_senha) {
-        console.log("/login: >>>>> Reset de senha solicitado")
-        return res.status(203).json({ mensagem: "Reset de senha solicitado por um adminstrador" })
-    }
-
-    const senhaCorreta = await validarSenha(senha, usuario.senha_hash);
-    if (!senhaCorreta) {
-        return res.status(401).json({ mensagem: 'Email ou senha inválidos' });
-    }
-
-    const token = gerarToken(usuario);
-    res.cookie('token', token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
-        maxAge: 2 * 60 * 60 * 1000
-    });
-
-    return res.status(200).json({
-        mensagem: 'Login realizado com sucesso',
-        usuario: { id: usuario.id_usuario, nome: usuario.nome, tipo: usuario.tipo }
-    });
-});
-
-app.post('/confirmar-senha', limitadorLogin, autenticar, async (req, res) => {
-    const { senha } = req.body
-    const { data: usuario } = await supabase
-        .from('usuarios')
-        .select('senha_hash') // adicionado tipo
-        .eq('id_usuario', req.usuario.id_usuario)
-        .single();
-
-    // Validar senha
-    const senhaCorreta = await validarSenha(senha, usuario.senha_hash);
-    if (!senhaCorreta) {
-        console.log("/confirmar-senha: >>>>> Senha incorreta")
-        return res.status(400).json({ mensagem: 'Senha incorreta' });
-    }
-    console.log("/confirmar-senha: Senha correta")
-    return res.status(200).json({ mensagem: "Senha correta" })
-})
-// ROTA DE LOGOUT
-app.post('/logout', limitadorCodigo, (req, res) => {
-    res.clearCookie('token');
-    console.log('/logout: Logout realizado')
-    return res.status(200).json({ mensagem: 'Logout realizado' });
-});
 const codigos = criarServicoCodigos(supabase);
 
 async function buscarUsuario(email) {
@@ -308,13 +218,116 @@ async function emitirCodigo(email, nome, finalidade) {
     }
 }
 
-app.post('/solicitar-codigo', limitadorCodigo, async (req, res) => {
-    const { nome } = req.body ?? {};
-    const email = normalizarEmail(req.body?.email);
-    if (typeof nome !== 'string' || !nome || !email.includes('@') || !email.includes('.com')) {
-        console.log('/solicitar-codigo: >>>>> Dados inválidos ou incompletos');
-        return res.status(400).json({ mensagem: 'Dados inválidos ou incompletos' });
+app.get('/me', autenticar, async (req, res) => {
+    const { id } = req.query
+
+    if (id && req.usuario.tipo !== 'Admin') {
+        console.log("/usuario: Acesso negado - usuário comum tentou acessar outro ID");
+        return res.status(403).json({ mensagem: 'Acesso negado' });
     }
+    if (id) {
+        const { data, error } = await supabase
+            .from('usuarios')
+            .select('id_usuario, nome, email, tipo, status_usuario')
+            .eq('id_usuario', id)
+            .single();
+
+        if (error) {
+            console.log("/me: Usuario não existe ou inativo")
+            return res.status(401).json({ mensagem: 'Sessão inválida' });
+        }
+        console.log("/me: Retornado o status do usuario " + data.nome)
+        return res.status(200).json({ status_usuario: data.status_usuario, tipo: data.tipo });
+    }
+
+    // req.usuario já vem do middleware, mas revalida contra o banco
+    // pra pegar dados atualizados (ex: se foi inativado depois do token ser emitido)
+    const { data, error } = await supabase
+        .from('usuarios')
+        .select('id_usuario, nome, email, tipo, status_usuario')
+        .eq('id_usuario', req.usuario.id_usuario)
+        .single();
+
+    if (error || data.status_usuario === 'Inativo') {
+        console.log("/me: Usuario não existe ou inativo")
+        return res.status(401).json({ mensagem: 'Sessão inválida' });
+    }
+    console.log("/me: Usuario autenticado")
+    return res.status(200).json({ id_usuario: data.id_usuario, nome: data.nome, tipo: data.tipo });
+});
+
+// ROTA DE LOGIN
+app.post('/login', limitadorLogin, validar(schemaEmail, schemaSenha), async (req, res) => {
+    const { email, senha } = req.body;
+
+    const { data: usuario, error } = await supabase
+        .from('usuarios')
+        .select('id_usuario, nome, senha_hash, status_usuario, tipo, status_reset_senha')
+        .eq('email', email)
+        .single();
+
+    // Erro OU usuário não encontrado — checa isso PRIMEIRO
+    if (error || !usuario) {
+        console.log('/login: Erro ao buscar usuário:', error.message);
+        return res.status(401).json({ mensagem: 'Email ou senha inválidos' });
+    }
+
+    // Só chega aqui se usuario existir de verdade
+    if (usuario.status_usuario === 'Inativo') {
+        return res.status(403).json({ mensagem: 'Conta inativa. Contate o administrador.' });
+    }
+
+    if (usuario.status_reset_senha) {
+        console.log("/login: >>>>> Reset de senha solicitado")
+        return res.status(203).json({ mensagem: "Reset de senha solicitado por um adminstrador" })
+    }
+
+    const senhaCorreta = await validarSenha(senha, usuario.senha_hash);
+    if (!senhaCorreta) {
+        return res.status(401).json({ mensagem: 'Email ou senha inválidos' });
+    }
+
+    const token = gerarToken(usuario);
+    res.cookie('token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 2 * 60 * 60 * 1000
+    });
+
+    return res.status(200).json({
+        mensagem: 'Login realizado com sucesso',
+        usuario: { id: usuario.id_usuario, nome: usuario.nome, tipo: usuario.tipo }
+    });
+});
+
+app.post('/confirmar-senha', limitadorLogin, autenticar, validar(schemaSenha), async (req, res) => {
+    const { senha } = req.body
+    const { data: usuario } = await supabase
+        .from('usuarios')
+        .select('senha_hash') // adicionado tipo
+        .eq('id_usuario', req.usuario.id_usuario)
+        .single();
+
+    // Validar senha
+    const senhaCorreta = await validarSenha(senha, usuario.senha_hash);
+    if (!senhaCorreta) {
+        console.log("/confirmar-senha: >>>>> Senha incorreta")
+        return res.status(401).json({ mensagem: 'Senha incorreta' });
+    }
+    console.log("/confirmar-senha: Senha correta")
+    return res.status(200).json({ mensagem: "Senha correta" })
+})
+// ROTA DE LOGOUT
+app.post('/logout', limitadorCodigo, (req, res) => {
+    res.clearCookie('token');
+    console.log('/logout: Logout realizado')
+    return res.status(200).json({ mensagem: 'Logout realizado' });
+});
+
+app.post('/solicitar-codigo', limitadorCodigo, validar(schemaNome, schemaEmail, schemaSenha), async (req, res) => {
+    const { nome } = req.body;
+    const email = normalizarEmail(req.body?.email);
     try {
         if (await buscarUsuario(email)) {
             console.log('/solicitar-codigo: >>>>> Esse email já está cadastrado');
@@ -329,14 +342,9 @@ app.post('/solicitar-codigo', limitadorCodigo, async (req, res) => {
     }
 });
 
-app.post('/confirmar-cadastro', limitadorCadastro, async (req, res) => {
+app.post('/confirmar-cadastro', limitadorCadastro, validar(schemaNome, schemaEmail, schemaCodigo, schemaSenha), async (req, res) => {
     const { nome, senha, codigoDigitado } = req.body ?? {};
     const email = normalizarEmail(req.body?.email);
-    if (typeof nome !== 'string' || !nome || !email.includes('@') || !email.includes('.com') ||
-        typeof senha !== 'string' || senha.length < 10 || !codigoDigitado) {
-        console.log('/confirmar-cadastro: >>>>> Dados inválidos ou incompletos');
-        return res.status(400).json({ mensagem: 'Dados inválidos ou incompletos' });
-    }
     try {
         const senha_hash = await gerarHashSenha(senha);
         const resultado = await codigos.validarCodigo(email, String(codigoDigitado), 'cadastro');
@@ -364,12 +372,8 @@ app.post('/confirmar-cadastro', limitadorCadastro, async (req, res) => {
     }
 });
 
-app.post('/solicitar-reset-senha', limitadorCodigo, async (req, res) => {
+app.post('/solicitar-reset-senha', limitadorCodigo, validar(schemaEmail), async (req, res) => {
     const email = normalizarEmail(req.body?.email);
-    if (!email.includes('@')) {
-        console.log('/solicitar-reset-senha: >>>>> Email inválido ou não informado');
-        return res.status(400).json({ mensagem: 'Email inválido ou não informado' });
-    }
     try {
         const usuario = await buscarUsuario(email);
 
@@ -389,13 +393,9 @@ app.post('/solicitar-reset-senha', limitadorCodigo, async (req, res) => {
     }
 });
 
-app.post('/confirmar-reset-senha', limitadorCodigo, async (req, res) => {
+app.post('/confirmar-reset-senha', limitadorCodigo, validar(schemaEmail, schemaCodigo, schemaNovaSenha), async (req, res) => {
     const { codigoDigitado, novaSenha } = req.body ?? {};
     const email = normalizarEmail(req.body?.email);
-    if (!email || !codigoDigitado || typeof novaSenha !== 'string' || novaSenha.length < 10) {
-        console.log('/confirmar-reset-senha: >>>>> Dados inválidos ou incompletos');
-        return res.status(400).json({ mensagem: 'Dados inválidos ou incompletos' });
-    }
     try {
         const usuario = await buscarUsuario(email);
 
@@ -410,11 +410,12 @@ app.post('/confirmar-reset-senha', limitadorCodigo, async (req, res) => {
 
         if (!resultado.valido) {
             console.log('/confirmar-reset-senha: >>>>> ' + resultado.motivo);
-            return res.status(400).json({ mensagem: resultado.motivo });
+            return res.status(401).json({ mensagem: resultado.motivo });
         }
         const { data, error } = await supabase.from('usuarios')
             .update({ senha_hash: novaSenhaHash, status_reset_senha: false })
-            .eq('id_usuario', usuario.id_usuario).select('id_usuario').maybeSingle();
+            .eq('id_usuario', usuario.id_usuario)
+            .select('id_usuario').maybeSingle();
         if (error) {
             throw new Error('Falha ao atualizar senha');
         }
@@ -475,7 +476,7 @@ app.patch('/usuario/desativar-usuario', autenticar, async (req, res) => {
     return res.status(200).json({ mensagem: "Usuario desativado com sucesso" })
 })
 
-app.patch('/usuario/atualizar-dados', autenticar, async (req, res) => {
+app.patch('/usuario/atualizar-dados', autenticar, validar(schemaNome), async (req, res) => {
     const { nome } = req.body
 
     const { error } = await supabase
@@ -565,7 +566,7 @@ app.get('/admin/usuario', autenticar, somenteAdmin, async (req, res) => {
     }
 })
 
-app.patch('/admin/editar-usuario', autenticar, somenteAdmin, async (req, res) => {
+app.patch('/admin/editar-usuario', autenticar, somenteAdmin, validar(schemaId, schemaNome, schemaEmail), async (req, res) => {
     const { id, nome, email } = req.body
 
     const { error } = await supabase
@@ -687,11 +688,27 @@ app.patch('/admin/desativar-usuario', autenticar, somenteAdmin, async (req, res)
 
 app.delete('/admin/deletar-usuario', autenticar, somenteAdmin, async (req, res) => {
     const { id_usuario } = req.query
+
     if (!id_usuario) {
         console.log("admin/deletar-usuario: Backend não recebeu o ID")
         return res.status(400).json({ mensagem: "Backend não recebeu o id" })
     }
+    const { data: consulta, error: erroConsulta } = await supabase
+        .from('usuarios')
+        .select('status_usuario, tipo')
+        .eq('id_usuario', id_usuario)
+        .single();
 
+    if (erroConsulta || !consulta) {
+        console.log("/admin/desativar-usuario: Usuário não encontrado");
+        return res.status(404).json({ mensagem: "Usuário não encontrado" });
+    }
+    console.log(consulta)
+
+    if (consulta.tipo === 'Admin') {
+        console.log("/admin/deletar-usuario: >>>>> Admin não pode deletar própria conta ou de outro admin");
+        return res.status(403).json({ mensagem: "Admin não pode deletar própria conta ou de outro admin" });
+    }
     const { error } = await supabase
         .from('usuarios')
         .delete()

@@ -7,6 +7,7 @@
     <title>Login</title>
     <link rel="stylesheet" href="/template.css">
 </head>
+
 <body>
     <div class="loading-overlay" id="loading-overlay">
         <div class="loading-box">
@@ -45,6 +46,7 @@
             </form>
         </div>
     </div>
+    <script src="./validacao-joi.bundle.js"></script>
     <script>
         let liberarAcesso = false;
         let resetSolicitado = false;
@@ -94,73 +96,70 @@
             }
         }
         // Sistema para mostrar a senha
-        const senha = document.getElementById("Senha");
+        const campoSenha = document.getElementById("Senha");
         const mostrarSenha = document.getElementById("mostrar-senha");
+
+
         mostrarSenha.addEventListener("click", () => {
-            if (senha.type === "password") {
-                senha.type = "text";
+            if (campoSenha.type === "password") {
+                campoSenha.type = "text";
                 mostrarSenha.textContent = "🙈";
             } else {
-                senha.type = "password";
+                campoSenha.type = "password";
                 mostrarSenha.textContent = "👁";
             }
         });
         document.getElementById("meuForm").addEventListener("submit", async (e) => {
             e.preventDefault();
-            const email = document.getElementById("Email").value;
+            const email = document.getElementById("Email").value.trim();
             const senha = document.getElementById("Senha").value;
 
-            if (!email.includes("@")) {
-                MostrarErro("erro-email", "ERRO: insira um email valido")
-            }
-            else {
-                MostrarErro("erro-email", "")
-            }
-            if (!senha || senha.length < 10) {
-                MostrarErro("erro-senha", "ERRO: A senha deve ter no minimo 10 caracteres")
-            }
-            else {
-                MostrarErro("erro-senha", "")
-            }
-            if (email.includes("@") && senha && senha.length >= 10) {
-                loading.style.display = "flex"
-                const response = await fetch(`/login`, {
-                    method: 'POST',
-                    credentials: 'include',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, senha })
-                });
-                const resultado = await response.json();
-                loading.style.display = "none";
+            loading.style.display = "flex"
+            const response = await fetch(`/login`, {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, senha })
+            });
+            const resultado = await response.json();
+            loading.style.display = "none";
 
-                switch (response.status) {
-                    // SUCESSO
-                    case 200:
-                        resultado_overlay.style.display = "flex";
-                        MostrarResultado_Overlay(1, resultado.mensagem)
-                        console.log(resultado.mensagem)
+            switch (response.status) {
+                // SUCESSO
+                case 200:
+                    resultado_overlay.style.display = "flex";
+                    MostrarResultado_Overlay(1, resultado.mensagem)
+                    console.log(resultado.mensagem)
 
-                        localStorage.setItem('tipo', resultado.usuario.tipo);
-                        liberarAcesso = true;
-                        break;
-                    case 203:
-                        resultado_overlay.style.display = "flex";
-                        MostrarResultado_Overlay(0, resultado.mensagem)
-                        console.log(resultado.mensagem)
-                        resetSolicitado = true;
-                    // ERROS:
-                    case 401:
-                    case 403:
-                    case 429:
-                        resultado_overlay.style.display = "flex";
-                        MostrarResultado_Overlay(0, resultado.mensagem)
-                        console.log(resultado.mensagem)
-                        break;
-                    default:
-                        break;
-                }
+                    localStorage.setItem('tipo', resultado.usuario.tipo);
+                    liberarAcesso = true;
+                    break;
+                case 203:
+                    resultado_overlay.style.display = "flex";
+                    MostrarResultado_Overlay(0, resultado.mensagem)
+                    console.log(resultado.mensagem)
+                    resetSolicitado = true;
+                    break;
+                // ERROS:
+                case 400:
+                    if (resultado.erros?.length) {
+                        MostrarErro("erro-email", "");
+                        MostrarErro("erro-senha", "");
+                        resultado.erros.forEach(erro => {
+                            MostrarErro(`erro-${erro.campo}`, erro.mensagem);
+                        });
+                    }
+                    break;
+                case 401:
+                case 403:
+                case 429:
+                    resultado_overlay.style.display = "flex";
+                    MostrarResultado_Overlay(0, resultado.mensagem)
+                    console.log(resultado.mensagem)
+                    break;
+                default:
+                    break;
             }
-
         })
     </script>
 </body>

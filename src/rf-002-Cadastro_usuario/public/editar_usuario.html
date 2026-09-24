@@ -7,6 +7,7 @@
     <title>Editar usuario</title>
     <link rel="stylesheet" href="/template.css">
 </head>
+
 <body>
     <div class="loading-overlay" id="loading-overlay">
         <div class="loading-box">
@@ -69,30 +70,26 @@
 
                         <div class="input-dados">
                             <label for="Email">Email:</label><br>
-                            <input type="email" name="Email" id="email"
-                                placeholder="Ex: Daniel@gmail.com" disabled>
+                            <input type="email" name="Email" id="email" placeholder="Ex: Daniel@gmail.com" disabled>
                         </div>
                         <div id="erro-email"></div>
 
                         <div class="input-dados">
                             <label for="senha" style="margin-bottom: 5px;">Senha </label>
                             <div id="campo-senha" class="campo-senha campo-senha-reset">
-                                <input type="text" name="senha" id="senha"
-                                    value="•••••••••••" disabled>
+                                <input type="text" name="senha" id="senha" value="•••••••••••" disabled>
                                 <button type="button" onclick="confirmarResetSenha()">Resetar senha</button>
                             </div>
                         </div>
 
                         <div class="input-dados">
                             <label for="Email">Status: </label><br>
-                            <input type="text" name="status"
-                                id="status" disabled>
+                            <input type="text" name="status" id="status" disabled>
                         </div>
 
                         <div class="input-dados">
                             <label for="data-criacao">data criacao: </label><br>
-                            <input type="text"
-                                name="data-criacao" id="data-criacao" disabled>
+                            <input type="text" name="data-criacao" id="data-criacao" disabled>
                         </div>
 
                         <div id="input-submit">
@@ -303,6 +300,15 @@
                     MostrarResultado_Overlay(1, resposta.mensagem)
                     console.log(resposta.mensagem)
                     break;
+                case 400:
+                    loading.style.display = 'none'
+                    if (resposta.erros?.length) {
+                        MostrarErro("erro-nome", "");
+                        resposta.erros.forEach(erro => {
+                            MostrarErro(`erro-${erro.campo}`, erro.mensagem);
+                        });
+                    }
+                    break;
                 case 500:
                     loading.style.display = "none";
                     resultado_overlay.style.display = "flex";
@@ -353,43 +359,50 @@
 
                 const senha = document.getElementById("senha-confirmar").value.trim();
 
-                if (!senha || senha.length < 10) {
-                    MostrarErro("erro-senha", "ERRO: A senha deve ter no mínimo 10 caracteres");
-                } else {
-                    MostrarErro("erro-senha", "");
-                    try {
-                        senha_overlay.style.display = 'none'
-                        loading.style.display = "flex";
+                try {
+                    senha_overlay.style.display = 'none'
+                    loading.style.display = "flex";
 
-                        const response = await fetch('/confirmar-senha', {
-                            method: 'POST',
-                            credentials: "include",
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ senha })
-                        });
-                        const resultado = await response.json();
+                    const response = await fetch('/confirmar-senha', {
+                        method: 'POST',
+                        credentials: "include",
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ senha })
+                    });
+                    const resultado = await response.json();
 
-                        switch (response.status) {
-                            case 200:
-                                console.log("Senha verificada: Correta")
-                                confirmarEdicao()
-                                break;
-                            case 400:
-                                senha_overlay.style.display = 'none'
-                                loading.style.display = "none";
-                                resultado_overlay.style.display = "flex";
-                                MostrarResultado_Overlay(2, resultado.mensagem)
-                                console.log(resultado.mensagem)
-                                retornarSenha = true;
-                            default:
-                                break;
-                        }
-                    } catch (error) {
-                        MostrarResultado_Overlay(2, "Ocorreu um erro, por favor tente mais tarde");
-                    } finally {
-                        loading.style.display = "none";
+                    switch (response.status) {
+                        case 200:
+                            console.log("Senha verificada: Correta")
+                            confirmarEdicao()
+                            break;
+                        case 400:
+                            loading.style.display = 'none'
+                            senha_overlay.style.display = 'flex'
+                            if (resultado.erros?.length) {
+                                MostrarErro("erro-senha", "");
+                                resultado.erros.forEach(erro => {
+                                    MostrarErro(`erro-${erro.campo}`, erro.mensagem);
+                                });
+                            }
+                            break;
+                        case 401:
+                            senha_overlay.style.display = 'none'
+                            loading.style.display = "none";
+                            resultado_overlay.style.display = "flex";
+                            MostrarResultado_Overlay(2, resultado.mensagem)
+                            console.log(resultado.mensagem)
+                            retornarSenha = true;
+                            break;
+                        default:
+                            break;
                     }
+                } catch (error) {
+                    MostrarResultado_Overlay(2, "Ocorreu um erro, por favor tente mais tarde");
+                } finally {
+                    loading.style.display = "none";
                 }
+
             })
         }
         protegerPagina().then(usuario => {

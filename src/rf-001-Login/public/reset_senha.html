@@ -5,8 +5,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Redefinir Senha</title>
-        <link rel="stylesheet" href="/template.css">
+    <link rel="stylesheet" href="/template.css">
 </head>
+
 <body>
     <div class="loading-overlay" id="loading-overlay">
         <div class="loading-box">
@@ -30,7 +31,7 @@
                     <label for="input-codigo" style="font-size: 0.83em; font-weight: bold;">Código:</label>
                     <input id="input-codigo" style="width: 150px; text-align: center;" type="text" maxlength="6"
                         inputmode="numeric" pattern="\d{6}" placeholder="000000" autocomplete="one-time-code" required>
-                    <div id="erro-codigo"></div>
+                    <div id="erro-codigoDigitado"></div>
                 </div>
                 <div>
                     <label for="Senha" style="font-size: 0.83em; font-weight: bold; gap: 5px">Nova senha:</label>
@@ -39,11 +40,12 @@
                             autocomplete="new-password" required>
                         <button type="button" id="mostrar-senha" aria-label="Mostrar ou ocultar senha">👁</button>
                     </div>
-                    <div id="erro-senha"></div>
+                    <div id="erro-novaSenha"></div>
                 </div>
                 <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
                     <input style="width: 100px;" type="submit" value="Confirmar">
-                    <input style="width: 100px;" type="button" onclick="FechaResultado_overlay(2)" value="Cancelar">
+                    <input style="width: 100px;" type="button" onclick="solicitacaoCodigo_overlay.style.display='none'"
+                        value="Cancelar">
                 </div>
             </form>
         </div>
@@ -68,11 +70,12 @@
             </form>
         </div>
     </div>
-
+    <script src="./validacao-joi.bundle.js"></script>
     <script>
         let reabrirJanelaCodigo = false;
         let retonarLogin = false;
-        let email = "";
+        let email;
+
         const loading = document.getElementById("loading-overlay");
         const resultado_overlay = document.getElementById("resultado-overlay");
         const solicitacaoCodigo_overlay = document.getElementById("solicitacaoCodigo-overlay");
@@ -83,46 +86,43 @@
         }
 
         function MostrarResultado_Overlay(tipo, mensagem) {
-            document.getElementById("resultado-funcao").innerHTML = `
-                <div id="div-resultado-overlay"
+            if (tipo == 1) {
+                document.getElementById("resultado-funcao").innerHTML =
+                    `<div id="div-resultado-overlay"
                     style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 20px;">
-                    <div><h5 style="margin: 0;"></h5></div>
-                    <div style="display: flex; align-items: center; justify-content: center;">
-                        <input style="width: 100px;" type="button" onclick="FechaResultado_overlay(1)" value="Continuar">
+                    <div>
+                        <h5 style="color: rgb(103, 198, 40); margin: 0;">${mensagem}</h5>
                     </div>
-                </div>`;
-            const texto = document.getElementById("resultado-funcao").querySelector("h5");
-            // A mensagem da API é exibida como texto, sem interpretar HTML.
-            texto.textContent = mensagem;
-            if (tipo === 1) {
-                texto.style.color = "rgb(103, 198, 40)";
+                    <div style="display: flex; align-items: center; justify-content: center;">
+                     <input style="width: 100px;" type="button" onclick="FechaResultado_overlay()" value="Continuar">
+                    </div>
+                </div>`
             } else {
-                texto.style.color = "rgb(160, 2, 2)";
+                document.getElementById("resultado-funcao").innerHTML =
+                    `<div id="div-resultado-overlay"
+                    style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center gap: 20px;">
+                    <div>
+                        <h5 style="color: rgb(160, 2, 2); margin: 0;">${mensagem}</h5>
+                    </div>
+                    <div style="display: flex; align-items: center; justify-content: center;">
+                     <input style="width: 100px;" type="button" onclick="FechaResultado_overlay()" value="Continuar">
+                    </div>
+                </div>`
             }
-            resultado_overlay.style.display = "flex";
         }
 
-        function FechaResultado_overlay(num) {
-            if (num === 1) {
-                resultado_overlay.style.display = "none";
-                if (reabrirJanelaCodigo) {
-                    reabrirJanelaCodigo = false;
-                    solicitacaoCodigo_overlay.style.display = "flex";
-                } else if (retonarLogin) {
-                    retonarLogin = false;
-                    window.location.href = "/login";
-                } else {
-                    document.getElementById("Email").focus();
-                }
-            } else if (num === 2) {
-                solicitacaoCodigo_overlay.style.display = "none";
+        function FechaResultado_overlay() {
+
+            resultado_overlay.style.display = "none";
+            if (reabrirJanelaCodigo) {
                 reabrirJanelaCodigo = false;
-                document.getElementById("meuForm-confirmar-reset").reset();
-                MostrarErro("erro-codigo", "");
-                MostrarErro("erro-senha", "");
-                document.getElementById("Email").focus();
+                solicitacaoCodigo_overlay.style.display = "flex";
+            } else if (retonarLogin) {
+                retonarLogin = false;
+                window.location.href = "/login";
             }
         }
+
 
         // Sistema para mostrar a senha
         const campoSenha = document.getElementById("Senha");
@@ -138,117 +138,113 @@
             }
         });
 
+        // Janela que pede o email, valida e enviar o codigo
         document.getElementById("meuForm").addEventListener("submit", async (e) => {
             e.preventDefault();
             email = document.getElementById("Email").value.trim();
 
             // Mesma validação de email utilizada no login.
-            if (!email.includes("@")) {
-                MostrarErro("erro-email", "ERRO: insira um email válido");
-            } else {
-                MostrarErro("erro-email", "");
-                loading.style.display = "flex";
+            loading.style.display = "flex";
+            try {
+                const response = await fetch('/solicitar-reset-senha', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                const resultado = await response.json();
 
-                try {
-                    const response = await fetch('/solicitar-reset-senha', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ email })
-                    });
-                    const resultado = await response.json();
-
-                    switch (response.status) {
-                        case 200:
-                            solicitacaoCodigo_overlay.style.display = "flex";
-                            console.log(resultado.mensagem)
-                            break;
-                        case 400:
-                            resultado_overlay.style.display = "flex";
-                            MostrarResultado_Overlay(0, resultado.mensagem)
-                            console.log(resultado.mensagem)
-                            break;
-                        case 404:
-                            resultado_overlay.style.display = "flex";
-                            MostrarResultado_Overlay(0, resultado.mensagem)
-                            console.log(resultado.mensagem)
-                            break;
-                        case 429:
-                            resultado_overlay.style.display = "flex";
-                            MostrarResultado_Overlay(0, resultado.mensagem)
-                            console.log(resultado.mensagem)
-                            break;
-                        case 500:
-                            resultado_overlay.style.display = "flex";
-                            MostrarResultado_Overlay(0, resultado.mensagem)
-                            console.log(resultado.mensagem)
-                            break;
-                        default:
-                            break;
-                    }
-                } catch (error) {
-                    MostrarResultado_Overlay(2, "Ocorreu um erro, por favor tente mais tarde");
-                } finally {
-                    loading.style.display = "none";
+                switch (response.status) {
+                    case 200:
+                        solicitacaoCodigo_overlay.style.display = "flex";
+                        console.log(resultado.mensagem)
+                        break;
+                    case 400:
+                        if (resultado.erros?.length) {
+                            MostrarErro("erro-email", "");
+                            resultado.erros.forEach(erro => {
+                                MostrarErro(`erro-${erro.campo}`, erro.mensagem);
+                            });
+                        }
+                        break;
+                    case 404:
+                    case 429:
+                    case 500:
+                        resultado_overlay.style.display = "flex";
+                        MostrarResultado_Overlay(0, resultado.mensagem)
+                        console.log(resultado.mensagem)
+                        break;
+                    default:
+                        break;
                 }
+            } catch (error) {
+                MostrarResultado_Overlay(2, "Ocorreu um erro na solicitação de codigo, por favor tente mais tarde");
+            } finally {
+                loading.style.display = "none";
             }
-        });
+        }
 
+        );
+
+        // Janela que pede o codigo enviado e a nova senha
         document.getElementById("meuForm-confirmar-reset").addEventListener("submit", async (e) => {
             e.preventDefault();
+
             const codigoDigitado = document.getElementById("input-codigo").value.trim();
             const senha = document.getElementById("Senha").value;
 
-            if (!/^\d{6}$/.test(codigoDigitado)) {
-                MostrarErro("erro-codigo", "ERRO: O código deve ter exatamente 6 números");
-            } else {
-                MostrarErro("erro-codigo", "");
-            }
-            if (!senha || senha.length < 10) {
-                MostrarErro("erro-senha", "ERRO: A senha deve ter no mínimo 10 caracteres");
-            } else {
-                MostrarErro("erro-senha", "");
-            }
+            console.log("Dados recebidos: " + codigoDigitado + " e " + senha)
 
-            if (/^\d{6}$/.test(codigoDigitado) && senha && senha.length >= 10) {
-                solicitacaoCodigo_overlay.style.display = "none";
-                loading.style.display = "flex";
+            try {
+                console.log("tentativa de request")
+                loading.style.display = 'flex'
+                solicitacaoCodigo_overlay.style.display = "none"
+                const response = await fetch('/confirmar-reset-senha', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, codigoDigitado, novaSenha: senha })
+                });
+                const resultado = await response.json();
+                console.log("dados recebidos:" + resultado)
 
-                try {
-                    const response = await fetch('/confirmar-reset-senha', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ email, codigoDigitado, novaSenha: senha })
-                    });
-                    const resultado = await response.json();
-
-                    switch (response.status) {
-                        case 200:
-                            retonarLogin = true;
-                            resultado_overlay.style.display = "flex";
-                            MostrarResultado_Overlay(1, resultado.mensagem)
-                            console.log(resultado.mensagem)
-                            break;
-                        case 400:
-                        case 404:
-                        case 429:
-                        case 500:
-                            reabrirJanelaCodigo = true;
-                            resultado_overlay.style.display = "flex";
-                            MostrarResultado_Overlay(2, resultado.mensagem)
-                            console.log(resultado.mensagem)
-                        default:
-                            break;
-                    }
-                } catch (error) {
-                    reabrirJanelaCodigo = true;
-                    MostrarResultado_Overlay(2, "Ocorreu um erro, por favor tente mais tarde");
-                } finally {
-                    loading.style.display = "none";
+                switch (response.status) {
+                    case 200:
+                        loading.style.display = 'none'
+                        retonarLogin = true;
+                        resultado_overlay.style.display = "flex";
+                        MostrarResultado_Overlay(1, resultado.mensagem)
+                        console.log(resultado.mensagem)
+                        break;
+                    case 400:
+                        loading.style.display = 'none'
+                        solicitacaoCodigo_overlay.style.display = "flex"
+                        if (resultado.erros?.length) {
+                            MostrarErro("erro-codigoDigitado", "");
+                            MostrarErro("erro-novaSenha", "");
+                            resultado.erros.forEach(erro => {
+                                MostrarErro(`erro-${erro.campo}`, erro.mensagem);
+                            });
+                        }
+                        break;
+                        break;
+                    case 401:
+                    case 404:
+                    case 429:
+                    case 500:
+                        loading.style.display = 'none'
+                        reabrirJanelaCodigo = true;
+                        resultado_overlay.style.display = "flex";
+                        MostrarResultado_Overlay(2, resultado.mensagem)
+                        console.log(resultado.mensagem)
+                    default:
+                        break;
                 }
-            } else {
-                solicitacaoCodigo_overlay.style.display = "flex";
+            } catch (error) {
+                reabrirJanelaCodigo = true;
+                MostrarResultado_Overlay(2, "Ocorreu um erro, por favor tente mais tarde");
+            } finally {
+                loading.style.display = "none";
             }
-        });
+        })
     </script>
 </body>
 

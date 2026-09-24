@@ -1,0 +1,88 @@
+import Joi from "joi";
+
+export const schemaId = Joi.object({
+    id: Joi.number()
+    .integer()
+    .positive()
+    .required()
+});
+// NOME
+export const schemaNome = Joi.object({
+
+    nome: Joi.string()
+        .trim()
+        .min(3)
+        .max(100)
+        .required()
+        .messages({
+            "string.empty": "O nome é obrigatório.",
+            "string.min": "O nome deve possuir pelo menos 3 caracteres.",
+            "string.max": "O nome deve possuir no máximo 100 caracteres.",
+            "any.required": "O nome é obrigatório."
+        })
+
+});
+
+// EMAIL
+export const schemaEmail = Joi.object({
+
+    email: Joi.string()
+        .trim()
+        .email({
+            minDomainSegments: 2,
+            tlds: {
+                allow: true
+            }
+        })
+        .required()
+        .messages({
+            "string.empty": "O e-mail é obrigatório.",
+            "string.email": "Informe um endereço de e-mail válido.",
+            "any.required": "O e-mail é obrigatório."
+        })
+
+});
+
+// SENHA
+export const schemaSenha = Joi.object({
+
+    senha: Joi.string()
+        .min(10)
+        .max(128)
+        .required()
+        .messages({
+            "string.empty": "A senha é obrigatória.",
+            "string.min": "A senha deve possuir pelo menos 10 caracteres.",
+            "string.max": "A senha deve possuir no máximo 128 caracteres.",
+            "any.required": "A senha é obrigatória."
+        })
+
+});
+export const schemaNovaSenha = Joi.object({
+
+    novaSenha: Joi.string()
+        .min(10)
+        .max(128)
+        .required()
+        .messages({
+            "string.empty": "A senha é obrigatória.",
+            "string.min": "A senha deve possuir pelo menos 10 caracteres.",
+            "string.max": "A senha deve possuir no máximo 128 caracteres.",
+            "any.required": "A senha é obrigatória."
+        })
+
+});
+
+// CÓDIGO DE VERIFICAÇÃO
+export const schemaCodigo = Joi.object({
+
+    codigoDigitado: Joi.string()
+        .pattern(/^\d{6}$/)
+        .required()
+        .messages({
+            "string.empty": "O código é obrigatório.",
+            "string.pattern.base": "O código deve possuir exatamente 6 números.",
+            "any.required": "O código é obrigatório."
+        })
+
+});

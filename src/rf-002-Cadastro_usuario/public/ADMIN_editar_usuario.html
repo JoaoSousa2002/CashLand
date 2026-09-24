@@ -166,7 +166,7 @@
                     style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 20px;">
                     <div>
                         <h5 style="color: rgb(160, 2, 2); margin: 0;">Tem certeza que deseja resetar a senha desse usuario?</h5>
-                        <hp style="color: rgb(160, 2, 2); margin: 0; font-size: 13px">Essa ação não poderá ser desfeita</hp>
+                        <p style="color: rgb(160, 2, 2); margin: 0; font-size: 13px">Essa ação não poderá ser desfeita</p>
                     </div>
                     <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
                      <input style="width: 100px;" type="button" onclick="redirecionaResetSenha()" value="Continuar">
@@ -370,6 +370,16 @@
                     MostrarResultado_Overlay(1, resposta.mensagem)
                     console.log(resposta.mensagem)
                     break;
+                case 400:
+                    loading.style.display = 'none'
+                    if (resposta.erros?.length) {
+                        MostrarErro("erro-nome", "");
+                        MostrarErro("erro-email", "");
+                        resposta.erros.forEach(erro => {
+                            MostrarErro(`erro-${erro.campo}`, erro.mensagem);
+                        });
+                    }
+                    break;
                 case 500:
                     loading.style.display = "none";
                     resultado_overlay.style.display = "flex";
@@ -419,44 +429,54 @@
                 e.preventDefault();
 
                 const senha = document.getElementById("senha-confirmar").value.trim();
+                try {
+                    senha_overlay.style.display = 'none'
+                    loading.style.display = "flex";
 
-                if (!senha || senha.length < 10) {
-                    MostrarErro("erro-senha", "ERRO: A senha deve ter no mínimo 10 caracteres");
-                } else {
-                    MostrarErro("erro-senha", "");
-                    try {
-                        senha_overlay.style.display = 'none'
-                        loading.style.display = "flex";
+                    const response = await fetch('/confirmar-senha', {
+                        method: 'POST',
+                        credentials: "include",
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ senha })
+                    });
+                    const resultado = await response.json();
 
-                        const response = await fetch('/confirmar-senha', {
-                            method: 'POST',
-                            credentials: "include",
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ senha })
-                        });
-                        const resultado = await response.json();
-
-                        switch (response.status) {
-                            case 200:
-                                console.log("Senha verificada: Correta")
-                                confirmarEdicao()
-                                break;
-                            case 400:
-                                senha_overlay.style.display = 'none'
-                                loading.style.display = "none";
-                                resultado_overlay.style.display = "flex";
-                                MostrarResultado_Overlay(2, resultado.mensagem)
-                                console.log(resultado.mensagem)
-                                retornarSenha = true;
-                            default:
-                                break;
-                        }
-                    } catch (error) {
-                        MostrarResultado_Overlay(2, "Ocorreu um erro, por favor tente mais tarde");
-                    } finally {
-                        loading.style.display = "none";
+                    switch (response.status) {
+                        case 200:
+                            console.log("Senha verificada: Correta")
+                            confirmarEdicao()
+                            break;
+                        case 400:
+                            loading.style.display = 'none'
+                            senha_overlay.style.display = 'flex'
+                            if (resultado.erros?.length) {
+                                MostrarErro("erro-senha", "");
+                                resultado.erros.forEach(erro => {
+                                    MostrarErro(`erro-${erro.campo}`, erro.mensagem);
+                                });
+                            }
+                            break;
+                        case 401:
+                            senha_overlay.style.display = 'none'
+                            loading.style.display = "none";
+                            resultado_overlay.style.display = "flex";
+                            MostrarResultado_Overlay(2, resultado.mensagem)
+                            console.log(resultado.mensagem)
+                            retornarSenha = true;
+                            break;
+                        case 429:
+                            resultado_overlay.style.display = "flex";
+                            MostrarResultado_Overlay(0, resultado.mensagem)
+                            console.log(resultado.mensagem)
+                        default:
+                            break;
                     }
+                } catch (error) {
+                    MostrarResultado_Overlay(2, "Ocorreu um erro, por favor tente mais tarde");
+                } finally {
+                    loading.style.display = "none";
                 }
+
             })
         }
         protegerPagina("Admin").then(usuario => {
@@ -468,20 +488,8 @@
         document.getElementById("meuForm-editar-cadastro")
             .addEventListener("submit", (e) => {
                 e.preventDefault();
-                const nome = document.getElementById("nome").value
-                const email = document.getElementById("email").value
-                if (!nome) {
-                    MostrarErro("erro-nome", "ERRO: O nome não pode estar vazio")
-                } else {
-                    MostrarErro("erro-nome", "")
-                }
-                if (!email.includes("@") || !email.includes(".com")) {
-                    MostrarErro("erro-email", "ERRO: insira um email valido")
-                }
-                else {
-                    MostrarErro("erro-email", "")
-                    solicitarSenha();
-                }
+                solicitarSenha();
+
             });
 
         document.getElementById("meuForm-Logout").addEventListener("submit", async (e) => {

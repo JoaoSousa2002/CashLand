@@ -7,6 +7,7 @@
     <title>Login</title>
     <link rel="stylesheet" href="/template.css">
 </head>
+
 <body>
     <div class="loading-overlay" id="loading-overlay">
         <div class="loading-box">
@@ -83,7 +84,7 @@
             </form>
         </div>
     </div>
-
+    <script src="./validacao-joi.bundle.js"></script>
     <script>
         let reabrirJanelaCodigo = false;
         let retonarLogin = false;
@@ -158,39 +159,16 @@
         document.getElementById("meuForm").addEventListener("submit", async (e) => {
             e.preventDefault();
 
-            nome = document.getElementById("Nome").value;
-            email = document.getElementById("Email").value;
+            nome = document.getElementById("Nome").value.trim();
+            email = document.getElementById("Email").value.trim();
             senha = document.getElementById("Senha").value;
-
-            // Verifica se os campo nome e senha estão vazios ou se o campo email falta o '@'', se sim, retorna mensagem de erro
-            // O else serve para caso já tenha aparecido a mensagem de erro e o usuario insira o campo corretamente
-            if (!nome) {
-                MostrarErro("erro-nome", "ERRO: O nome não pode estar vazio")
-            } else {
-                MostrarErro("erro-nome", "")
-            }
-            if (!email.includes("@") || !email.includes(".com")) {
-                MostrarErro("erro-email", "ERRO: insira um email valido")
-            }
-            else {
-                MostrarErro("erro-email", "")
-            }
-            if (!senha || senha.length < 10) {
-                MostrarErro("erro-senha", "ERRO: A senha deve ter no minimo 10 caracteres")
-            }
-            else {
-                MostrarErro("erro-senha", "")
-            }
-            //Verifica se todos os campos estão preenchidos corretamente e faz a requisição
-            if (nome && email.includes("@") && email.includes(".com") && senha && senha.length >= 10) {
-                // Bloqueia a tela
+            {
                 loading.style.display = "flex";
-
                 try {
                     const response = await fetch(`/solicitar-codigo`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ nome, email })
+                        body: JSON.stringify({ nome, email, senha })
                     });
                     const resultado = await response.json();
 
@@ -202,17 +180,17 @@
                             console.log(resultado.mensagem)
                             break;
                         case 400:
-                            resultado_overlay.style.display = "flex";
-                            MostrarResultado_Overlay(2, resultado.mensagem)
-                            console.log(resultado.mensagem)
+                            if (resultado.erros?.length) {
+                                MostrarErro("erro-nome", "");
+                                MostrarErro("erro-email", "");
+                                MostrarErro("erro-senha", "");
+                                resultado.erros.forEach(erro => {
+                                    MostrarErro(`erro-${erro.campo}`, erro.mensagem);
+                                });
+                            }
+                            break;
                         case 409:
-                            resultado_overlay.style.display = "flex";
-                            MostrarResultado_Overlay(2, resultado.mensagem)
-                            console.log(resultado.mensagem)
                         case 500:
-                            resultado_overlay.style.display = "flex";;
-                            MostrarResultado_Overlay(2, resultado.mensagem)
-                            console.log(resultado.mensagem)
                         case 429:
                             resultado_overlay.style.display = "flex";;
                             MostrarResultado_Overlay(2, resultado.mensagem)
@@ -227,18 +205,12 @@
                 }
 
             }
-        })
+        }
+        )
 
         document.getElementById("meuForm-confirmar-cadastro").addEventListener("submit", async (e) => {
             e.preventDefault();
             const codigoDigitado = document.getElementById("input-codigo").value.trim();
-
-            if (!/^\d{6}$/.test(codigoDigitado)) {
-                MostrarErro("erro-codigo", "ERRO: O código deve ter exatamente 6 números");
-                return;
-            } else {
-                MostrarErro("erro-codigo", "");
-            }
 
             try {
                 solicitacaoCodigo_overlay.style.display = "none"
@@ -266,9 +238,12 @@
                         retonarLogin = true;
                         break;
                     case 400:
-                        solicitacaoCodigo_overlay.style.display = "none"
-                        resultado_overlay.style.display = "flex"
-                        MostrarResultado_Overlay(2, resultado.mensagem)
+                        if (resultado.erros?.length) {
+                            MostrarErro("erro-codigo", "");
+                            resultado.erros.forEach(erro => {
+                                MostrarErro(`erro-${erro.campo}`, erro.mensagem);
+                            });
+                        }
                         break;
                     case 401:
                         solicitacaoCodigo_overlay.style.display = "none"

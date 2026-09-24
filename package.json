@@ -8,6 +8,7 @@
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "express-rate-limit": "^8.7.0",
+    "joi": "^18.2.9",
     "jose": "^6.2.12",
     "jsonwebtoken": "^9.0.3",
     "swagger-ui-express": "^5.0.1",
@@ -16,5 +17,8 @@
   "scripts": {
     "test": "node --test tests/*.test.js",
     "test:supabase": "node tests/integracao/codigos-supabase.js --executar"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2"
   }
 }
