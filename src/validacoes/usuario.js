@@ -2,9 +2,9 @@ import Joi from "joi";
 
 export const schemaId = Joi.object({
     id: Joi.number()
-    .integer()
-    .positive()
-    .required()
+        .integer()
+        .positive()
+        .required()
 });
 // NOME
 export const schemaNome = Joi.object({
@@ -83,6 +83,22 @@ export const schemaCodigo = Joi.object({
             "string.empty": "O código é obrigatório.",
             "string.pattern.base": "O código deve possuir exatamente 6 números.",
             "any.required": "O código é obrigatório."
+        })
+
+});
+
+export const schemaDescricaoCategoria = Joi.object({
+
+    descricao: Joi.string()
+        .trim()
+        .min(3)
+        .max(100)
+        .allow("")
+        .optional()
+        .messages({
+            "string.base": "A descrição deve ser um texto.",
+            "string.min": "A descrição deve possuir pelo menos 3 caracteres.",
+            "string.max": "A descrição deve possuir no máximo 100 caracteres."
         })
 
 });
