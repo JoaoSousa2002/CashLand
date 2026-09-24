@@ -197,20 +197,10 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "mensagem": {
-                      "type": "string"
-                    },
-                    "erro": {
-                      "type": "object",
-                      "additionalProperties": true
-                    }
-                  }
+                  "$ref": "#/components/schemas/Mensagem"
                 },
                 "example": {
-                  "mensagem": "Usuario criado, mas o email de confirmação não foi enviado",
-                  "erro": {}
+                  "mensagem": "Usuario criado, mas o email de confirmação não foi enviado"
                 }
               }
             }
@@ -242,7 +232,7 @@
             "$ref": "#/components/responses/LimiteCadastro"
           },
           "500": {
-            "description": "Erro ao cadastrar usuário",
+            "description": "Falha de infraestrutura ao consultar, persistir ou consumir o código, enviar email ou concluir a operação. Detalhes internos não são retornados.",
             "content": {
               "application/json": {
                 "schema": {
@@ -252,7 +242,7 @@
             }
           }
         },
-        "description": "Exige nome, email contendo @ e .com, senha com no mínimo 10 caracteres e código enviado por POST /solicitar-codigo. O código tem seis dígitos, expira em 10 minutos e é consumido ao ser validado. Retorna 200 no cadastro completo ou 201 se o cadastro foi criado, mas o envio do email de boas-vindas falhou."
+        "description": "Exige nome, email contendo @ e .com, senha com no mínimo 10 caracteres e código enviado por POST /solicitar-codigo. O código tem seis dígitos, expira em 10 minutos e é consumido ao ser validado. Retorna 200 no cadastro completo ou 201 se o cadastro foi criado, mas o envio do email de boas-vindas falhou. O email é normalizado com trim e conversão para minúsculas. O código é persistido como HMAC no banco, separado por finalidade, com validade de 10 minutos. Código incorreto não altera o registro nem renova sua validade. O consumo condicional permite um único uso. O consumo e a alteração do usuário são operações separadas; uma falha posterior ao consumo exige solicitar novo código."
       }
     },
     "/solicitar-codigo": {
@@ -320,30 +310,17 @@
             "$ref": "#/components/responses/LimiteCodigo"
           },
           "500": {
-            "description": "O envio de email falhou.",
+            "description": "Falha de infraestrutura ao consultar, persistir ou consumir o código, enviar email ou concluir a operação. Detalhes internos não são retornados.",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "mensagem": {
-                      "type": "string"
-                    },
-                    "erro": {
-                      "type": "object",
-                      "additionalProperties": true
-                    }
-                  }
-                },
-                "example": {
-                  "mensagem": "O envio de email falhou!",
-                  "erro": {}
+                  "$ref": "#/components/schemas/Mensagem"
                 }
               }
             }
           }
         },
-        "description": "Exige nome e email contendo @ e .com. Rejeita email já cadastrado. O código tem seis dígitos e expira em 10 minutos. Uma nova solicitação substitui o código anterior desse email."
+        "description": "Exige nome e email contendo @ e .com. Rejeita email já cadastrado. O código tem seis dígitos e expira em 10 minutos. Uma nova solicitação substitui somente o código anterior do mesmo email e finalidade. O email é normalizado com trim e conversão para minúsculas. O código é persistido como HMAC no banco, separado por finalidade, com validade de 10 minutos. Código incorreto não altera o registro nem renova sua validade. O consumo condicional permite um único uso."
       }
     },
     "/solicitar-reset-senha": {
@@ -406,7 +383,7 @@
             "$ref": "#/components/responses/LimiteCodigo"
           },
           "500": {
-            "description": "Erro ao consultar usuário ou não foi possível enviar o código",
+            "description": "Falha de infraestrutura ao consultar, persistir ou consumir o código, enviar email ou concluir a operação. Detalhes internos não são retornados.",
             "content": {
               "application/json": {
                 "schema": {
@@ -416,7 +393,7 @@
             }
           }
         },
-        "description": "Exige email contendo @ e cadastrado no banco. Envia código de seis dígitos com validade de 10 minutos; uma nova solicitação substitui o código anterior desse email."
+        "description": "Exige email contendo @ e cadastrado no banco. Envia código de seis dígitos com validade de 10 minutos; uma nova solicitação substitui o código anterior desse email. O email é normalizado com trim e conversão para minúsculas. O código é persistido como HMAC no banco, separado por finalidade, com validade de 10 minutos. Código incorreto não altera o registro nem renova sua validade. O consumo condicional permite um único uso."
       }
     },
     "/confirmar-reset-senha": {
@@ -491,7 +468,7 @@
             "$ref": "#/components/responses/LimiteCodigo"
           },
           "500": {
-            "description": "Erro ao atualizar senha ou erro ao processar sua solicitação",
+            "description": "Falha de infraestrutura ao consultar, persistir ou consumir o código, enviar email ou concluir a operação. Detalhes internos não são retornados.",
             "content": {
               "application/json": {
                 "schema": {
@@ -501,7 +478,7 @@
             }
           }
         },
-        "description": "Valida e consome o código de uso único, atualiza o hash da senha e define status_reset_senha como false. Não exige sessão autenticada."
+        "description": "Valida e consome o código de uso único, atualiza o hash da senha e define status_reset_senha como false. Não exige sessão autenticada. O email é normalizado com trim e conversão para minúsculas. O código é persistido como HMAC no banco, separado por finalidade, com validade de 10 minutos. Código incorreto não altera o registro nem renova sua validade. O consumo condicional permite um único uso. O consumo e a alteração do usuário são operações separadas; uma falha posterior ao consumo exige solicitar novo código."
       }
     },
     "/me": {

@@ -1,6 +1,5 @@
 import 'dotenv/config';
-
-const codigosPendentes = new Map();
+import { createHmac, randomInt, randomUUID, timingSafeEqual } from 'node:crypto';
 
 const TEMPO_EXPIRACAO_MS = 10 * 60 * 1000; // 10 minutos
 
@@ -30,8 +29,6 @@ export async function enviarEmail({ destinatarioEmail, destinatarioNome, assunto
   });
 
   if (!response.ok) {
-    const erro = await response.json();
-    console.error('Erro ao enviar email:', erro);
     throw new Error('Falha ao enviar email');
   }
 
@@ -40,29 +37,84 @@ export async function enviarEmail({ destinatarioEmail, destinatarioNome, assunto
 }
 
 
+export function normalizarEmail(email) {
+  return typeof email === 'string' ? email.trim().toLowerCase() : '';
+}
+
 export function gerarCodigo() {
-  return Math.floor(100000 + Math.random() * 900000).toString(); // 6 dígitos
+  return randomInt(100000, 1000000).toString();
 }
 
-export function salvarCodigo(email, codigo) {
-  codigosPendentes.set(email, {
-    codigo,
-    expiraEm: Date.now() + TEMPO_EXPIRACAO_MS
-  });
-}
-
-export function validarCodigo(email, codigoDigitado) {
-  const registro = codigosPendentes.get(email);
-
-  if (!registro) return { valido: false, motivo: 'nenhum_codigo_solicitado' };
-  if (Date.now() > registro.expiraEm) {
-    codigosPendentes.delete(email);
-    return { valido: false, motivo: 'codigo expirado' };
+// Recebe o cliente do servidor, sem abrir outra conexão ou importar Servidor.js.
+export function criarServicoCodigos(supabase, {
+  obterSegredo = () => process.env.SEGREDO_CODIGOS,
+  agora = Date.now
+} = {}) {
+  function hashCodigo(email, codigo, finalidade) {
+    if (!['cadastro', 'recuperacao_senha'].includes(finalidade)) {
+      throw new Error('Finalidade de código inválida');
+    }
+    const segredo = obterSegredo();
+    if (typeof segredo !== 'string' || !segredo.trim() || segredo === process.env.SEGREDO_JWT) {
+      throw new Error('Configure SEGREDO_CODIGOS com uma chave própria');
+    }
+    return createHmac('sha256', segredo)
+      .update(JSON.stringify([finalidade, email, String(codigo)]))
+      .digest('hex');
   }
-  if (registro.codigo !== codigoDigitado) {
-    return { valido: false, motivo: 'codigo incorreto' };
+
+  async function salvarCodigo(email, codigo, finalidade) {
+    email = normalizarEmail(email);
+    const codigo_hash = hashCodigo(email, codigo, finalidade);
+    const instante = agora();
+    // O ID identifica esta emissão, inclusive quando o mesmo código for sorteado novamente.
+    const id = randomUUID();
+    const { data, error } = await supabase.from('codigos_verificacao')
+      .upsert({
+        id, email, finalidade, codigo_hash,
+        criado_em: new Date(instante).toISOString(),
+        expira_em: new Date(instante + TEMPO_EXPIRACAO_MS).toISOString()
+      }, { onConflict: 'email,finalidade' })
+      .select('id').single();
+    if (error || data?.id !== id) throw new Error('Não foi possível persistir o código');
+    return { id, email, finalidade };
   }
 
-  codigosPendentes.delete(email); // uso único
-  return { valido: true, motivo:"" };
+  async function cancelarEmissao(emissao) {
+    const { error } = await supabase.from('codigos_verificacao').delete()
+      .eq('id', emissao.id).eq('email', emissao.email).eq('finalidade', emissao.finalidade);
+    if (error) throw new Error('Não foi possível cancelar a emissão');
+  }
+
+  async function validarCodigo(email, codigoDigitado, finalidade) {
+    email = normalizarEmail(email);
+    const hash = hashCodigo(email, codigoDigitado, finalidade);
+    const { data: registro, error } = await supabase.from('codigos_verificacao')
+      .select('id,codigo_hash,expira_em').eq('email', email).eq('finalidade', finalidade)
+      .maybeSingle();
+    if (error) throw new Error('Não foi possível consultar o código');
+    if (!registro) return { valido: false, motivo: 'nenhum_codigo_solicitado' };
+    const expiraEm = Date.parse(registro.expira_em);
+    if (!Number.isFinite(expiraEm)) throw new Error('Validade do código indisponível');
+    if (expiraEm <= agora()) return { valido: false, motivo: 'codigo expirado' };
+
+    const esperado = Buffer.from(registro.codigo_hash, 'hex');
+    const recebido = Buffer.from(hash, 'hex');
+    if (esperado.length !== recebido.length || !timingSafeEqual(esperado, recebido)) {
+      // Erros de digitação não alteram o registro nem sua expiração.
+      return { valido: false, motivo: 'codigo incorreto' };
+    }
+
+    // O SELECT é diagnóstico; somente este DELETE condicional autoriza a operação.
+    // ID protege reenvios concorrentes; hash, finalidade e TTL são revalidados no DELETE.
+    const { data: consumidos, error: erroConsumo } = await supabase.from('codigos_verificacao')
+      .delete().eq('id', registro.id).eq('email', email).eq('finalidade', finalidade)
+      .eq('codigo_hash', hash).gt('expira_em', new Date(agora()).toISOString()).select('id');
+    if (erroConsumo) throw new Error('Não foi possível consumir o código');
+    return consumidos?.length === 1
+      ? { valido: true, motivo: '' }
+      : { valido: false, motivo: 'codigo incorreto' };
+  }
+
+  return { salvarCodigo, validarCodigo, cancelarEmissao };
 }

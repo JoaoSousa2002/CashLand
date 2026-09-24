@@ -25,3 +25,7 @@
 - **LINK_BANCO_DADOS:** https://supabase.com/dashboard/project/xjfgkakjpuxoznbwznyb
 - **LINK_API_SWAGGER:** https://cashland-cdf0.onrender.com/api-docs/
 - **LINK_DEMONSTRAÇÃO:** https://cashland-cdf0.onrender.com/
+
+### Configuração dos códigos de verificação
+
+O backend requer `SEGREDO_CODIGOS`, uma chave própria para os códigos enviados por email. Consulte a [configuração, permissões e roteiro de testes](docs/configuracao/codigos-verificacao.md).

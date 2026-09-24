@@ -85,7 +85,8 @@ Também é necessário disponibilizar um fluxo de recuperação de senha para qu
 - ✅ Serviço web funcionando.
 - ✅ Banco de dados Supabase funcionando.
 - ✅ Serviço de envio de email disponível.
-- ✅ Variáveis de ambiente do serviço de email configuradas.
+- ✅ Variáveis de ambiente do serviço de email e `SEGREDO_CODIGOS` configuradas.
+- ✅ Tabela `codigos_verificacao` acessível ao backend para consulta, gravação e consumo.
 
 ---
 
@@ -203,7 +204,7 @@ Também é necessário disponibilizar um fluxo de recuperação de senha para qu
 10. Backend consulta `nome` e `email` na tabela `usuarios`.
 11. Backend verifica se o usuário existe.
 12. Backend gera um código aleatório de 6 dígitos utilizando `gerarCodigo()`.
-13. Backend salva temporariamente o código por meio de `salvarCodigo(email, codigo)`.
+13. Backend persiste o HMAC por meio de `await codigos.salvarCodigo(email, codigo, 'recuperacao_senha')`.
 14. O código recebe tempo de expiração de 10 minutos.
 15. Backend envia o código para o email do usuário por meio de `enviarEmail()`.
 16. Servidor retorna HTTP `200`.
@@ -234,17 +235,17 @@ Também é necessário disponibilizar um fluxo de recuperação de senha para qu
 
 7. Backend valida a presença dos dados e o tamanho mínimo da nova senha.
 
-8. A confirmação está sujeita ao mesmo limitador por IP da solicitação, executado antes das validações do corpo.
+8. O backend consulta o usuário pelo email normalizado e prepara o hash da nova senha. A confirmação está sujeita ao mesmo limitador por IP da solicitação, executado antes das validações do corpo.
 
 9. Backend converte `codigoDigitado` para string.
 
-10. Backend executa `validarCodigo(email, String(codigoDigitado))`.
+10. Backend executa `await codigos.validarCodigo(email, String(codigoDigitado), 'recuperacao_senha')`.
 
 11. Sistema confirma que o código existe, não expirou e corresponde ao código armazenado.
 
-12. Após validação bem-sucedida, o código é removido da lista de códigos pendentes.
+12. Após conferir HMAC e validade, o código é consumido por exclusão condicional no banco; somente uma confirmação pode consumi-lo.
 
-13. Backend gera o hash da nova senha usando `gerarHashSenha()`.
+13. Backend utiliza o hash da nova senha preparado antes do consumo.
 
 14. Backend executa `UPDATE` na tabela `usuarios`, alterando `senha_hash` e definindo `status_reset_senha: false` no registro com o email informado.
 
@@ -374,7 +375,7 @@ Também é necessário disponibilizar um fluxo de recuperação de senha para qu
 | **RNF-01** | Performance              | Processar login e operações de reset em tempo compatível com o uso web normal | Tempo de resposta das rotas                | Evitar espera desnecessária durante autenticação e recuperação |
 | **RNF-02** | Usabilidade              | Exibir feedback visual de carregamento, sucesso e erro                        | Presença de overlays e mensagens por etapa | Informar ao usuário o estado da operação                       |
 | **RNF-03** | Segurança de credenciais | Armazenar senhas somente como hash bcrypt                                     | Verificação do campo `senha_hash`          | Evitar armazenamento de senha em texto puro                    |
-| **RNF-04** | Segurança de recuperação | Código temporário com expiração de 10 minutos                                 | Tempo registrado em `expiraEm`             | Limitar o período de validade do código                        |
+| **RNF-04** | Segurança de recuperação | Código temporário com expiração de 10 minutos                                 | Tempo registrado em `expira_em`             | Limitar o período de validade do código                        |
 | **RNF-05** | Controle de abuso        | Bloquear novas requisições após o limite configurado                          | HTTP `429` e bloqueio de 15 minutos        | Controlar tentativas repetidas de recuperação                  |
 | **RNF-06** | Usabilidade              | Nova senha deve possuir pelo menos 10 caracteres                              | Validação no frontend e backend            | Impedir envio de senha abaixo do tamanho mínimo definido       |
 | **RNF-07** | Integração               | Enviar o código por serviço externo de email                                  | Resposta da API de email                   | Disponibilizar o código ao usuário cadastrado                  |
@@ -749,15 +750,17 @@ com HTTP `401`.
 
 ```javascript
 const codigo = gerarCodigo();
-salvarCodigo(email, codigo);
+const codigos = criarServicoCodigos(supabase);
+await codigos.salvarCodigo(email, codigo, 'recuperacao_senha');
 ```
 
 Na confirmação:
 
 ```javascript
-const resultado = validarCodigo(
+const resultado = await codigos.validarCodigo(
     email,
-    String(codigoDigitado)
+    String(codigoDigitado),
+    'recuperacao_senha'
 );
 ```
 
@@ -775,20 +778,9 @@ const resultado = validarCodigo(
 
 **Contexto:** O projeto já possui funções para envio de email e validação de códigos.
 
-**Decisão:** O RF-001 importa:
+**Decisão:** Todas as rotas ficam em `Servidor.js`. As quatro operações de código são declaradas diretamente com `app.post`, utilizando o cliente Supabase existente e os limitadores. O servidor utiliza `criarServicoCodigos`, `gerarCodigo`, `normalizarEmail` e `enviarEmail` de `Email.js`.
 
-```javascript
-import {
-    enviarEmail,
-    gerarCodigo,
-    salvarCodigo,
-    validarCodigo
-} from '../rf-002-Cadastro_usuario/Email.js';
-```
-
-**Consequências:** O mesmo mecanismo de código e envio de email é utilizado pelo cadastro e pela recuperação de senha.
-
----
+**Consequências:** Cadastro e recuperação compartilham a implementação, com registros independentes por finalidade. As operações de banco são aguardadas com `await`.
 
 ### ADR-008: Limitação de requisições por IP
 
@@ -812,7 +804,7 @@ const { data: usuarioAtualizado, error } = await supabase
     .update({
         senha_hash: novaSenhaHash, status_reset_senha: false
     })
-    .eq('email', email)
+    .eq('id_usuario', usuario.id_usuario)
     .select('id_usuario')
     .maybeSingle();
 ```
@@ -863,9 +855,9 @@ const { data: usuarioAtualizado, error } = await supabase
 ## Fluxo de Dados — Recuperação de Senha
 
 1. A solicitação passa pelo limitador por IP e pela validação do email cadastrado.
-2. O backend gera o código, salva sua expiração em memória e envia o email pela Brevo.
-3. Na confirmação, o mesmo limitador é aplicado; o servidor valida os campos e o código, removido após uso válido.
-4. O servidor gera o novo hash e atualiza `senha_hash` e `status_reset_senha: false`.
+2. O backend gera o código, persiste seu HMAC e a expiração no Supabase e envia o email pela Brevo.
+3. Na confirmação, o mesmo limitador é aplicado; o servidor valida os campos, consulta o usuário e prepara o novo hash antes de validar e consumir o código.
+4. O servidor atualiza `senha_hash` e `status_reset_senha: false` pelo ID do usuário encontrado.
 5. Após sucesso, o frontend apresenta a confirmação e retorna ao login no clique em "Continuar".
 
 ---
@@ -900,7 +892,7 @@ await supabase
     .update({
         senha_hash: novaSenhaHash, status_reset_senha: false
     })
-    .eq('email', email);
+    .eq('id_usuario', usuario.id_usuario);
 ```
 
 A nova senha não é gravada diretamente na tabela.
@@ -954,9 +946,10 @@ O sistema utiliza a mesma mensagem para falhas de autenticação.
 A senha só é atualizada depois da validação do código:
 
 ```javascript
-const resultado = validarCodigo(
+const resultado = await codigos.validarCodigo(
     email,
-    String(codigoDigitado)
+    String(codigoDigitado),
+    'recuperacao_senha'
 );
 
 if (!resultado.valido) {
@@ -972,11 +965,7 @@ O código possui expiração:
 const TEMPO_EXPIRACAO_MS = 10 * 60 * 1000;
 ```
 
-Após validação correta, o código é removido:
-
-```javascript
-codigosPendentes.delete(email);
-```
+Após conferir HMAC e validade, o serviço consome o código com `DELETE` condicional por ID da emissão, email, finalidade, hash e `expira_em > agora`. O retorno deve conter exatamente um ID. Código incorreto não executa escrita; código expirado permanece inválido mesmo sem limpeza física.
 
 O fluxo utiliza `limitadorCodigo`, compartilhado com a solicitação de código de cadastro e o logout:
 
@@ -1008,13 +997,7 @@ const { data: usuario, error } = await supabase
 
 **Implementação no reset:**
 
-```javascript
-const { data: usuario, error } = await supabase
-    .from('usuarios')
-    .select('nome, email')
-    .eq('email', email)
-    .maybeSingle();
-```
+`buscarUsuario()` consulta `id_usuario`, `nome` e `email` com `ilike`, escapando os curingas de SQL e confirmando a igualdade do email normalizado. A alteração de senha utiliza o ID retornado pela consulta.
 
 **UPDATE da senha:**
 
@@ -1024,7 +1007,13 @@ const { data: usuarioAtualizado, error } = await supabase
     .update({
         senha_hash: novaSenhaHash, status_reset_senha: false
     })
-    .eq('email', email)
+    .eq('id_usuario', usuario.id_usuario)
     .select('id_usuario')
     .maybeSingle();
 ```
+
+### Persistência e validade dos códigos
+
+O código usa `crypto.randomInt()` e é armazenado somente como HMAC-SHA256 com `SEGREDO_CODIGOS`, incorporando email normalizado e finalidade. Um reenvio substitui somente a emissão da mesma finalidade e renova seus dez minutos. Erro de digitação mantém o registro e o prazo original. Falhas de persistência ou consumo retornam HTTP 500.
+
+O TTL usa timestamps UTC do servidor Node.js, inclusive no filtro de exclusão. Consumo e atualização da senha são operações separadas: falha na atualização após o consumo exige novo código. Consulte a [configuração e validação](../configuracao/codigos-verificacao.md) para permissões, compensação de envio e testes.

@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import { enviarEmail, gerarCodigo, salvarCodigo, validarCodigo } from '../rf-002-Cadastro_usuario/Email.js';
+import { criarServicoCodigos, enviarEmail, gerarCodigo, normalizarEmail } from '../rf-002-Cadastro_usuario/Email.js';
 import { gerarHashSenha, validarSenha, gerarToken, verificarToken } from './Autenticacao.js'
 import Express, { response } from 'express'
 import cors from 'cors'
@@ -102,9 +102,6 @@ app.get('/tela-admin/listar-usuarios', (req, res) => {
 app.get('/tela-admin/editar-usuarios', (req, res) => {
     res.sendFile(path.join(__dirname, '../rf-002-Cadastro_usuario/public/ADMIN_editar_usuario.html'));
 });
-
-
-
 
 
 const supabase = createClient(
@@ -268,227 +265,168 @@ app.post('/logout', limitadorCodigo, (req, res) => {
     console.log('/logout: Logout realizado')
     return res.status(200).json({ mensagem: 'Logout realizado' });
 });
-// ROTA PARA VERIFICAR SE O EMAIL EXISTE
-app.post('/solicitar-codigo', limitadorCodigo, async (req, res) => {
-    const { nome, email } = req.body;
+const codigos = criarServicoCodigos(supabase);
 
+async function buscarUsuario(email) {
+    // Compatibilidade com emails legados que possuem letras maiúsculas.
+    // A comparação final também impede que curingas do ILIKE identifiquem outra conta.
+    const { data, error } = await supabase.from('usuarios')
+        .select('id_usuario,nome,email')
+        .ilike('email', email.replace(/[\\%_]/g, '\\$&'));
+    if (error) throw new Error('Não foi possível consultar o usuário');
+    const usuarios = (data ?? []).filter(usuario => normalizarEmail(usuario.email) === email);
+    if (usuarios.length > 1) throw new Error('Email corresponde a mais de uma conta');
+    return usuarios[0];
+}
 
-    // 3. O backend recebe o email e verifica se é valido (inicialmente)
-    if (!nome || !email || !email.includes('@') || !email.includes(".com")) {
-        return res.status(400).json({ mensagem: 'Dados inválidos ou incompletos' });
-    }
-
-    // 5. Verifica se o email recebido já está cadastrado e retorna erro com status 409 se sim
-    const { data } = await supabase
-        .from('usuarios')
-        .select('email')
-        .eq('email', email)
-        .maybeSingle()  // Se a lista existir, retorna ela, se não, não retorna nada
-
-    if (data) {
-        console.log("/solicitar-codigo: >>>>> Tentativa de cadastro falhou: Email já cadastrado")
-        return res.status(409).json({ mensagem: "Esse email já está cadastrado" })
-    }
-    // se o email não está cadastrado, continua com o cadastro
-    else {
-        //Verificar email com codigo aleatorio
-        try {
-            const codigo = gerarCodigo();
-            salvarCodigo(email, codigo);
-            await enviarEmail({
-                destinatarioEmail: email,
-                destinatarioNome: nome,
-                assunto: 'Seu código de verificação',
-                conteudoHtml: `<html><body>
-        <h2>Código de verificação</h2>
-        <p>Use o código abaixo para continuar:</p>
-        <h1 style="letter-spacing: 4px;">${codigo}</h1>
-        <p>Esse código expira em 10 minutos.</p>
-      </body></html>`
-            });
-            console.log("/solicitar-codigo: Codigo enviado - Server side");
-            return res.status(200).json({ mensagem: "Codigo enviado para o email!" })
-        } catch (erro) {
-            console.error('/solicitar-codigo: >>>>> O envio de email falhou:', erro);
-            return res.status(500).json({ mensagem: "O envio de email falhou!", erro })
-        }
-    }
-});
-
-// ROTA PARA CRIAR O CADASTRO
-app.post('/confirmar-cadastro', limitadorCadastro, async (req, res) => {
-    const { nome, email, senha, codigoDigitado } = req.body;
-
-    if (!nome || !email || !email.includes('@') || !email.includes(".com") || !senha || senha.length < 10 || !codigoDigitado) {
-        console.log("/confirmar-cadastro: Dados invalido ou incompletos")
-        return res.status(400).json({ mensagem: 'Dados inválidos ou incompletos' });
-    }
-    const resultado = validarCodigo(email, codigoDigitado)
-
-    if (resultado.valido) {
-        const { error } = await supabase
-            .from('usuarios')
-            .insert({
-                nome: nome,
-                email: email,
-                senha_hash: await gerarHashSenha(senha)
-
-            })
-        if (error) {
-            console.log('/confirmar-cadastro: Erro ao cadastrar usuario, Erro: ' + error.message);
-            return res.status(500).json({ mensagem: "Erro ao cadastrar usuário" });
-        } else {
-            try {
-                await enviarEmail({
-                    destinatarioEmail: email,
-                    destinatarioNome: nome,
-                    assunto: 'Bem-vindo ao CashLand!',
-                    conteudoHtml: `<h1>Olá, ${nome}!</h1><p>Sua conta foi criada com sucesso.</p>`
-                });
-
-            } catch (erro) {
-                console.error('Usuário criado, mas email falhou:', erro);
-                return res.status(201).json({ mensagem: "Usuario criado, mas o email de confirmação não foi enviado", erro })
-                // normalmente não deve travar a resposta por causa do email
-            }
-        }
-        console.log("/confirmar-cadastro: Cadastro realizado com sucesso")
-        return res.status(200).json({
-            mensagem: "Cadastro realizado com sucesso, prossiga para o login!"
-        });
+async function emitirCodigo(email, nome, finalidade) {
+    const codigo = gerarCodigo();
+    const emissao = await codigos.salvarCodigo(email, codigo, finalidade);
+    let assunto;
+    if (finalidade === 'cadastro') {
+        assunto = 'Seu código de verificação';
     } else {
-        console.log("/confirmar-cadastro: Erro 401: " + resultado.motivo)
-        return res.status(401).json({ mensagem: resultado.motivo })
+        assunto = 'Redefinição de senha - CashLand';
     }
-
-})
-
-// ===== ROTAS PARA RECUPERAÇÃO DE SENHA (RF-001) =====
-
-// ROTA 1 - Solicitar reset de senha
-app.post('/solicitar-reset-senha', limitadorCodigo, async (req, res) => {
-    const { email } = req.body;
-
-    // Validação do email
-    if (!email || !email.includes('@')) {
-        return res.status(400).json({
-            mensagem: 'Email inválido ou não informado'
-        });
-    }
-
-    // Consultar se o email existe no banco
-    const { data: usuario, error } = await supabase
-        .from('usuarios')
-        .select('nome, email')
-        .eq('email', email)
-        .maybeSingle();
-
-    if (error) {
-        console.error('/solicitar-rest-senha: Erro ao consultar usuário:', error.message);
-        return res.status(500).json({
-            mensagem: 'Erro ao consultar usuário'
-        });
-    }
-
-    if (!usuario) {
-        console.log('/solicitar-reset-senha: Email não cadastrado')
-        return res.status(404).json({
-            mensagem: 'Email não cadastrado'
-        });
-    }
-
     try {
-        const codigo = gerarCodigo();
-        salvarCodigo(email, codigo);
-
         await enviarEmail({
             destinatarioEmail: email,
-            destinatarioNome: usuario.nome,
-            assunto: 'Redefinição de senha - CashLand',
-            conteudoHtml: `
-                <html>
-                    <body>
-                        <h2>Redefinição de senha</h2>
-                        <p>Olá, ${usuario.nome}!</p>
-                        <p>Use o código abaixo para redefinir sua senha:</p>
-                        <h1 style="letter-spacing: 4px;">
-                            ${codigo}
-                        </h1>
-                        <p>Esse código expira em 10 minutos.</p>
-                    </body>
-                </html>
-            `
+            destinatarioNome: nome,
+            assunto: assunto,
+            conteudoHtml: `<html><body><h2>Código de verificação</h2>
+        <p>Use o código abaixo para continuar:</p>
+        <h1 style="letter-spacing: 4px;">${codigo}</h1>
+        <p>Esse código expira em 10 minutos.</p></body></html>`
         });
+    } catch {
+        try {
+            await codigos.cancelarEmissao(emissao);
+        } catch {
+            console.error('Falha ao cancelar emissão após erro no envio de email');
+        }
+        throw new Error('Não foi possível enviar o código');
+    }
+}
 
-        console.log('/solicitar-reset-senha: Código enviado para o email')
-        return res.status(200).json({
-            mensagem: 'Código enviado para o email!'
-        });
-
-    } catch (erro) {
-        console.error('/solicitar-reset-senha: Erro ao enviar código:', erro);
-        return res.status(500).json({
-            mensagem: 'Não foi possível enviar o código'
-        });
+app.post('/solicitar-codigo', limitadorCodigo, async (req, res) => {
+    const { nome } = req.body ?? {};
+    const email = normalizarEmail(req.body?.email);
+    if (typeof nome !== 'string' || !nome || !email.includes('@') || !email.includes('.com')) {
+        console.log('/solicitar-codigo: >>>>> Dados inválidos ou incompletos');
+        return res.status(400).json({ mensagem: 'Dados inválidos ou incompletos' });
+    }
+    try {
+        if (await buscarUsuario(email)) {
+            console.log('/solicitar-codigo: >>>>> Esse email já está cadastrado');
+            return res.status(409).json({ mensagem: 'Esse email já está cadastrado' });
+        }
+        await emitirCodigo(email, nome, 'cadastro');
+        console.log('/solicitar-codigo: Código enviado para o email');
+        return res.status(200).json({ mensagem: 'Codigo enviado para o email!' });
+    } catch {
+        console.log('/solicitar-codigo: >>>>> Falha ao consultar, persistir ou enviar o código');
+        return res.status(500).json({ mensagem: 'Não foi possível solicitar o código' });
     }
 });
 
-// ROTA 2 - Confirmar reset de senha
-app.post('/confirmar-reset-senha', limitadorCodigo, async (req, res) => {
-    const { email, codigoDigitado, novaSenha } = req.body;
-
-    // Validações
-    if (!email || !codigoDigitado || !novaSenha || novaSenha.length < 10) {
-        return res.status(400).json({
-            mensagem: 'Dados inválidos ou incompletos'
-        });
+app.post('/confirmar-cadastro', limitadorCadastro, async (req, res) => {
+    const { nome, senha, codigoDigitado } = req.body ?? {};
+    const email = normalizarEmail(req.body?.email);
+    if (typeof nome !== 'string' || !nome || !email.includes('@') || !email.includes('.com') ||
+        typeof senha !== 'string' || senha.length < 10 || !codigoDigitado) {
+        console.log('/confirmar-cadastro: >>>>> Dados inválidos ou incompletos');
+        return res.status(400).json({ mensagem: 'Dados inválidos ou incompletos' });
     }
-
-    // Validar código
-    const resultado = validarCodigo(email, String(codigoDigitado));
-
-    if (!resultado.valido) {
-        return res.status(400).json({
-            mensagem: resultado.motivo
-        });
-    }
-
     try {
-        // Gerar hash da nova senha
+        const senha_hash = await gerarHashSenha(senha);
+        const resultado = await codigos.validarCodigo(email, String(codigoDigitado), 'cadastro');
+        if (!resultado.valido) {
+            console.log('/confirmar-cadastro: >>>>> ' + resultado.motivo);
+            return res.status(401).json({ mensagem: resultado.motivo });
+        }
+        const { error } = await supabase.from('usuarios').insert({ nome, email, senha_hash });
+        if (error) throw new Error('Falha ao cadastrar usuário');
+        try {
+            await enviarEmail({
+                destinatarioEmail: email, destinatarioNome: nome,
+                assunto: 'Bem-vindo ao CashLand!',
+                conteudoHtml: `<h1>Olá, ${nome}!</h1><p>Sua conta foi criada com sucesso.</p>`
+            });
+        } catch {
+            console.log('/confirmar-cadastro: >>>>> Usuário criado, mas o envio do email de boas-vindas falhou');
+            return res.status(201).json({ mensagem: 'Usuario criado, mas o email de confirmação não foi enviado' });
+        }
+        console.log('/confirmar-cadastro: Cadastro realizado com sucesso');
+        return res.status(200).json({ mensagem: 'Cadastro realizado com sucesso, prossiga para o login!' });
+    } catch {
+        console.log('/confirmar-cadastro: >>>>> Falha ao validar código ou cadastrar usuário');
+        return res.status(500).json({ mensagem: 'Erro ao cadastrar usuário' });
+    }
+});
+
+app.post('/solicitar-reset-senha', limitadorCodigo, async (req, res) => {
+    const email = normalizarEmail(req.body?.email);
+    if (!email.includes('@')) {
+        console.log('/solicitar-reset-senha: >>>>> Email inválido ou não informado');
+        return res.status(400).json({ mensagem: 'Email inválido ou não informado' });
+    }
+    try {
+        const usuario = await buscarUsuario(email);
+
+        if (!usuario) {
+            console.log('/solicitar-reset-senha: >>>>> Email não cadastrado');
+            return res.status(404).json({ mensagem: 'Email não cadastrado' });
+        }
+
+        await emitirCodigo(email, usuario.nome, 'recuperacao_senha');
+
+        console.log('/solicitar-reset-senha: Código enviado para o email');
+        return res.status(200).json({ mensagem: 'Código enviado para o email!' });
+
+    } catch {
+        console.log('/solicitar-reset-senha: >>>>> Falha ao consultar, persistir ou enviar o código');
+        return res.status(500).json({ mensagem: 'Não foi possível enviar o código' });
+    }
+});
+
+app.post('/confirmar-reset-senha', limitadorCodigo, async (req, res) => {
+    const { codigoDigitado, novaSenha } = req.body ?? {};
+    const email = normalizarEmail(req.body?.email);
+    if (!email || !codigoDigitado || typeof novaSenha !== 'string' || novaSenha.length < 10) {
+        console.log('/confirmar-reset-senha: >>>>> Dados inválidos ou incompletos');
+        return res.status(400).json({ mensagem: 'Dados inválidos ou incompletos' });
+    }
+    try {
+        const usuario = await buscarUsuario(email);
+
+        if (!usuario) {
+            console.log('/confirmar-reset-senha: >>>>> Usuário não encontrado');
+            return res.status(404).json({ mensagem: 'Usuário não encontrado' });
+        }
+
         const novaSenhaHash = await gerarHashSenha(novaSenha);
 
-        // Atualizar senha no banco
-        const { data: usuarioAtualizado, error } = await supabase
-            .from('usuarios')
-            .update({
-                senha_hash: novaSenhaHash, status_reset_senha: false
-            })
-            .eq('email', email)
-            .select('id_usuario')
-            .maybeSingle();
+        const resultado = await codigos.validarCodigo(email, String(codigoDigitado), 'recuperacao_senha');
 
+        if (!resultado.valido) {
+            console.log('/confirmar-reset-senha: >>>>> ' + resultado.motivo);
+            return res.status(400).json({ mensagem: resultado.motivo });
+        }
+        const { data, error } = await supabase.from('usuarios')
+            .update({ senha_hash: novaSenhaHash, status_reset_senha: false })
+            .eq('id_usuario', usuario.id_usuario).select('id_usuario').maybeSingle();
         if (error) {
-            console.error('Erro ao atualizar senha:', error.message);
-            return res.status(500).json({
-                mensagem: 'Erro ao atualizar senha'
-            });
+            throw new Error('Falha ao atualizar senha');
         }
-
-        if (!usuarioAtualizado) {
-            return res.status(404).json({
-                mensagem: 'Usuário não encontrado'
-            });
+        if (!data) {
+            console.log('/confirmar-reset-senha: >>>>> Usuário não encontrado');
+            return res.status(404).json({ mensagem: 'Usuário não encontrado' });
         }
-
-        return res.status(200).json({
-            mensagem: 'Senha alterada com sucesso!'
-        });
-
-    } catch (erro) {
-        console.error('Erro ao processar reset de senha:', erro);
-        return res.status(500).json({
-            mensagem: 'Erro ao processar sua solicitação'
-        });
+        console.log('/confirmar-reset-senha: Senha alterada com sucesso');
+        return res.status(200).json({ mensagem: 'Senha alterada com sucesso!' });
+    } catch {
+        console.log('/confirmar-reset-senha: >>>>> Falha ao validar código ou atualizar senha');
+        return res.status(500).json({ mensagem: 'Erro ao processar sua solicitação' });
     }
 });
 

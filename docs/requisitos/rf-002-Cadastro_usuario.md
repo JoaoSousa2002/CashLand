@@ -65,6 +65,7 @@ O sistema precisa saber quem está logado para mostrar os dados referentes ao us
 - ✅ Variáveis de ambiente do Supabase configuradas
 - ✅ `BREVO_API_KEY`, `BREVO_SENDER_NAME` e `BREVO_SENDER_EMAIL` configuradas no servidor
 - ✅ Serviço da Brevo disponível para envio dos emails
+- ✅ `SEGREDO_CODIGOS` configurado e acesso do backend à tabela `codigos_verificacao`
 - ✅ Para gerenciar o próprio perfil, sessão válida do RF-001
 - ✅ Para gerenciar outros usuários, JWT com tipo `Admin`
 
@@ -98,16 +99,16 @@ O sistema precisa saber quem está logado para mostrar os dados referentes ao us
 8. O backend verifica se nome e email foram informados e se o email contém `@` e `.com`.
 9. O backend consulta a tabela `usuarios` para verificar se o email já está cadastrado.
 10. Se o email não estiver cadastrado, o backend gera um código aleatório de 6 dígitos.
-11. O backend armazena temporariamente o código em memória, associado ao email, com validade de 10 minutos.
+11. O backend persiste o HMAC do código no Supabase, associado ao email normalizado e à finalidade `cadastro`, com validade de 10 minutos.
 12. O backend envia o código para o email do usuário por meio da API da Brevo.
 13. O backend retorna HTTP 200 com a mensagem "Codigo enviado para o email!".
 14. O frontend fecha o carregamento e abre o overlay para digitação do código.
 15. Usuário digita o código de 6 dígitos e clica em "Confirmar".
 16. O frontend verifica se o código contém exatamente seis números; se válido, envia `POST /confirmar-cadastro` com `{ nome, email, senha, codigoDigitado }`.
 17. O backend valida se nome, email, senha e código foram informados, se o email contém `@` e `.com` e se a senha possui pelo menos 10 caracteres.
-18. O backend valida o código associado ao email.
-19. Se o código for válido, ele é removido da memória para impedir reutilização.
-20. O backend gera o hash bcrypt da senha.
+18. O backend prepara o hash bcrypt da senha e valida o código associado ao email e à finalidade `cadastro`.
+19. Se o código for válido, uma exclusão condicional no banco consome a emissão uma única vez.
+20. O backend utiliza o hash bcrypt preparado antes do consumo do código.
 21. O backend executa o `insert` de `nome`, `email` e `senha_hash` na tabela `usuarios`.
 22. O backend verifica o `error` retornado pelo Supabase.
 23. Sem erro no `insert`, o backend tenta enviar o email de boas-vindas.
@@ -146,7 +147,7 @@ O sistema precisa saber quem está logado para mostrar os dados referentes ao us
 
 ```
 12a.1. A API da Brevo retorna erro ou ocorre falha durante o envio.
-12a.2. Backend retorna HTTP 500 com a mensagem "O envio de email falhou!".
+12a.2. Backend retorna HTTP 500 com a mensagem "Não foi possível solicitar o código".
 12a.3. Frontend exibe a mensagem em um overlay de erro.
 12a.4. O cadastro não avança para a confirmação enquanto um código não for enviado com sucesso.
 ```
@@ -165,8 +166,8 @@ O sistema precisa saber quem está logado para mostrar os dados referentes ao us
 ```
 18a.1. Backend procura o código associado ao email informado.
 18a.2. Se não existir registro, retorna motivo "nenhum_codigo_solicitado".
-18a.3. Se o prazo de 10 minutos tiver terminado, remove o registro e retorna "codigo expirado".
-18a.4. Se o código digitado for diferente do armazenado, retorna "codigo incorreto".
+18a.3. Se o prazo de 10 minutos tiver terminado, retorna "codigo expirado", mesmo se o registro ainda existir no banco.
+18a.4. Se o código digitado for diferente do armazenado, retorna "codigo incorreto", preservando o registro e a expiração.
 18a.5. Backend responde HTTP 401 com o motivo da falha.
 18a.6. Frontend exibe a mensagem em overlay e reabre a janela de confirmação do código após o usuário continuar.
 ```
@@ -300,7 +301,7 @@ A solicitação de código compartilha o limite de 5 requisições por IP em 15 
 | **RN-07** | Verificação por código              | A criação da conta depende da validação de um código de 6 dígitos enviado ao email informado                                                          |
 | **RN-08** | Expiração do código                 | O código de verificação expira 10 minutos após ser gerado                                                                                             |
 | **RN-09** | Código de uso único                 | Após uma validação bem-sucedida, o código é removido do armazenamento temporário e não pode ser reutilizado                                           |
-| **RN-10** | Armazenamento temporário em memória | Os códigos pendentes são mantidos em um `Map` no processo do Node.js                                                                                  |
+| **RN-10** | Persistência com HMAC | Os códigos são persistidos em `codigos_verificacao`, separados por email normalizado e finalidade, com HMAC-SHA256 e validade de dez minutos |
 | **RN-11** | Email de boas-vindas                | Após a criação do usuário, o backend tenta enviar um email de boas-vindas; se o envio falhar, retorna HTTP 201 informando que o usuário já foi criado |
 | **RN-12** | Validação antes do `insert`         | `/confirmar-cadastro` valida os campos obrigatórios e o código antes de executar a criação do usuário                                                 |
 
@@ -566,7 +567,7 @@ Cartões e overlays respeitam a largura disponível. As caixas de overlay têm a
 │  • Valida nome/email                    │
 │  • Consulta duplicidade no Supabase    │
 │  • Gera código de 6 dígitos            │
-│  • Mantém códigos em Map por 10 min    │
+│  • Persiste HMAC e TTL no Supabase     │
 └──────────────┬────────────────┬─────────┘
                │                │
                │ SELECT         │ API HTTPS
@@ -599,7 +600,7 @@ Cartões e overlays respeitam a largura disponível. As caixas de overlay têm a
 
 **Contexto:** É preciso impedir dois cadastros com o mesmo email e evitar o envio do código de verificação quando o endereço já está registrado.
 
-**Decisão:** A rota `POST /solicitar-codigo` faz um `SELECT` com `maybeSingle()` filtrando por `email`. Se houver registro, retorna HTTP 409 e o fluxo não gera nem envia o código.
+**Decisão:** A rota `POST /solicitar-codigo` consulta o email com `ilike` e confirma a igualdade do endereço normalizado, aceitando maiúsculas/minúsculas em contas existentes. Se houver registro, retorna HTTP 409 e o fluxo não gera nem envia o código.
 
 **Consequências:** O usuário recebe a informação de duplicidade antes da etapa de confirmação do código e a API de email não é chamada para esse caso.
 
@@ -623,7 +624,7 @@ Cartões e overlays respeitam a largura disponível. As caixas de overlay têm a
 
 **Contexto:** O cadastro confirma o acesso ao email informado antes da criação da conta.
 
-**Decisão:** Gerar um código numérico aleatório de 6 dígitos, armazená-lo temporariamente no servidor e enviá-lo por email. A conta só é criada depois de `validarCodigo(email, codigoDigitado)` retornar válido.
+**Decisão:** Gerar um código numérico de 6 dígitos com `crypto.randomInt()`, persistir seu HMAC no Supabase e enviá-lo por email. A conta só é criada depois de `await codigos.validarCodigo(email, String(codigoDigitado), 'cadastro')` retornar válido.
 
 **Consequências:** O código fica associado ao email, possui validade de 10 minutos e é removido após validação bem-sucedida.
 
@@ -637,15 +638,15 @@ Cartões e overlays respeitam a largura disponível. As caixas de overlay têm a
 
 **Consequências:** O mesmo serviço é utilizado para o código de verificação e para o email de boas-vindas.
 
-### ADR-010: Armazenamento temporário dos códigos em memória
+### ADR-010: Persistência dos códigos e consumo condicional
 
 **Status:** ACEITO
 
-**Contexto:** O sistema precisa associar temporariamente cada código gerado ao email correspondente e ao horário de expiração.
+**Contexto:** Os códigos devem sobreviver ao reinício do servidor e permitir correção de digitação dentro do prazo original.
 
-**Decisão:** Usar `const codigosPendentes = new Map()` no módulo `Email.js`.
+**Decisão:** Reutilizar o cliente Supabase em `criarServicoCodigos`. Persistir HMAC-SHA256 com `SEGREDO_CODIGOS`, email normalizado, finalidade, ID da emissão e timestamps UTC em `codigos_verificacao`. O `upsert` usa a restrição única `(email, finalidade)` declarada no DDL.
 
-**Consequências:** O registro temporário contém `codigo` e `expiraEm`; o código é removido quando expira e também quando é validado com sucesso.
+**Consequências:** A validade de dez minutos é verificada na confirmação e no filtro do consumo. Erro de código não altera o registro. Somente a exclusão condicional que retorna um ID autoriza a criação do usuário. Consumo e criação são operações separadas; falha após o consumo exige novo código. O envio de email possui compensação pelo ID da emissão, preservando reenvios concorrentes. Consulte a [configuração e os testes](../configuracao/codigos-verificacao.md).
 
 ### ADR-011: Tratamento do resultado do `insert` antes da resposta de sucesso
 
@@ -699,7 +700,7 @@ Cartões e overlays respeitam a largura disponível. As caixas de overlay têm a
 | Banco de Dados           | Supabase (PostgreSQL) | Armazena os usuários e seus hashes de senha              |
 | Hash                     | bcrypt                | Função `gerarHashSenha` reutilizada do RF-01             |
 | Email transacional       | Brevo API             | Envio do código de verificação e do email de boas-vindas |
-| Armazenamento temporário | JavaScript `Map`      | Mantém os códigos pendentes e seus horários de expiração |
+| Códigos temporários | Supabase + HMAC-SHA256 | Persiste emissão, finalidade e validade; consumo condicional |
 | Documentação de API      | swagger-ui-express    | Interface disponível em `/api-docs`                      |
 | Hospedagem               | Render                | Serviço web público, com `PORT` fornecida pelo ambiente  |
 
@@ -708,19 +709,19 @@ Cartões e overlays respeitam a largura disponível. As caixas de overlay têm a
 1. Frontend valida `{ nome, email, senha }` localmente.
 2. Frontend envia `POST /solicitar-codigo` com `{ nome, email }`.
 3. Backend valida nome/email.
-4. Backend consulta `usuarios` por email usando `maybeSingle()`.
+4. Backend consulta `usuarios` pelo email normalizado, aceitando diferenças de maiúsculas/minúsculas.
 5. Se houver duplicidade, retorna HTTP 409.
 6. Caso contrário, gera um código de 6 dígitos.
-7. `Email.js` salva `{ codigo, expiraEm }` em `codigosPendentes`.
+7. `Email.js` persiste HMAC, email, finalidade, ID e timestamps em `codigos_verificacao`.
 8. Backend chama a API da Brevo e envia o código.
 9. Em sucesso, `/solicitar-codigo` retorna HTTP 200.
 10. Frontend abre o overlay de confirmação.
 11. Usuário informa o código.
 12. Frontend valida os seis dígitos do código e, se válido, envia `POST /confirmar-cadastro` com `{ nome, email, senha, codigoDigitado }`.
 13. Backend valida nome, email, senha e presença do código.
-14. Backend chama `validarCodigo(email, codigoDigitado)`.
-15. Código válido é removido do `Map`.
-16. Backend gera `senha_hash` com bcrypt.
+14. Backend prepara o hash bcrypt e chama `await codigos.validarCodigo(email, String(codigoDigitado), 'cadastro')`.
+15. Código válido é consumido por exclusão condicional no banco.
+16. Backend utiliza `senha_hash` preparado antes do consumo.
 17. Backend executa `INSERT` em `usuarios`.
 18. Se o Supabase retornar `error`, backend responde HTTP 500.
 19. Se o `insert` for concluído, backend tenta enviar o email de boas-vindas.
@@ -823,30 +824,12 @@ Resultado: HTTP 400 - "Dados inválidos ou incompletos".
 **Implementação:**
 
 ```javascript
-export function gerarCodigo() {
-  return Math.floor(100000 + Math.random() * 900000).toString();
-}
-
-export function salvarCodigo(email, codigo) {
-  codigosPendentes.set(email, {
-    codigo,
-    expiraEm: Date.now() + TEMPO_EXPIRACAO_MS
-  });
-}
+const codigo = gerarCodigo(); // crypto.randomInt(100000, 1000000)
+const codigos = criarServicoCodigos(supabase);
+await codigos.salvarCodigo(email, codigo, 'cadastro');
+const resultado = await codigos.validarCodigo(email, String(codigoDigitado), 'cadastro');
 ```
 
-**Validação:**
+O HMAC incorpora a finalidade e o email normalizado. O segredo fica somente no servidor. O serviço consulta a emissão, verifica expiração e compara HMACs; código incorreto não realiza escrita. Para código correto, o `DELETE` filtra ID, email, finalidade, hash e `expira_em > agora`, retornando o ID efetivamente consumido. Falhas de banco são tratadas como infraestrutura, com HTTP 500, e não como erro de digitação.
 
-```javascript
-if (!registro) return { valido: false, motivo: 'nenhum_codigo_solicitado' };
-if (Date.now() > registro.expiraEm) {
-  codigosPendentes.delete(email);
-  return { valido: false, motivo: 'codigo expirado' };
-}
-if (registro.codigo !== codigoDigitado) {
-  return { valido: false, motivo: 'codigo incorreto' };
-}
-
-codigosPendentes.delete(email);
-return { valido: true, motivo: "" };
-```
+**Validação:** A suíte `npm test` cobre erro seguido de correção, TTL, uso único, reenvio, isolamento de finalidades, concorrência, reinicialização do serviço e falhas de banco/email com dependências simuladas. O [roteiro manual](../configuracao/codigos-verificacao.md) descreve a verificação no banco e nas telas.
