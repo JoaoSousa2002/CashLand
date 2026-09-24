@@ -19,18 +19,19 @@ import {
     schemaId,
     schemaNovaSenha
 } from "../validacoes/usuario.js";
-
+import logger from "../config/logger.js";
+import { auditar, confirmarAlteracao } from "../middlewares/AuditoriaRota.js";
+import { LoggerHTTP } from "../middlewares/LoggerHTTP.js";
 import { validar } from "../validacoes/validar.js";
 import Express from 'express'
 import cors from 'cors'
 import ws from 'ws'
 import path from 'path'
 import { fileURLToPath } from 'url'
-import 'dotenv/config'
+import 'dotenv/config';
 import swaggerUi from 'swagger-ui-express';
 import { readFileSync } from 'fs';
 import rateLimit from 'express-rate-limit';
-import 'dotenv/config';
 import cookieParser from 'cookie-parser';
 
 
@@ -38,7 +39,7 @@ const limitadorLogin = rateLimit({
     windowMs: 5 * 60 * 1000,
     max: 8, // só 8 tentativas de login por IP a cada 5 min
     handler: (req, res) => {
-        console.log(`LOGIN: >>>>> Rate limit atingido pelo IP: ${req.ip}`);
+        console.log("Operação processada; consulte o evento de auditoria e o status HTTP.");
         res.status(429).json({ mensagem: 'Muitas tentativas de login realizadas. Tente novamente em 5 minutos.' });
     }
 });
@@ -46,7 +47,7 @@ const limitadorCadastro = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 8, // só 5 tentativas de login por IP a cada 15 min
     handler: (req, res) => {
-        console.log(`CADASTRO: >>>>> Rate limit atingido pelo IP: ${req.ip}`);
+        console.log("Operação processada; consulte o evento de auditoria e o status HTTP.");
         res.status(429).json({ mensagem: 'Muitas tentativas de cadastro realizadas. Tente novamente em 15 minutos.' });
     }
 });
@@ -54,7 +55,7 @@ const limitadorCodigo = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 8, // só 5 tentativas de login por IP a cada 15 min
     handler: (req, res) => {
-        console.log(`CODIGO: >>>>> Rate limit atingido pelo IP: ${req.ip}`);
+        console.log("Operação processada; consulte o evento de auditoria e o status HTTP.");
         res.status(429).json({ mensagem: 'Muitas tentativas de realizadas para esta operação. Tente novamente em 15 minutos.' });
     }
 });
@@ -79,6 +80,7 @@ const __dirname = path.dirname(__filename);
 const app = Express()
 // Autoriza o acesso por proxy, necessario para funcionar no render
 app.set('trust proxy', 1)
+app.use(LoggerHTTP);
 app.use(cors({ origin: origemAutorizada, credentials: true }));
 app.use(Express.json())
 app.use(cookieParser());
@@ -142,7 +144,7 @@ async function testarConexao() {
         .limit(1);
 
     if (error) {
-        console.log(' Falha ao conectar/consultar o Supabase:', error.message)
+        console.log("Operação processada; consulte o evento de auditoria e o status HTTP.");
     } else {
         console.log(' Conexão com o Supabase OK.')
     }
@@ -151,6 +153,7 @@ async function testarConexao() {
 function autenticar(req, res, next) {
     const token = req.cookies.token;
     if (!token) {
+        Object.assign(res.locals.auditoria, { resultado: 'NEGADO', motivo: 'NAO_AUTENTICADO' });
         console.log('Autenticacao erro 401: Não autenticado')
         return res.status(401).json({ mensagem: 'Não autenticado' });
     }
@@ -158,6 +161,7 @@ function autenticar(req, res, next) {
         req.usuario = verificarToken(token);
         next();
     } catch {
+        Object.assign(res.locals.auditoria, { resultado: 'NEGADO', motivo: 'SESSAO_INVALIDA' });
         console.log('Autenticacao erro 401: Token inválido ou expirado')
         return res.status(401).json({ mensagem: 'Token inválido ou expirado' });
     }
@@ -218,7 +222,7 @@ async function emitirCodigo(email, nome, finalidade) {
     }
 }
 
-app.get('/me', autenticar, async (req, res) => {
+app.get('/me', auditar('CONSULTAR_SESSAO', req => req.query.id || req.usuario?.id_usuario, false), autenticar, async (req, res) => {
     const { id } = req.query
 
     if (id && req.usuario.tipo !== 'Admin') {
@@ -233,10 +237,11 @@ app.get('/me', autenticar, async (req, res) => {
             .single();
 
         if (error) {
+            res.locals.auditoria.resultado = error.code === 'PGRST116' ? 'FALHA' : 'ERRO';
             console.log("/me: Usuario não existe ou inativo")
             return res.status(401).json({ mensagem: 'Sessão inválida' });
         }
-        console.log("/me: Retornado o status do usuario " + data.nome)
+        console.log("Operação processada; consulte o evento de auditoria e o status HTTP.");
         return res.status(200).json({ status_usuario: data.status_usuario, tipo: data.tipo });
     }
 
@@ -248,6 +253,7 @@ app.get('/me', autenticar, async (req, res) => {
         .eq('id_usuario', req.usuario.id_usuario)
         .single();
 
+    if (error) res.locals.auditoria.resultado = error.code === 'PGRST116' ? 'FALHA' : 'ERRO';
     if (error || data.status_usuario === 'Inativo') {
         console.log("/me: Usuario não existe ou inativo")
         return res.status(401).json({ mensagem: 'Sessão inválida' });
@@ -257,7 +263,7 @@ app.get('/me', autenticar, async (req, res) => {
 });
 
 // ROTA DE LOGIN
-app.post('/login', limitadorLogin, validar(schemaEmail, schemaSenha), async (req, res) => {
+app.post('/login', auditar('LOGIN', undefined, true), limitadorLogin, validar(schemaEmail, schemaSenha), async (req, res) => {
     const { email, senha } = req.body;
 
     const { data: usuario, error } = await supabase
@@ -268,7 +274,7 @@ app.post('/login', limitadorLogin, validar(schemaEmail, schemaSenha), async (req
 
     // Erro OU usuário não encontrado — checa isso PRIMEIRO
     if (error || !usuario) {
-        console.log('/login: Erro ao buscar usuário:', error.message);
+        res.locals.auditoria.resultado = error && error.code !== 'PGRST116' ? 'ERRO' : 'FALHA';
         return res.status(401).json({ mensagem: 'Email ou senha inválidos' });
     }
 
@@ -295,13 +301,14 @@ app.post('/login', limitadorLogin, validar(schemaEmail, schemaSenha), async (req
         maxAge: 2 * 60 * 60 * 1000
     });
 
+    Object.assign(res.locals.auditoria, { usuarioId: usuario.id_usuario, recursoId: usuario.id_usuario, resultado: 'SUCESSO' });
     return res.status(200).json({
         mensagem: 'Login realizado com sucesso',
         usuario: { id: usuario.id_usuario, nome: usuario.nome, tipo: usuario.tipo }
     });
 });
 
-app.post('/confirmar-senha', limitadorLogin, autenticar, validar(schemaSenha), async (req, res) => {
+app.post('/confirmar-senha', auditar('CONFIRMAR_SENHA', req => req.usuario?.id_usuario, false), limitadorLogin, autenticar, validar(schemaSenha), async (req, res) => {
     const { senha } = req.body
     const { data: usuario } = await supabase
         .from('usuarios')
@@ -319,13 +326,17 @@ app.post('/confirmar-senha', limitadorLogin, autenticar, validar(schemaSenha), a
     return res.status(200).json({ mensagem: "Senha correta" })
 })
 // ROTA DE LOGOUT
-app.post('/logout', limitadorCodigo, (req, res) => {
+app.post('/logout', auditar('LOGOUT', undefined, false), limitadorCodigo, (req, res) => {
+    try {
+        const usuario = verificarToken(req.cookies.token);
+        Object.assign(res.locals.auditoria, { usuarioId: usuario.id_usuario, recursoId: usuario.id_usuario });
+    } catch { /* Logout continua permitido mesmo sem sessão válida. */ }
     res.clearCookie('token');
     console.log('/logout: Logout realizado')
     return res.status(200).json({ mensagem: 'Logout realizado' });
 });
 
-app.post('/solicitar-codigo', limitadorCodigo, validar(schemaNome, schemaEmail, schemaSenha), async (req, res) => {
+app.post('/solicitar-codigo', auditar('SOLICITAR_CODIGO_CADASTRO', undefined, false), limitadorCodigo, validar(schemaNome, schemaEmail, schemaSenha), async (req, res) => {
     const { nome } = req.body;
     const email = normalizarEmail(req.body?.email);
     try {
@@ -342,18 +353,19 @@ app.post('/solicitar-codigo', limitadorCodigo, validar(schemaNome, schemaEmail, 
     }
 });
 
-app.post('/confirmar-cadastro', limitadorCadastro, validar(schemaNome, schemaEmail, schemaCodigo, schemaSenha), async (req, res) => {
+app.post('/confirmar-cadastro', auditar('CADASTRAR_USUARIO', undefined, true), limitadorCadastro, validar(schemaNome, schemaEmail, schemaCodigo, schemaSenha), async (req, res) => {
     const { nome, senha, codigoDigitado } = req.body ?? {};
     const email = normalizarEmail(req.body?.email);
     try {
         const senha_hash = await gerarHashSenha(senha);
         const resultado = await codigos.validarCodigo(email, String(codigoDigitado), 'cadastro');
         if (!resultado.valido) {
-            console.log('/confirmar-cadastro: >>>>> ' + resultado.motivo);
+            console.log("Operação processada; consulte o evento de auditoria e o status HTTP.");
             return res.status(401).json({ mensagem: resultado.motivo });
         }
-        const { error } = await supabase.from('usuarios').insert({ nome, email, senha_hash });
+        const { data: criados, error } = await supabase.from('usuarios').insert({ nome, email, senha_hash }).select('id_usuario');
         if (error) throw new Error('Falha ao cadastrar usuário');
+        confirmarAlteracao(res, criados);
         try {
             await enviarEmail({
                 destinatarioEmail: email, destinatarioNome: nome,
@@ -361,10 +373,11 @@ app.post('/confirmar-cadastro', limitadorCadastro, validar(schemaNome, schemaEma
                 conteudoHtml: `<h1>Olá, ${nome}!</h1><p>Sua conta foi criada com sucesso.</p>`
             });
         } catch {
+            res.locals.auditoria.motivo = 'EMAIL_BOAS_VINDAS_NAO_ENVIADO';
             console.log('/confirmar-cadastro: >>>>> Usuário criado, mas o envio do email de boas-vindas falhou');
             return res.status(201).json({ mensagem: 'Usuario criado, mas o email de confirmação não foi enviado' });
         }
-        console.log('/confirmar-cadastro: Cadastro realizado com sucesso');
+        console.log('/confirmar-cadastro: Cadastro processado');
         return res.status(200).json({ mensagem: 'Cadastro realizado com sucesso, prossiga para o login!' });
     } catch {
         console.log('/confirmar-cadastro: >>>>> Falha ao validar código ou cadastrar usuário');
@@ -372,7 +385,7 @@ app.post('/confirmar-cadastro', limitadorCadastro, validar(schemaNome, schemaEma
     }
 });
 
-app.post('/solicitar-reset-senha', limitadorCodigo, validar(schemaEmail), async (req, res) => {
+app.post('/solicitar-reset-senha', auditar('SOLICITAR_RECUPERACAO_SENHA', undefined, false), limitadorCodigo, validar(schemaEmail), async (req, res) => {
     const email = normalizarEmail(req.body?.email);
     try {
         const usuario = await buscarUsuario(email);
@@ -393,7 +406,7 @@ app.post('/solicitar-reset-senha', limitadorCodigo, validar(schemaEmail), async 
     }
 });
 
-app.post('/confirmar-reset-senha', limitadorCodigo, validar(schemaEmail, schemaCodigo, schemaNovaSenha), async (req, res) => {
+app.post('/confirmar-reset-senha', auditar('REDEFINIR_SENHA', undefined, true), limitadorCodigo, validar(schemaEmail, schemaCodigo, schemaNovaSenha), async (req, res) => {
     const { codigoDigitado, novaSenha } = req.body ?? {};
     const email = normalizarEmail(req.body?.email);
     try {
@@ -409,7 +422,7 @@ app.post('/confirmar-reset-senha', limitadorCodigo, validar(schemaEmail, schemaC
         const resultado = await codigos.validarCodigo(email, String(codigoDigitado), 'recuperacao_senha');
 
         if (!resultado.valido) {
-            console.log('/confirmar-reset-senha: >>>>> ' + resultado.motivo);
+            console.log("Operação processada; consulte o evento de auditoria e o status HTTP.");
             return res.status(401).json({ mensagem: resultado.motivo });
         }
         const { data, error } = await supabase.from('usuarios')
@@ -423,6 +436,7 @@ app.post('/confirmar-reset-senha', limitadorCodigo, validar(schemaEmail, schemaC
             console.log('/confirmar-reset-senha: >>>>> Usuário não encontrado');
             return res.status(404).json({ mensagem: 'Usuário não encontrado' });
         }
+        confirmarAlteracao(res, data);
         console.log('/confirmar-reset-senha: Senha alterada com sucesso');
         return res.status(200).json({ mensagem: 'Senha alterada com sucesso!' });
     } catch {
@@ -433,13 +447,14 @@ app.post('/confirmar-reset-senha', limitadorCodigo, validar(schemaEmail, schemaC
 
 // ROTAS ACESSO USUARIO COMUM
 
-app.get('/usuario', autenticar, async (req, res) => {
+app.get('/usuario', auditar('CONSULTAR_USUARIO', req => req.usuario?.id_usuario, false), autenticar, async (req, res) => {
     const { data, error } = await supabase
         .from('usuarios')
         .select('id_usuario, nome, email, status_usuario, data_criacao')
         .eq('id_usuario', req.usuario.id_usuario)
         .single();
 
+    if (error) res.locals.auditoria.resultado = error.code === 'PGRST116' ? 'FALHA' : 'ERRO';
     if (error || data.status_usuario === 'Inativo') {
         console.log("/usuario: Usuario não existe ou inativo")
         return res.status(401).json({ mensagem: 'Sessão inválida' });
@@ -448,7 +463,7 @@ app.get('/usuario', autenticar, async (req, res) => {
     return res.status(200).json(data);
 })
 
-app.patch('/usuario/desativar-usuario', autenticar, async (req, res) => {
+app.patch('/usuario/desativar-usuario', auditar('DESATIVAR_USUARIO', req => req.usuario?.id_usuario, true), autenticar, async (req, res) => {
 
     const { data: consulta } = await supabase
         .from('usuarios')
@@ -463,39 +478,43 @@ app.patch('/usuario/desativar-usuario', autenticar, async (req, res) => {
         console.log("Nada retornado")
     }
 
-    const { error } = await supabase
+    const { data: alterados, error } = await supabase
         .from('usuarios')
         .update({ status_usuario: 'Inativo', data_inativacao: new Date().toISOString() })
-        .eq('id_usuario', req.usuario.id_usuario)
+        .eq('id_usuario', req.usuario.id_usuario).select('id_usuario')
 
     if (error) {
+        res.locals.auditoria.resultado = 'ERRO';
         console.log("/usuario: Usuario não existe, inativo ou sessao invalida")
         return res.status(401).json({ mensagem: 'Erro ao desativar a conta, tente novamente mais tarde' });
     }
-    console.log("/usuario/desativar-conta: Usuario " + consulta.nome + " desativado")
+    console.log("Operação processada; consulte o evento de auditoria e o status HTTP.");
+    confirmarAlteracao(res, alterados);
     return res.status(200).json({ mensagem: "Usuario desativado com sucesso" })
 })
 
-app.patch('/usuario/atualizar-dados', autenticar, validar(schemaNome), async (req, res) => {
+app.patch('/usuario/atualizar-dados', auditar('ATUALIZAR_USUARIO', req => req.usuario?.id_usuario, true), autenticar, validar(schemaNome), async (req, res) => {
     const { nome } = req.body
 
-    const { error } = await supabase
+    const { data: alterados, error } = await supabase
         .from('usuarios')
         .update({ nome: nome })
-        .eq('id_usuario', req.usuario.id_usuario)
+        .eq('id_usuario', req.usuario.id_usuario).select('id_usuario')
 
     if (error) {
-        console.log("/usuario/atualizar-dados: Erro em atualizar usuario - " + error)
+        res.locals.auditoria.resultado = 'ERRO';
+        console.log("Operação processada; consulte o evento de auditoria e o status HTTP.");
         return res.status(500).json({ mensagem: "Erro em atualizar usuario - " + error })
     }
 
-    console.log("/usario/atualizar-dados: Dados atualizados com sucesso")
+    console.log("/usuario/atualizar-dados: Atualização processada")
+    confirmarAlteracao(res, alterados);
     return res.status(200).json({ mensagem: "Dados atualizados com sucesso" })
 })
 
 // ROTAS DE ACESSO RESTRITO (Admin)
 
-app.get('/admin/listar-usuarios', autenticar, somenteAdmin, async (req, res) => {
+app.get('/admin/listar-usuarios', auditar('LISTAR_USUARIOS', undefined, false), autenticar, somenteAdmin, async (req, res) => {
     res.set('Cache-Control', 'no-store');
     const { pesquisa } = req.query;
 
@@ -506,7 +525,7 @@ app.get('/admin/listar-usuarios', autenticar, somenteAdmin, async (req, res) => 
             .select('id_usuario, nome, email, tipo, status_usuario, data_criacao, data_inativacao')
             .order('id_usuario', { ascending: true })
         if (error) {
-            console.log("/admin/listar-usuarios: Erro ao retornar as mensagens do banco de dados: " + error.message)
+            console.log("Operação processada; consulte o evento de auditoria e o status HTTP.");
             return res.status(500).json({ erro: error.message });
         }
         console.log("/admin/listar-usuarios: Todos os dados retornados")
@@ -528,11 +547,11 @@ app.get('/admin/listar-usuarios', autenticar, somenteAdmin, async (req, res) => 
     if (error) {
         return res.status(500).json({ erro: error.message });
     }
-    console.log("/admin/listar-usuarios: Dados filtrados por '" + pesquisa + "' Retornados")
+    console.log("Operação processada; consulte o evento de auditoria e o status HTTP.");
     return res.status(201).json(data);
 });
 
-app.get('/admin/usuario', autenticar, somenteAdmin, async (req, res) => {
+app.get('/admin/usuario', auditar('CONSULTAR_USUARIO', req => req.query.id || req.usuario?.id_usuario, false), autenticar, somenteAdmin, async (req, res) => {
     const { id } = req.query
     // req.usuario já vem do middleware, mas revalida contra o banco
     // pra pegar dados atualizados (ex: se foi inativado depois do token ser emitido)
@@ -545,10 +564,11 @@ app.get('/admin/usuario', autenticar, somenteAdmin, async (req, res) => {
             .single();
 
         if (error) {
+            res.locals.auditoria.resultado = error.code === 'PGRST116' ? 'FALHA' : 'ERRO';
             console.log("/usuario: Usuario não existe ou inativo")
             return res.status(401).json({ mensagem: 'Usuario não existe ou inativo' });
         }
-        console.log("/usuario: todos os dados do id: " + id + " retornados")
+        console.log("Operação processada; consulte o evento de auditoria e o status HTTP.");
         return res.status(200).json(data);
     } else {
         const { data, error } = await supabase
@@ -558,32 +578,35 @@ app.get('/admin/usuario', autenticar, somenteAdmin, async (req, res) => {
             .single();
 
         if (error) {
+            res.locals.auditoria.resultado = error.code === 'PGRST116' ? 'FALHA' : 'ERRO';
             console.log("/usuario: Usuario não existe ou inativo")
             return res.status(401).json({ mensagem: 'Usuario não existe ou inativo' });
         }
-        console.log("/usuario: todos os dados do id: " + req.usuario.id_usuario + " retornados")
+        console.log("Operação processada; consulte o evento de auditoria e o status HTTP.");
         return res.status(200).json(data);
     }
 })
 
-app.patch('/admin/editar-usuario', autenticar, somenteAdmin, validar(schemaId, schemaNome, schemaEmail), async (req, res) => {
+app.patch('/admin/editar-usuario', auditar('ATUALIZAR_USUARIO', req => req.body?.id, true), autenticar, somenteAdmin, validar(schemaId, schemaNome, schemaEmail), async (req, res) => {
     const { id, nome, email } = req.body
 
-    const { error } = await supabase
+    const { data: alterados, error } = await supabase
         .from('usuarios')
         .update({ nome: nome, email: email })
-        .eq('id_usuario', id)
+        .eq('id_usuario', id).select('id_usuario')
 
     if (error) {
-        console.log("/uadmin/editar-usuario: Erro em atualizar usuario - " + error)
+        res.locals.auditoria.resultado = 'ERRO';
+        console.log("Operação processada; consulte o evento de auditoria e o status HTTP.");
         return res.status(500).json({ mensagem: "Erro em atualizar usuario - " + error })
     }
 
-    console.log("/admin/editar-usuario: Dados atualizados com sucesso")
+    console.log("/admin/editar-usuario: Atualização processada")
+    confirmarAlteracao(res, alterados);
     return res.status(200).json({ mensagem: "Dados atualizados com sucesso" })
 })
 
-app.patch('/admin/resetar-senha', autenticar, somenteAdmin, async (req, res) => {
+app.patch('/admin/resetar-senha', auditar('SOLICITAR_RESET_ADMIN', req => req.body?.id, true), autenticar, somenteAdmin, async (req, res) => {
     const { id } = req.body
 
     //Verifica que o reset já foi solicitado
@@ -593,7 +616,7 @@ app.patch('/admin/resetar-senha', autenticar, somenteAdmin, async (req, res) => 
         .eq('id_usuario', id)
         .single()
     if (errorConsulta) {
-        console.log("/admin/resetar-senha: >>>>> Consulta -> " + errorConsulta.message)
+        console.log("Operação processada; consulte o evento de auditoria e o status HTTP.");
         return res.status(500).json({ mensagem: "Ocorreu um erro ao consultar o usuario, verifique os logs" })
     }
     if (consulta.status_reset_senha === true) {
@@ -602,20 +625,22 @@ app.patch('/admin/resetar-senha', autenticar, somenteAdmin, async (req, res) => 
     }
 
     // Solicita o reset da senha
-    const { error } = await supabase
+    const { data: alterados, error } = await supabase
         .from('usuarios')
         .update({ status_reset_senha: true })
-        .eq('id_usuario', id)
+        .eq('id_usuario', id).select('id_usuario')
     if (error) {
-        console.log("/admin/resetar-senha: >>>>> " + error.message)
+        res.locals.auditoria.resultado = 'ERRO';
+        console.log("Operação processada; consulte o evento de auditoria e o status HTTP.");
         return res.status(501).json({ mensagem: "Ocorreu um erro com sua solicitação, verifique os logs" })
     }
-    console.log("/admin/resetar-senha: Solicitação de reset realizada com sucesso")
+    console.log("/admin/resetar-senha: Solicitação processada")
+    confirmarAlteracao(res, alterados);
     return res.status(200).json({ mensagem: "Solicitação de reset da senha realizada" })
 
 })
 
-app.patch('/admin/reativar-usuario', autenticar, somenteAdmin, async (req, res) => {
+app.patch('/admin/reativar-usuario', auditar('REATIVAR_USUARIO', req => req.body?.id, true), autenticar, somenteAdmin, async (req, res) => {
     const { id } = req.body
     const { data: consulta } = await supabase
         .from('usuarios')
@@ -630,20 +655,22 @@ app.patch('/admin/reativar-usuario', autenticar, somenteAdmin, async (req, res) 
         console.log("/admin/reativar-usuario: Nada retornado")
         return res.status(401).json({ mensagem: "Nada retornado" })
     }
-    const { error } = await supabase
+    const { data: alterados, error } = await supabase
         .from('usuarios')
         .update({ status_usuario: 'Ativo', data_inativacao: null })
-        .eq('id_usuario', id)
+        .eq('id_usuario', id).select('id_usuario')
 
     if (error) {
+        res.locals.auditoria.resultado = 'ERRO';
         console.log("/admin/reativar-usuario: Usuario não existe, inativo ou sessao invalida")
         return res.status(401).json({ mensagem: 'Erro ao reativar a conta, tente novamente mais tarde' });
     }
-    console.log("/admin/reativar-usuario: Usuario " + consulta.nome + " reativado")
+    console.log("Operação processada; consulte o evento de auditoria e o status HTTP.");
+    confirmarAlteracao(res, alterados);
     return res.status(200).json({ mensagem: "Usuario reativado com sucesso" })
 })
 
-app.patch('/admin/desativar-usuario', autenticar, somenteAdmin, async (req, res) => {
+app.patch('/admin/desativar-usuario', auditar('DESATIVAR_USUARIO', req => req.body?.id, true), autenticar, somenteAdmin, async (req, res) => {
     const { id } = req.body || {};
 
     if (!id) {
@@ -657,10 +684,10 @@ app.patch('/admin/desativar-usuario', autenticar, somenteAdmin, async (req, res)
         .single();
 
     if (erroConsulta || !consulta) {
+        res.locals.auditoria.resultado = erroConsulta && erroConsulta.code !== 'PGRST116' ? 'ERRO' : 'FALHA';
         console.log("/admin/desativar-usuario: Usuário não encontrado");
         return res.status(404).json({ mensagem: "Usuário não encontrado" });
     }
-    console.log(consulta)
 
     if (consulta.tipo === 'Admin') {
         console.log("/admin/desativar-usuario: >>>>> Admin não pode desativar própria conta ou de outro admin");
@@ -672,21 +699,23 @@ app.patch('/admin/desativar-usuario', autenticar, somenteAdmin, async (req, res)
         return res.status(400).json({ mensagem: "Usuario já está desativado" });
     }
 
-    const { error } = await supabase
+    const { data: alterados, error } = await supabase
         .from('usuarios')
         .update({ status_usuario: 'Inativo', data_inativacao: new Date().toISOString() })
-        .eq('id_usuario', id);
+        .eq('id_usuario', id).select('id_usuario');
 
     if (error) {
-        console.log("/admin/desativar-usuario: Erro ao desativar - " + error.message);
+        res.locals.auditoria.resultado = 'ERRO';
+        console.log("Operação processada; consulte o evento de auditoria e o status HTTP.");
         return res.status(500).json({ mensagem: 'Erro ao desativar a conta, tente novamente mais tarde' });
     }
 
-    console.log("/admin/desativar-usuario: Usuario " + consulta.nome + " desativado");
+    console.log("Operação processada; consulte o evento de auditoria e o status HTTP.");
+    confirmarAlteracao(res, alterados);
     return res.status(200).json({ mensagem: "Usuario desativado com sucesso" });
 })
 
-app.delete('/admin/deletar-usuario', autenticar, somenteAdmin, async (req, res) => {
+app.delete('/admin/deletar-usuario', auditar('EXCLUIR_USUARIO', req => req.query.id_usuario, true), autenticar, somenteAdmin, async (req, res) => {
     const { id_usuario } = req.query
 
     if (!id_usuario) {
@@ -700,25 +729,27 @@ app.delete('/admin/deletar-usuario', autenticar, somenteAdmin, async (req, res) 
         .single();
 
     if (erroConsulta || !consulta) {
+        res.locals.auditoria.resultado = erroConsulta && erroConsulta.code !== 'PGRST116' ? 'ERRO' : 'FALHA';
         console.log("/admin/desativar-usuario: Usuário não encontrado");
         return res.status(404).json({ mensagem: "Usuário não encontrado" });
     }
-    console.log(consulta)
 
     if (consulta.tipo === 'Admin') {
         console.log("/admin/deletar-usuario: >>>>> Admin não pode deletar própria conta ou de outro admin");
         return res.status(403).json({ mensagem: "Admin não pode deletar própria conta ou de outro admin" });
     }
-    const { error } = await supabase
+    const { data: alterados, error } = await supabase
         .from('usuarios')
         .delete()
-        .eq('id_usuario', id_usuario)
+        .eq('id_usuario', id_usuario).select('id_usuario')
 
     if (error) {
+        res.locals.auditoria.resultado = 'ERRO';
         console.log("admin/deletar-usuario: Erro a deletar o ususario, verifique o banco de dados")
         return res.status(500).json({ mensagem: "Erro ao deletar o usuario, verifique o banco de dados" })
     }
-    console.log("admin/deletar-usuario: Operação com sucesso, usuario deletado permanentemente")
+    console.log("/admin/deletar-usuario: Exclusão processada")
+    confirmarAlteracao(res, alterados);
     return res.status(200).json({ mensagem: "Operação com sucesso, usuario deletado permanentemente" })
 })
 
@@ -730,5 +761,9 @@ app.use((req, res) => {
 // dinamicamente via variável de ambiente PORT. Localmente, cai no 3000.
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`Servidor rodando na porta ${PORT}`);
+    console.log("Servidor rodando na porta "+PORT)
+    logger.info("Servidor CashLand iniciado", {
+        porta: PORT,
+        ambiente: process.env.NODE_ENV || "development"
+    });
 });
