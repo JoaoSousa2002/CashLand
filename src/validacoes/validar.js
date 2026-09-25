@@ -1,6 +1,10 @@
 export function validar(...schemas) {
 
     return (req, res, next) => {
+        const origem = req.method === 'GET' || req.method === 'HEAD'
+            || (req.method === 'DELETE' && Object.keys(req.body ?? {}).length === 0)
+            ? 'query'
+            : 'body';
 
         // Combina todos os schemas recebidos
         const schemaFinal = schemas.reduce(
@@ -11,7 +15,7 @@ export function validar(...schemas) {
 
         // Valida os dados recebidos
         const { error, value } = schemaFinal.validate(
-            req.body,
+            req[origem] ?? {},
             {
                 abortEarly: false,
                 allowUnknown: false
@@ -32,7 +36,17 @@ export function validar(...schemas) {
 
         }
 
-        req.body = value;
+        if (origem === 'query') {
+            // No Express 5, query é um getter sem setter.
+            Object.defineProperty(req, 'query', {
+                value,
+                writable: true,
+                configurable: true,
+                enumerable: true
+            });
+        } else {
+            req[origem] = value;
+        }
 
         next();
 

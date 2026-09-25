@@ -1,11 +1,80 @@
 import Joi from "joi";
 
-export const schemaId = Joi.object({
-    id: Joi.number()
+export const schemaIdUsuarioObrigatorio = Joi.object({
+    id_usuario: Joi.number()
         .integer()
-        .positive()
+        .min(0)
         .required()
+        .messages({
+            "any.required": "O ID é obrigatório.",
+            "number.base": "O ID deve ser um número válido.",
+            "number.integer": "O ID deve ser um número inteiro.",
+            "number.min": "O ID deve ser maior ou igual a zero."
+        })
 });
+
+export const schemaIdUsuarioOpcional = Joi.object({
+    id_usuario: Joi.number()
+        .integer()
+        .min(0)
+        .optional()
+        .messages({
+            "number.base": "O ID deve ser um número válido.",
+            "number.integer": "O ID deve ser um número inteiro.",
+            "number.min": "O ID deve ser maior ou igual a zero."
+        })
+});
+
+export const schemaIdCategoriaObrigatorio = Joi.object({
+    id_categoria: Joi.number()
+        .integer()
+        .min(0)
+        .required()
+        .messages({
+            "any.required": "O ID é obrigatório.",
+            "number.base": "O ID deve ser um número válido.",
+            "number.integer": "O ID deve ser um número inteiro.",
+            "number.min": "O ID deve ser maior ou igual a zero."
+        })
+});
+
+export const schemaIdCategoriaOpcional = Joi.object({
+    id_categoria: Joi.number()
+        .integer()
+        .min(0)
+        .optional()
+        .messages({
+            "number.base": "O ID deve ser um número válido.",
+            "number.integer": "O ID deve ser um número inteiro.",
+            "number.min": "O ID deve ser maior ou igual a zero."
+        })
+});
+
+export const schemaIdSubcategoriaObrigatorio = Joi.object({
+    id_subcategoria: Joi.number()
+        .integer()
+        .min(0)
+        .required()
+        .messages({
+            "any.required": "O ID é obrigatório.",
+            "number.base": "O ID deve ser um número válido.",
+            "number.integer": "O ID deve ser um número inteiro.",
+            "number.min": "O ID deve ser maior ou igual a zero."
+        })
+});
+
+export const schemaIdSubcategoriaOpcional = Joi.object({
+    id_subcategoria: Joi.number()
+        .integer()
+        .min(0)
+        .optional()
+        .messages({
+            "number.base": "O ID deve ser um número válido.",
+            "number.integer": "O ID deve ser um número inteiro.",
+            "number.min": "O ID deve ser maior ou igual a zero."
+        })
+});
+
 // NOME
 export const schemaNome = Joi.object({
 

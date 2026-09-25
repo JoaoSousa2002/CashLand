@@ -176,7 +176,7 @@
         }
 
         async function confirmarDesativarConta() {
-            const response = await fetch(`/me?id=${idUsuario}`, {
+            const response = await fetch(`/me?id_usuario=${idUsuario}`, {
                 method: 'GET',
                 credentials: "include"
             })
@@ -217,7 +217,7 @@
                 method: 'PATCH',
                 credentials: 'include',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: idUsuario })
+                body: JSON.stringify({ id_usuario: idUsuario })
             })
             const resposta = await response.json()
             if (resposta.status === 200) {
@@ -237,7 +237,7 @@
                 method: 'PATCH',
                 credentials: 'include',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: idUsuario })
+                body: JSON.stringify({ id_usuario: idUsuario })
             })
             const resposta = await response.json()
             if (resposta.status === 200) {
@@ -260,7 +260,7 @@
                     method: 'PATCH',
                     credentials: "include",
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id: idUsuario })
+                    body: JSON.stringify({ id_usuario: idUsuario })
                 })
                 const resposta = await response.json()
                 switch (response.status) {
@@ -287,7 +287,7 @@
         }
         async function preencherCampos() {
             try {
-                const resposta = await fetch(`/admin/usuario?id=${idUsuario}`, {
+                const resposta = await fetch(`/admin/usuario?id_usuario=${idUsuario}`, {
                     method: 'GET',
                     credentials: 'include',
                 })
@@ -360,7 +360,7 @@
                 method: 'PATCH',
                 credentials: 'include',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: idUsuario, nome, email })
+                body: JSON.stringify({ id_usuario: idUsuario, nome, email })
             })
             const resposta = await resultado.json()
             switch (resultado.status) {
