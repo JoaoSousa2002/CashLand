@@ -24,6 +24,7 @@ import {
     schemaIdCategoriaOpcional,
     schemaIdSubcategoriaObrigatorio,
     schemaIdSubcategoriaOpcional,
+    schemaFiltroUsuario
 
 } from "../validacoes/usuario.js";
 import logger from "../config/logger.js";
@@ -522,240 +523,9 @@ app.patch('/usuario/atualizar-dados', auditar('ATUALIZAR_USUARIO', req => req.us
     return res.status(200).json({ mensagem: "Dados atualizados com sucesso" })
 })
 
-// ROTAS DE ACESSO RESTRITO (Admin)
-
-app.get('/admin/listar-usuarios', auditar('LISTAR_USUARIOS', undefined, false), autenticar, somenteAdmin, async (req, res) => {
-    res.set('Cache-Control', 'no-store');
-    const { pesquisa } = req.query;
-
-    if (!pesquisa || pesquisa === "") {
-        console.log("/admin/listar-usuarios: Pesquisa para listar usuario vazio")
-        const { data, error } = await supabase
-            .from('usuarios')
-            .select('id_usuario, nome, email, tipo, status_usuario, data_criacao, data_inativacao')
-            .order('id_usuario', { ascending: true })
-        if (error) {
-            console.log("Operação processada; consulte o evento de auditoria e o status HTTP.");
-            return res.status(500).json({ erro: error.message });
-        }
-        console.log("/admin/listar-usuarios: Todos os dados retornados")
-        return res.status(200).json(data);
-    }
-
-    const condicoes = [`nome.ilike.%${pesquisa}%`];
-    // só tenta buscar por ID se o termo for um número válido
-    if (!isNaN(pesquisa)) {
-        condicoes.push(`id_usuario.eq.${pesquisa}`);
-    }
-
-    const { data, error } = await supabase
-        .from('usuarios')
-        .select('id_usuario, nome, email, tipo, status_usuario, data_criacao, data_inativacao')
-        .order('id_usuario', { ascending: true })
-        .or(condicoes.join(','));
-
-    if (error) {
-        return res.status(500).json({ erro: error.message });
-    }
-    console.log("Operação processada; consulte o evento de auditoria e o status HTTP.");
-    return res.status(201).json(data);
-});
-
-app.get('/admin/usuario', auditar('CONSULTAR_USUARIO', req => req.query.id_usuario ?? req.usuario?.id_usuario, false), autenticar, somenteAdmin, validar(schemaIdUsuarioOpcional), async (req, res) => {
-    const { id_usuario } = req.query
-    // req.usuario já vem do middleware, mas revalida contra o banco
-    // pra pegar dados atualizados (ex: se foi inativado depois do token ser emitido)
-
-    if (id_usuario !== undefined) {
-        const { data, error } = await supabase
-            .from('usuarios')
-            .select('id_usuario, nome, email, status_usuario, data_criacao, data_inativacao')
-            .eq('id_usuario', id_usuario)
-            .single();
-
-        if (error) {
-            res.locals.auditoria.resultado = error.code === 'PGRST116' ? 'FALHA' : 'ERRO';
-            console.log("/usuario: Usuario não existe ou inativo")
-            return res.status(401).json({ mensagem: 'Usuario não existe ou inativo' });
-        }
-        console.log("Operação processada; consulte o evento de auditoria e o status HTTP.");
-        return res.status(200).json(data);
-    } else {
-        const { data, error } = await supabase
-            .from('usuarios')
-            .select('id_usuario, nome, email, status_usuario, data_criacao, data_inativacao')
-            .eq('id_usuario', req.usuario.id_usuario)
-            .single();
-
-        if (error) {
-            res.locals.auditoria.resultado = error.code === 'PGRST116' ? 'FALHA' : 'ERRO';
-            console.log("/usuario: Usuario não existe ou inativo")
-            return res.status(401).json({ mensagem: 'Usuario não existe ou inativo' });
-        }
-        console.log("Operação processada; consulte o evento de auditoria e o status HTTP.");
-        return res.status(200).json(data);
-    }
-})
-
-app.patch('/admin/editar-usuario', auditar('ATUALIZAR_USUARIO', req => req.body?.id_usuario, true), autenticar, somenteAdmin, validar(schemaIdUsuarioObrigatorio, schemaNome, schemaEmail), async (req, res) => {
-    const { id_usuario, nome, email } = req.body
-
-    const { data: alterados, error } = await supabase
-        .from('usuarios')
-        .update({ nome: nome, email: email })
-        .eq('id_usuario', id_usuario).select('id_usuario')
-
-    if (error) {
-        res.locals.auditoria.resultado = 'ERRO';
-        console.log("Operação processada; consulte o evento de auditoria e o status HTTP.");
-        return res.status(500).json({ mensagem: "Erro em atualizar usuario - " + error })
-    }
-
-    console.log("/admin/editar-usuario: Atualização processada")
-    confirmarAlteracao(res, alterados);
-    return res.status(200).json({ mensagem: "Dados atualizados com sucesso" })
-})
-
-app.patch('/admin/resetar-senha', auditar('SOLICITAR_RESET_ADMIN', req => req.body?.id_usuario, true), autenticar, somenteAdmin, validar(schemaIdUsuarioObrigatorio), async (req, res) => {
-    const { id_usuario } = req.body
-
-    //Verifica que o reset já foi solicitado
-    const { data: consulta, error: errorConsulta } = await supabase
-        .from('usuarios')
-        .select('status_reset_senha')
-        .eq('id_usuario', id_usuario)
-        .single()
-    if (errorConsulta) {
-        console.log("Operação processada; consulte o evento de auditoria e o status HTTP.");
-        return res.status(500).json({ mensagem: "Ocorreu um erro ao consultar o usuario, verifique os logs" })
-    }
-    if (consulta.status_reset_senha === true) {
-        console.log("/admin/resetar-senha: >>>>> A solicitação de reset já foi feita")
-        return res.status(400).json({ mensagem: "Já foi feita uma solicitação de reset de senha para este usuario" })
-    }
-
-    // Solicita o reset da senha
-    const { data: alterados, error } = await supabase
-        .from('usuarios')
-        .update({ status_reset_senha: true })
-        .eq('id_usuario', id_usuario).select('id_usuario')
-    if (error) {
-        res.locals.auditoria.resultado = 'ERRO';
-        console.log("Operação processada; consulte o evento de auditoria e o status HTTP.");
-        return res.status(501).json({ mensagem: "Ocorreu um erro com sua solicitação, verifique os logs" })
-    }
-    console.log("/admin/resetar-senha: Solicitação processada")
-    confirmarAlteracao(res, alterados);
-    return res.status(200).json({ mensagem: "Solicitação de reset da senha realizada" })
-
-})
-
-app.patch('/admin/reativar-usuario', auditar('REATIVAR_USUARIO', req => req.body?.id_usuario, true), autenticar, somenteAdmin, validar(schemaIdUsuarioObrigatorio), async (req, res) => {
-    const { id_usuario } = req.body
-    const { data: consulta } = await supabase
-        .from('usuarios')
-        .select('status_usuario, nome')
-        .eq('id_usuario', id_usuario)
-        .single()
-
-    if (!consulta) {
-        return res.status(404).json({ mensagem: 'Usuário não encontrado' });
-    }
-    if (consulta.status_usuario === 'Ativo') {
-        console.log("/admin/reativar-usuario: Usuario já está ativo")
-        return res.status(400).json({ mensagem: "Usuario já está ativo" })
-    }
-    const { data: alterados, error } = await supabase
-        .from('usuarios')
-        .update({ status_usuario: 'Ativo', data_inativacao: null })
-        .eq('id_usuario', id_usuario).select('id_usuario')
-
-    if (error) {
-        res.locals.auditoria.resultado = 'ERRO';
-        console.log("/admin/reativar-usuario: Usuario não existe, inativo ou sessao invalida")
-        return res.status(401).json({ mensagem: 'Erro ao reativar a conta, tente novamente mais tarde' });
-    }
-    console.log("Operação processada; consulte o evento de auditoria e o status HTTP.");
-    confirmarAlteracao(res, alterados);
-    return res.status(200).json({ mensagem: "Usuario reativado com sucesso" })
-})
-
-app.patch('/admin/desativar-usuario', auditar('DESATIVAR_USUARIO', req => req.body?.id_usuario, true), autenticar, somenteAdmin, validar(schemaIdUsuarioObrigatorio), async (req, res) => {
-    const { id_usuario } = req.body || {};
-
-
-    const { data: consulta, error: erroConsulta } = await supabase
-        .from('usuarios')
-        .select('status_usuario, nome, tipo')
-        .eq('id_usuario', id_usuario)
-        .single();
-
-    if (erroConsulta || !consulta) {
-        res.locals.auditoria.resultado = erroConsulta && erroConsulta.code !== 'PGRST116' ? 'ERRO' : 'FALHA';
-        console.log("/admin/desativar-usuario: Usuário não encontrado");
-        return res.status(404).json({ mensagem: "Usuário não encontrado" });
-    }
-
-    if (consulta.tipo === 'Admin') {
-        console.log("/admin/desativar-usuario: >>>>> Admin não pode desativar própria conta ou de outro admin");
-        return res.status(403).json({ mensagem: "Admin não pode desativar própria conta ou de outro admin" });
-    }
-
-    if (consulta.status_usuario === 'Inativo') {
-        console.log("/admin/desativar-usuario: Usuario já está desativado");
-        return res.status(400).json({ mensagem: "Usuario já está desativado" });
-    }
-
-    const { data: alterados, error } = await supabase
-        .from('usuarios')
-        .update({ status_usuario: 'Inativo', data_inativacao: new Date().toISOString() })
-        .eq('id_usuario', id_usuario).select('id_usuario');
-
-    if (error) {
-        res.locals.auditoria.resultado = 'ERRO';
-        console.log("Operação processada; consulte o evento de auditoria e o status HTTP.");
-        return res.status(500).json({ mensagem: 'Erro ao desativar a conta, tente novamente mais tarde' });
-    }
-
-    console.log("Operação processada; consulte o evento de auditoria e o status HTTP.");
-    confirmarAlteracao(res, alterados);
-    return res.status(200).json({ mensagem: "Usuario desativado com sucesso" });
-})
-
-app.delete('/admin/deletar-usuario', auditar('EXCLUIR_USUARIO', req => req.query.id_usuario, true), autenticar, somenteAdmin, validar(schemaIdUsuarioObrigatorio), async (req, res) => {
-    const { id_usuario } = req.query
-
-    const { data: consulta, error: erroConsulta } = await supabase
-        .from('usuarios')
-        .select('status_usuario, tipo')
-        .eq('id_usuario', id_usuario)
-        .single();
-
-    if (erroConsulta || !consulta) {
-        res.locals.auditoria.resultado = erroConsulta && erroConsulta.code !== 'PGRST116' ? 'ERRO' : 'FALHA';
-        console.log("/admin/desativar-usuario: Usuário não encontrado");
-        return res.status(404).json({ mensagem: "Usuário não encontrado" });
-    }
-
-    if (consulta.tipo === 'Admin') {
-        console.log("/admin/deletar-usuario: >>>>> Admin não pode deletar própria conta ou de outro admin");
-        return res.status(403).json({ mensagem: "Admin não pode deletar própria conta ou de outro admin" });
-    }
-    const { data: alterados, error } = await supabase
-        .from('usuarios')
-        .delete()
-        .eq('id_usuario', id_usuario).select('id_usuario')
-
-    if (error) {
-        res.locals.auditoria.resultado = 'ERRO';
-        console.log("admin/deletar-usuario: Erro a deletar o ususario, verifique o banco de dados")
-        return res.status(500).json({ mensagem: "Erro ao deletar o usuario, verifique o banco de dados" })
-    }
-    console.log("/admin/deletar-usuario: Exclusão processada")
-    confirmarAlteracao(res, alterados);
-    return res.status(200).json({ mensagem: "Operação com sucesso, usuario deletado permanentemente" })
-})
-
+// =====================================================================================================================
+// =================================== RF003 CATEGORIAS E SUBCATEGORIAS ================================================
+// =====================================================================================================================
 
 app.post('/usuario/criar-categoria', auditar('CRIAR_CATEGORIA', req => req.usuario?.id_usuario, false), autenticar, validar(schemaNome, schemaDescricaoCategoria), async (req, res) => {
     const { nome, descricao } = req.body
@@ -968,6 +738,449 @@ app.delete('/usuario/deletar-categoria', auditar('USER_DELETAR_CATEGORIA', req =
     return res.status(200).json({ mensagem: "Categoria deletada com sucesso" })
 })
 
+app.post('/usuario/criar-sub_categoria', auditar('USER_CRIAR_SUB_CATEGORIA', req => req.usuario?.id_usuario, false), autenticar, validar(schemaIdCategoriaObrigatorio, schemaNome, schemaDescricaoCategoria), async (req, res) => {
+    const { id_categoria, nome, descricao } = req.body;
+
+    // Verifica se o usuario está tentando criar uma subcategoria com o nome reservado
+    if (nome.trim().toLowerCase() === "Sem subcategoria") {
+        return res.status(409).json({
+            mensagem: "O nome 'Sem subcategoria' é reservado pelo sistema."
+        });
+    }
+
+    // Verifica se a subcategoria já existe
+    const { data: consultaSubCategoria, error: erroConsultaSubCategoria } = await supabase
+        .from('subcategorias')
+        .select()
+        .eq('nome', nome)
+        .maybeSingle()
+
+    if (erroConsultaSubCategoria) {
+        res.locals.auditoria.resultado = 'ERRO';
+        console.log("/usuario/criar-sub_categoria: Erro ao verificar a tabela: " + erroConsultaSubCategoria)
+        return res.status(500).json({ mensagem: "Erro ao verificar a tabela, tente novamente mais tarde" })
+    }
+    if (consultaSubCategoria) {
+        console.log("/usuario/criar-sub_categoria: >>>>> Já existe uma categoria com esse nome")
+        return res.status(409).json({ mensagem: "Já existe uma categoria com esse nome" })
+    }
+
+    // Cria a subcategoria
+    const { data: criaSubCategoria, error: errorCriar } = await supabase
+        .from('subcategorias')
+        .insert({
+            id_categoria: id_categoria,
+            nome: nome,
+            descricao: descricao,
+        })
+        .select()
+        .single()
+
+    if (errorCriar) {
+        console.log("/usuario/criar-sub_categoria: >>>>> Erro ao criar categoria: " + errorCriar)
+        return res.status(500).json({ mensagem: "Erro ao criar a subcategoria, tente novamente mais tarde" })
+    }
+    if (criaSubCategoria) {
+        console.log("/usuario/criar-sub_categoria: Subcategoria '" + criaSubCategoria.nome + "' criada com sucesso")
+        return res.status(200).json({ mensagem: "subcategoria criada com sucesso" })
+    }
+
+})
+
+app.get('/usuario/listar-sub_categoria', auditar('USER_LISTAR_SUB_CATEGORIA', req => req.usuario?.id_usuario, false), autenticar, async (req, res) => {
+    res.set('Cache-Control', 'no-store');
+    const { pesquisa } = req.query;
+
+    if (!pesquisa || pesquisa === "") {
+        console.log("/usuario/listar-sub_categoria: Pesquisa para listar subcategoria vazio")
+
+        const { data, error } = await supabase
+            .from('subcategorias')
+            .select('id_subcategoria, nome, descricao, data_criacao, categorias!inner(id_usuario, id_categoria, nome)')
+            .eq('categorias.id_usuario', req.usuario.id_usuario)
+            .order('id_subcategoria', { ascending: true })
+        if (error) {
+            console.log("/usuario/listar-sub_categoria: >>>>> Erro ao pesquisar a subcategoria");
+            return res.status(500).json({ erro: error.message });
+        }
+        console.log("/usuario/listar-sub_categoria: Todas as subcategorias foram retornadas")
+        return res.status(200).json(data);
+    }
+
+
+    const condicoes = [`nome.ilike.%${pesquisa}%`];
+    // só tenta buscar por ID se o termo for um número válido
+    if (!isNaN(pesquisa)) {
+        condicoes.push(`id_subcategoria.eq.${pesquisa}`);
+
+        // Verifica se a subcategoria pesquisada pertence ao usuário autenticado.
+        const { data: consultaSubcategoria, error: erroConsulta } = await supabase
+            .from('subcategorias')
+            .select('id_subcategoria, categorias!inner(id_usuario, id_categoria, nome)')
+            .eq('id_subcategoria', pesquisa)
+            .eq('categorias.id_usuario', req.usuario.id_usuario)
+            .maybeSingle();
+
+        if (erroConsulta) {
+            return res.status(500).json({ mensagem: "Erro ao verificar a subcategoria, tente novamente mais tarde" });
+        }
+        if (!consultaSubcategoria) {
+            return res.status(404).json({ mensagem: "Essa subcategoria não existe" });
+        }
+    }
+
+    const { data, error } = await supabase
+        .from('subcategorias')
+        .select('id_subcategoria, nome, descricao, data_criacao, categorias!inner(id_usuario, id_categoria, nome)')
+        .eq('categorias.id_usuario', req.usuario.id_usuario)
+        .order('id_subcategoria', { ascending: true })
+        .or(condicoes.join(','));
+
+    if (error) {
+        console.log("/usuario/listar-subcategoria: >>>>> Erro ao buscar a subcategoria: " + error.message)
+        return res.status(500).json({ mensagem: "Erro ao consultar a subcategoria" });
+    }
+    console.log("/usuario/listar-subcategoria: Todas as categorias foram retornadas");
+    return res.status(200).json(data);
+});
+
+app.patch('/usuario/editar-sub_categoria', auditar('USER_EDITAR_SUB_CATEGORIA', req => req.usuario?.id_usuario, false), autenticar, validar(schemaIdSubcategoriaObrigatorio, schemaNome, schemaDescricaoCategoria), async (req, res) => {
+    const { id_subcategoria, nome, descricao } = req.body
+
+
+    // Verifica se a Subcategoria existe
+    const { data: consultaSubcategoria, error: erroConsulta } = await supabase
+        .from('subcategorias')
+        .select('id_subcategoria, nome')
+        .eq('id_subcategoria', id_subcategoria)
+        .maybeSingle()
+
+    if (erroConsulta) {
+        res.locals.auditoria.resultado = 'ERRO';
+        console.log("/usuario/editar-sub_categoria: Erro ao verificar a tabela: " + erroConsulta)
+        return res.status(500).json({ mensagem: "Erro ao verificar a tabela, tente novamente mais tarde" })
+    }
+    if (!consultaSubcategoria) {
+        console.log("/usuario/editar-sub_categoria: >>>>> A categoria não existe")
+        return res.status(404).json({ mensagem: "Essa subcategoria não existe" })
+    }
+    if (consultaSubcategoria.nome.trim().toLowerCase() === "sem subcategoria") {
+        console.log("/usuario/editar-sub_categoria: >>>>> A categoria 'Sem subcategoria' não pode ser editada")
+        return res.status(403).json({ mensagem: "Essa subcategoria não pode ser editada!" });
+    }
+    if (nome.trim().toLowerCase() === "sem subcategoria") {
+        console.log("/usuario/editar-sub_categoria: >>>>> O nome 'Sem subcategoria' é reservado pelo sistema.")
+        return res.status(409).json({ mensagem: "O nome 'Sem subcategoria' é reservado pelo sistema." });
+    }
+
+    //Verifica se outra subcategoria já tem o nome editado
+    const { data: subcategoriaExistente, error: erroDuplicidade } = await supabase
+        .from('subcategorias')
+        .select('id_subcategoria')
+        .ilike('nome', nome.trim())
+        .neq('id_subcategoria', id_subcategoria)
+        .maybeSingle();
+
+    if (erroDuplicidade) {
+        res.locals.auditoria.resultado = 'ERRO';
+        console.log("/usuario/editar-sub_categoria: >>>>> Erro ao verificar o nome da subcategoria.")
+        return res.status(500).json({ mensagem: "Erro ao verificar o nome da subcategoria." });
+    }
+
+    if (subcategoriaExistente) {
+        console.log("/usuario/editar-sub_categoria: >>>>> á existe outra subcategoria com esse nome..")
+        return res.status(409).json({ mensagem: "Já existe outra subcategoria com esse nome." });
+    }
+
+    // Atualiza a tabela subcategoria
+    const { data: editarSubcategoria, error: errorEditar } = await supabase
+        .from('subcategorias')
+        .update({ nome: nome, descricao: descricao })
+        .eq('id_subcategoria', id_subcategoria)
+        .select()
+        .single()
+
+    if (errorEditar) {
+        res.locals.auditoria.resultado = 'ERRO';
+        console.log("/usuario/editar-sub_categoria: >>>>> Erro ao atualizar a tabela")
+        return res.status(500).json({ mensagem: "Erro ao atualizar a subcategoria, por favor tente novamente mais tarde" })
+    }
+    return res.status(200).json({ mensagem: "Subcategoria atualizada com sucesso." });
+})
+
+app.delete('/usuario/deletar-sub_categoria', auditar('USER_DELETAR_SUB_CATEGORIA', req => req.usuario?.id_usuario, false), autenticar, validar(schemaIdSubcategoriaObrigatorio), async (req, res) => {
+    const { id_subcategoria } = req.body
+
+    // Verifica se a categoria existe
+    const { data: consulta, error: erroConsulta } = await supabase
+        .from('subcategorias')
+        .select('id_subcategoria, nome, categorias!inner(id_usuario)')
+        .eq('categorias.id_usuario', req.usuario.id_usuario)
+        .eq('id_subcategoria', id_subcategoria)
+        .maybeSingle()
+
+    if (erroConsulta) {
+        res.locals.auditoria.resultado = 'ERRO';
+        console.log("/usuario/deletar-sub_categoria: Erro ao verificar a subcategoria: " + erroConsulta.message)
+        return res.status(500).json({ mensagem: "Erro ao verificar a tabela, tente novamente mais tarde" })
+    }
+    if (!consulta) {
+        console.log("/usuario/deletar-categoria: >>>>> A subcategoria não existe")
+        return res.status(404).json({ mensagem: "Essa subcategoria não existe" })
+    }
+    if (consulta.nome.trim().toLowerCase() === "sem subcategoria") {
+        console.log("/usuario/deletar-categoria: >>>>> A subcategoria 'sem categoria' não pode ser deletada")
+        return res.status(403).json({ mensagem: "Essa subcategoria não pode ser deletada!" });
+    }
+
+    const { data: subcategoriaDeletada, error } = await supabase
+        .from('subcategorias')
+        .delete()
+        .eq('id_subcategoria', id_subcategoria)
+        .single()
+    if (error) {
+        res.locals.auditoria.resultado = 'ERRO';
+        console.log("/usuario/deletar-sub_categoria: Erro ao deletar a subcategoria: " + error.message)
+        return res.status(500).json({ mensagem: "Erro ao deletar a subcategoria, tente novamente mais tarde" })
+    }
+    console.log("/usuario/deletar-sub_categoria: Subcategoria '" + subcategoriaDeletada.nome + "' deletada com sucesso")
+    return res.status(200).json({ mensagem: "Subcategoria deletada com sucesso" })
+})
+// ROTAS DE ACESSO RESTRITO (Admin)
+
+app.get('/admin/listar-usuarios', auditar('LISTAR_USUARIOS', undefined, false), autenticar, somenteAdmin, async (req, res) => {
+    res.set('Cache-Control', 'no-store');
+    const { pesquisa } = req.query;
+
+    if (!pesquisa || pesquisa === "") {
+        console.log("/admin/listar-usuarios: Pesquisa para listar usuario vazio")
+        const { data, error } = await supabase
+            .from('usuarios')
+            .select('id_usuario, nome, email, tipo, status_usuario, data_criacao, data_inativacao')
+            .order('id_usuario', { ascending: true })
+        if (error) {
+            console.log("Operação processada; consulte o evento de auditoria e o status HTTP.");
+            return res.status(500).json({ erro: error.message });
+        }
+        console.log("/admin/listar-usuarios: Todos os dados retornados")
+        return res.status(200).json(data);
+    }
+
+    const condicoes = [`nome.ilike.%${pesquisa}%`];
+    // só tenta buscar por ID se o termo for um número válido
+    if (!isNaN(pesquisa)) {
+        condicoes.push(`id_usuario.eq.${pesquisa}`);
+    }
+
+    const { data, error } = await supabase
+        .from('usuarios')
+        .select('id_usuario, nome, email, tipo, status_usuario, data_criacao, data_inativacao')
+        .order('id_usuario', { ascending: true })
+        .or(condicoes.join(','));
+
+    if (error) {
+        return res.status(500).json({ erro: error.message });
+    }
+    console.log("Operação processada; consulte o evento de auditoria e o status HTTP.");
+    return res.status(201).json(data);
+});
+
+app.get('/admin/usuario', auditar('CONSULTAR_USUARIO', req => req.query.id_usuario ?? req.usuario?.id_usuario, false), autenticar, somenteAdmin, validar(schemaIdUsuarioOpcional), async (req, res) => {
+    const { id_usuario } = req.query
+    // req.usuario já vem do middleware, mas revalida contra o banco
+    // pra pegar dados atualizados (ex: se foi inativado depois do token ser emitido)
+
+    if (id_usuario) {
+        const { data, error } = await supabase
+            .from('usuarios')
+            .select('id_usuario, nome, email, status_usuario, data_criacao, data_inativacao')
+            .eq('id_usuario', id_usuario)
+            .single();
+
+        if (error) {
+            res.locals.auditoria.resultado = error.code === 'PGRST116' ? 'FALHA' : 'ERRO';
+            console.log("/usuario: Usuario não existe ou inativo")
+            return res.status(401).json({ mensagem: 'Usuario não existe ou inativo' });
+        }
+        console.log("Operação processada; consulte o evento de auditoria e o status HTTP.");
+        return res.status(200).json(data);
+    } else {
+        const { data, error } = await supabase
+            .from('usuarios')
+            .select('id_usuario, nome, email, status_usuario, data_criacao, data_inativacao')
+            .eq('id_usuario', req.usuario.id_usuario)
+            .single();
+
+        if (error) {
+            res.locals.auditoria.resultado = error.code === 'PGRST116' ? 'FALHA' : 'ERRO';
+            console.log("/usuario: Usuario não existe ou inativo")
+            return res.status(401).json({ mensagem: 'Usuario não existe ou inativo' });
+        }
+        console.log("Operação processada; consulte o evento de auditoria e o status HTTP.");
+        return res.status(200).json(data);
+    }
+})
+
+app.patch('/admin/editar-usuario', auditar('ATUALIZAR_USUARIO', req => req.body?.id_usuario, true), autenticar, somenteAdmin, validar(schemaIdUsuarioObrigatorio, schemaNome, schemaEmail), async (req, res) => {
+    const { id_usuario, nome, email } = req.body
+
+    const { data: alterados, error } = await supabase
+        .from('usuarios')
+        .update({ nome: nome, email: email })
+        .eq('id_usuario', id_usuario).select('id_usuario')
+
+    if (error) {
+        res.locals.auditoria.resultado = 'ERRO';
+        console.log("Operação processada; consulte o evento de auditoria e o status HTTP.");
+        return res.status(500).json({ mensagem: "Erro em atualizar usuario - " + error })
+    }
+
+    console.log("/admin/editar-usuario: Atualização processada")
+    confirmarAlteracao(res, alterados);
+    return res.status(200).json({ mensagem: "Dados atualizados com sucesso" })
+})
+
+app.patch('/admin/resetar-senha', auditar('SOLICITAR_RESET_ADMIN', req => req.body?.id_usuario, true), autenticar, somenteAdmin, validar(schemaIdUsuarioObrigatorio), async (req, res) => {
+    const { id_usuario } = req.body
+
+    //Verifica que o reset já foi solicitado
+    const { data: consulta, error: errorConsulta } = await supabase
+        .from('usuarios')
+        .select('status_reset_senha')
+        .eq('id_usuario', id_usuario)
+        .single()
+    if (errorConsulta) {
+        console.log("Operação processada; consulte o evento de auditoria e o status HTTP.");
+        return res.status(500).json({ mensagem: "Ocorreu um erro ao consultar o usuario, verifique os logs" })
+    }
+    if (consulta.status_reset_senha === true) {
+        console.log("/admin/resetar-senha: >>>>> A solicitação de reset já foi feita")
+        return res.status(400).json({ mensagem: "Já foi feita uma solicitação de reset de senha para este usuario" })
+    }
+
+    // Solicita o reset da senha
+    const { data: alterados, error } = await supabase
+        .from('usuarios')
+        .update({ status_reset_senha: true })
+        .eq('id_usuario', id_usuario).select('id_usuario')
+    if (error) {
+        res.locals.auditoria.resultado = 'ERRO';
+        console.log("Operação processada; consulte o evento de auditoria e o status HTTP.");
+        return res.status(501).json({ mensagem: "Ocorreu um erro com sua solicitação, verifique os logs" })
+    }
+    console.log("/admin/resetar-senha: Solicitação processada")
+    confirmarAlteracao(res, alterados);
+    return res.status(200).json({ mensagem: "Solicitação de reset da senha realizada" })
+
+})
+
+app.patch('/admin/reativar-usuario', auditar('REATIVAR_USUARIO', req => req.body?.id_usuario, true), autenticar, somenteAdmin, validar(schemaIdUsuarioObrigatorio), async (req, res) => {
+    const { id_usuario } = req.body
+    const { data: consulta } = await supabase
+        .from('usuarios')
+        .select('status_usuario, nome')
+        .eq('id_usuario', id_usuario)
+        .single()
+
+    if (!consulta) {
+        return res.status(404).json({ mensagem: 'Usuário não encontrado' });
+    }
+    if (consulta.status_usuario === 'Ativo') {
+        console.log("/admin/reativar-usuario: Usuario já está ativo")
+        return res.status(400).json({ mensagem: "Usuario já está ativo" })
+    }
+    const { data: alterados, error } = await supabase
+        .from('usuarios')
+        .update({ status_usuario: 'Ativo', data_inativacao: null })
+        .eq('id_usuario', id_usuario).select('id_usuario')
+
+    if (error) {
+        res.locals.auditoria.resultado = 'ERRO';
+        console.log("/admin/reativar-usuario: Usuario não existe, inativo ou sessao invalida")
+        return res.status(401).json({ mensagem: 'Erro ao reativar a conta, tente novamente mais tarde' });
+    }
+    console.log("Operação processada; consulte o evento de auditoria e o status HTTP.");
+    confirmarAlteracao(res, alterados);
+    return res.status(200).json({ mensagem: "Usuario reativado com sucesso" })
+})
+
+app.patch('/admin/desativar-usuario', auditar('DESATIVAR_USUARIO', req => req.body?.id_usuario, true), autenticar, somenteAdmin, validar(schemaIdUsuarioObrigatorio), async (req, res) => {
+    const { id_usuario } = req.body || {};
+
+
+    const { data: consulta, error: erroConsulta } = await supabase
+        .from('usuarios')
+        .select('status_usuario, nome, tipo')
+        .eq('id_usuario', id_usuario)
+        .single();
+
+    if (erroConsulta || !consulta) {
+        res.locals.auditoria.resultado = erroConsulta && erroConsulta.code !== 'PGRST116' ? 'ERRO' : 'FALHA';
+        console.log("/admin/desativar-usuario: Usuário não encontrado");
+        return res.status(404).json({ mensagem: "Usuário não encontrado" });
+    }
+
+    if (consulta.tipo === 'Admin') {
+        console.log("/admin/desativar-usuario: >>>>> Admin não pode desativar própria conta ou de outro admin");
+        return res.status(403).json({ mensagem: "Admin não pode desativar própria conta ou de outro admin" });
+    }
+
+    if (consulta.status_usuario === 'Inativo') {
+        console.log("/admin/desativar-usuario: Usuario já está desativado");
+        return res.status(400).json({ mensagem: "Usuario já está desativado" });
+    }
+
+    const { data: alterados, error } = await supabase
+        .from('usuarios')
+        .update({ status_usuario: 'Inativo', data_inativacao: new Date().toISOString() })
+        .eq('id_usuario', id_usuario).select('id_usuario');
+
+    if (error) {
+        res.locals.auditoria.resultado = 'ERRO';
+        console.log("Operação processada; consulte o evento de auditoria e o status HTTP.");
+        return res.status(500).json({ mensagem: 'Erro ao desativar a conta, tente novamente mais tarde' });
+    }
+
+    console.log("Operação processada; consulte o evento de auditoria e o status HTTP.");
+    confirmarAlteracao(res, alterados);
+    return res.status(200).json({ mensagem: "Usuario desativado com sucesso" });
+})
+
+app.delete('/admin/deletar-usuario', auditar('EXCLUIR_USUARIO', req => req.query.id_usuario, true), autenticar, somenteAdmin, validar(schemaIdUsuarioObrigatorio), async (req, res) => {
+    const { id_usuario } = req.query
+
+    const { data: consulta, error: erroConsulta } = await supabase
+        .from('usuarios')
+        .select('status_usuario, tipo')
+        .eq('id_usuario', id_usuario)
+        .single();
+
+    if (erroConsulta || !consulta) {
+        res.locals.auditoria.resultado = erroConsulta && erroConsulta.code !== 'PGRST116' ? 'ERRO' : 'FALHA';
+        console.log("/admin/desativar-usuario: Usuário não encontrado");
+        return res.status(404).json({ mensagem: "Usuário não encontrado" });
+    }
+
+    if (consulta.tipo === 'Admin') {
+        console.log("/admin/deletar-usuario: >>>>> Admin não pode deletar própria conta ou de outro admin");
+        return res.status(403).json({ mensagem: "Admin não pode deletar própria conta ou de outro admin" });
+    }
+    const { data: alterados, error } = await supabase
+        .from('usuarios')
+        .delete()
+        .eq('id_usuario', id_usuario).select('id_usuario')
+
+    if (error) {
+        res.locals.auditoria.resultado = 'ERRO';
+        console.log("admin/deletar-usuario: Erro a deletar o ususario, verifique o banco de dados")
+        return res.status(500).json({ mensagem: "Erro ao deletar o usuario, verifique o banco de dados" })
+    }
+    console.log("/admin/deletar-usuario: Exclusão processada")
+    confirmarAlteracao(res, alterados);
+    return res.status(200).json({ mensagem: "Operação com sucesso, usuario deletado permanentemente" })
+})
+
+
 app.get('/admin/listar-categoria', auditar('ADMIN_LISTAR_CATEGORIA', req => req.usuario?.id_usuario, false), autenticar, somenteAdmin, validar(schemaIdUsuarioOpcional, schemaIdCategoriaOpcional), async (req, res) => {
 
     // Lista categorias por usuário, por categoria ou sem filtros.
@@ -1063,119 +1276,6 @@ app.get('/admin/listar-categoria', auditar('ADMIN_LISTAR_CATEGORIA', req => req.
     return res.status(200).json({ consultaPorID })
 })
 
-app.post('/usuario/criar-sub_categoria', auditar('USER_CRIAR_SUB_CATEGORIA', req => req.usuario?.id_usuario, false), autenticar, validar(schemaIdCategoriaObrigatorio, schemaNome, schemaDescricaoCategoria), async (req, res) => {
-    const { id_categoria, nome, descricao } = req.body;
-
-    // Verifica se o usuario está tentando criar uma subcategoria com o nome reservado
-    if (nome.trim().toLowerCase() === "Sem subcategoria") {
-        return res.status(409).json({
-            mensagem: "O nome 'Sem subcategoria' é reservado pelo sistema."
-        });
-    }
-
-    // Verifica se a subcategoria já existe
-    const { data: consultaSubCategoria, error: erroConsultaSubCategoria } = await supabase
-        .from('subcategorias')
-        .select()
-        .eq('nome', nome)
-        .maybeSingle()
-
-    if (erroConsultaSubCategoria) {
-        res.locals.auditoria.resultado = 'ERRO';
-        console.log("/usuario/criar-sub_categoria: Erro ao verificar a tabela: " + erroConsultaSubCategoria)
-        return res.status(500).json({ mensagem: "Erro ao verificar a tabela, tente novamente mais tarde" })
-    }
-    if (consultaSubCategoria) {
-        console.log("/usuario/criar-sub_categoria: >>>>> Já existe uma categoria com esse nome")
-        return res.status(409).json({ mensagem: "Já existe uma categoria com esse nome" })
-    }
-
-    // Cria a subcategoria
-    const { data: criaSubCategoria, error: errorCriar } = await supabase
-        .from('subcategorias')
-        .insert({
-            id_categoria: id_categoria,
-            nome: nome,
-            descricao: descricao,
-        })
-        .select()
-        .single()
-
-    if (errorCriar) {
-        console.log("/usuario/criar-sub_categoria: >>>>> Erro ao criar categoria: " + errorCriar)
-        return res.status(500).json({ mensagem: "Erro ao criar a subcategoria, tente novamente mais tarde" })
-    }
-    if (criaSubCategoria) {
-        console.log("/usuario/criar-sub_categoria: Subcategoria '" + criaSubCategoria.nome + "' criada com sucesso")
-        return res.status(200).json({ mensagem: "subcategoria criada com sucesso" })
-    }
-
-})
-
-app.patch('/usuario/editar-sub_categoria', auditar('USER_EDITAR_SUB_CATEGORIA', req => req.usuario?.id_usuario, false), autenticar, validar(schemaIdSubcategoriaObrigatorio, schemaNome, schemaDescricaoCategoria), async (req, res) => {
-    const { id_subcategoria, nome, descricao } = req.body
-
-
-    // Verifica se a Subcategoria existe
-    const { data: consultaSubcategoria, error: erroConsulta } = await supabase
-        .from('subcategorias')
-        .select('id_subcategoria, nome')
-        .eq('id_subcategoria', id_subcategoria)
-        .maybeSingle()
-
-    if (erroConsulta) {
-        res.locals.auditoria.resultado = 'ERRO';
-        console.log("/usuario/editar-sub_categoria: Erro ao verificar a tabela: " + erroConsulta)
-        return res.status(500).json({ mensagem: "Erro ao verificar a tabela, tente novamente mais tarde" })
-    }
-    if (!consultaSubcategoria) {
-        console.log("/usuario/editar-sub_categoria: >>>>> A categoria não existe")
-        return res.status(404).json({ mensagem: "Essa subcategoria não existe" })
-    }
-    if (consultaSubcategoria.nome.trim().toLowerCase() === "sem subcategoria") {
-        console.log("/usuario/editar-sub_categoria: >>>>> A categoria 'Sem subcategoria' não pode ser editada")
-        return res.status(403).json({ mensagem: "Essa subcategoria não pode ser editada!" });
-    }
-    if (nome.trim().toLowerCase() === "sem subcategoria") {
-        console.log("/usuario/editar-sub_categoria: >>>>> O nome 'Sem subcategoria' é reservado pelo sistema.")
-        return res.status(409).json({ mensagem: "O nome 'Sem subcategoria' é reservado pelo sistema." });
-    }
-
-    //Verifica se outra subcategoria já tem o nome editado
-    const { data: subcategoriaExistente, error: erroDuplicidade } = await supabase
-        .from('subcategorias')
-        .select('id_subcategoria')
-        .ilike('nome', nome.trim())
-        .neq('id_subcategoria', id_subcategoria)
-        .maybeSingle();
-
-    if (erroDuplicidade) {
-        res.locals.auditoria.resultado = 'ERRO';
-        console.log("/usuario/editar-sub_categoria: >>>>> Erro ao verificar o nome da subcategoria.")
-        return res.status(500).json({ mensagem: "Erro ao verificar o nome da subcategoria." });
-    }
-
-    if (subcategoriaExistente) {
-        console.log("/usuario/editar-sub_categoria: >>>>> á existe outra subcategoria com esse nome..")
-        return res.status(409).json({ mensagem: "Já existe outra subcategoria com esse nome." });
-    }
-
-    // Atualiza a tabela subcategoria
-    const { data: editarSubcategoria, error: errorEditar } = await supabase
-        .from('subcategorias')
-        .update({ nome: nome, descricao: descricao })
-        .eq('id_subcategoria', id_subcategoria)
-        .select()
-        .single()
-
-    if (errorEditar) {
-        res.locals.auditoria.resultado = 'ERRO';
-        console.log("/usuario/editar-sub_categoria: >>>>> Erro ao atualizar a tabela")
-        return res.status(500).json({ mensagem: "Erro ao atualizar a subcategoria, por favor tente novamente mais tarde" })
-    }
-    return res.status(200).json({ mensagem: "Subcategoria atualizada com sucesso." });
-})
-
 app.patch('/admin/editar-categoria', auditar('ADMIN_EDITAR_CATEGORIA', req => req.usuario?.id_usuario, false), autenticar, somenteAdmin, validar(schemaIdCategoriaObrigatorio, schemaNome, schemaDescricaoCategoria), async (req, res) => {
     const { id_categoria, nome, descricao } = req.body;
 
@@ -1214,38 +1314,108 @@ app.patch('/admin/editar-categoria', auditar('ADMIN_EDITAR_CATEGORIA', req => re
 
 })
 
+app.delete('/admin/deletar-categoria', auditar('ADMIN_DELETAR_CATEGORIA', req => req.usuario?.id_usuario, false), autenticar, somenteAdmin, validar(schemaIdCategoriaObrigatorio, schemaIdUsuarioObrigatorio), async (req, res) => {
+    const { id_categoria, id_usuario } = req.body
 
-app.get('/usuario/listar-sub_categoria', auditar('USER_LISTAR_SUB_CATEGORIA', req => req.usuario?.id_usuario, false), autenticar, async (req, res) => {
+    // Verifica se a categoria existe
+    const { data: consultaCategoria, error: erroConsulta } = await supabase
+        .from('categorias')
+        .select('id_categoria, nome')
+        .eq('id_usuario', id_usuario)
+        .eq('id_categoria', id_categoria)
+        .maybeSingle()
+
+    if (erroConsulta) {
+        res.locals.auditoria.resultado = 'ERRO';
+        console.log("/usuario/deletar-categoria: Erro ao verificar a tabela: " + erroConsulta)
+        return res.status(500).json({ mensagem: "Erro ao verificar a tabela, tente novamente mais tarde" })
+    }
+    if (!consultaCategoria) {
+        console.log("/usuario/deletar-categoria: >>>>> A categoria não existe")
+        return res.status(404).json({ mensagem: "Essa categoria não existe" })
+    }
+    if (consultaCategoria.nome.trim().toLowerCase() === "sem categoria") {
+        console.log("/usuario/deletar-categoria: >>>>> A categoria 'sem categoria' não pode ser deletada")
+        return res.status(403).json({ mensagem: "Essa categoria não pode ser deletada!" });
+    }
+
+    // Deleta a categoria
+    const { data: categoriaDeletada, error } = await supabase
+        .from('categorias')
+        .delete()
+        .eq('id_categoria', id_categoria)
+        .eq('id_usuario', id_usuario)
+        .select('nome')
+        .single()
+    if (error) {
+        res.locals.auditoria.resultado = 'ERRO';
+        console.log("/usuario/deletar-categoria: Erro ao deletar acategoria: " + error)
+        return res.status(500).json({ mensagem: "Erro ao deletar a categoria, tente novamente mais tarde" })
+    }
+    console.log("/usuario/deletar-categoria: Categoria '" + categoriaDeletada.nome + "' deletada com sucesso")
+    return res.status(200).json({ mensagem: "Categoria deletada com sucesso" })
+})
+
+app.get('/admin/listar-sub_categoria', auditar('ADMIN_LISTAR_SUB_CATEGORIA', req => req.usuario?.id_usuario, false), autenticar, validar(schemaFiltroUsuario, schemaIdUsuarioOpcional), async (req, res) => {
     res.set('Cache-Control', 'no-store');
-    const { pesquisa } = req.query;
+    const { pesquisa, id_usuario } = req.query;
 
     if (!pesquisa || pesquisa === "") {
         console.log("/usuario/listar-sub_categoria: Pesquisa para listar subcategoria vazio")
-
+        if (id_usuario) {
+            const { data, error } = await supabase
+                .from('subcategorias')
+                .select('id_subcategoria, nome, descricao, data_criacao, categorias!inner(id_usuario, id_categoria, nome)')
+                .eq('categorias.id_usuario', id_usuario)
+                .order('id_subcategoria', { ascending: true })
+            if (error) {
+                console.log("/usuario/listar-sub_categoria: >>>>> Erro ao pesquisar a subcategoria com usuario: " + error.message);
+                return res.status(500).json({ mensagem: "Erro ao consultar a subcategoria, por favor tente mais tarde" });
+            }
+            console.log("/usuario/listar-sub_categoria: Todas as subcategorias do usuario foram retornadas")
+            return res.status(200).json(data);
+        }
         const { data, error } = await supabase
             .from('subcategorias')
-            .select('id_subcategoria, nome, descricao, data_criacao, categorias!inner(id_usuario)')
-            .eq('categorias.id_usuario', req.usuario.id_usuario)
+            .select('id_subcategoria, nome, descricao, data_criacao, categorias!inner(id_usuario, id_categoria, nome))')
             .order('id_subcategoria', { ascending: true })
         if (error) {
-            console.log("/usuario/listar-sub_categoria: >>>>> Erro ao pesquisar a subcategoria");
-            return res.status(500).json({ erro: error.message });
+            console.log("/usuario/listar-sub_categoria: >>>>> Erro ao pesquisar a subcategoria: " + error.message);
+            return res.status(500).json({ mensagem: "Erro ao consultar a subcategoria, por favor tente mais tarde" });
         }
         console.log("/usuario/listar-sub_categoria: Todas as subcategorias foram retornadas")
         return res.status(200).json(data);
+
     }
+
 
     const condicoes = [`nome.ilike.%${pesquisa}%`];
     // só tenta buscar por ID se o termo for um número válido
     if (!isNaN(pesquisa)) {
         condicoes.push(`id_subcategoria.eq.${pesquisa}`);
 
-        // Verifica se a subcategoria pesquisada pertence ao usuário autenticado.
+        if (id_usuario) {
+            // Verifica se a subcategoria pesquisada pertence ao usuário autenticado.
+            const { data: consultaSubcategoria, error: erroConsulta } = await supabase
+                .from('subcategorias')
+                .select('id_subcategoria, categorias!inner(id_usuario, id_categoria, nome)')
+                .eq('id_subcategoria', pesquisa)
+                .eq('categorias.id_usuario', id_usuario)
+                .maybeSingle();
+
+            if (erroConsulta) {
+                return res.status(500).json({ mensagem: "Erro ao verificar a subcategoria do usuario, tente novamente mais tarde" });
+            }
+            if (!consultaSubcategoria) {
+                return res.status(404).json({ mensagem: "Essa subcategoria não existe" });
+            }
+            console.log("/admin/listar-sub_categoria: Todas as subcategorias do usuario retornadas")
+            return res.status(200).json({ consultaSubcategoria })
+        }
         const { data: consultaSubcategoria, error: erroConsulta } = await supabase
             .from('subcategorias')
-            .select('id_subcategoria, categorias!inner(id_usuario)')
+            .select('id_subcategoria, categorias!inner(id_usuario, id_categoria, nome)')
             .eq('id_subcategoria', pesquisa)
-            .eq('categorias.id_usuario', req.usuario.id_usuario)
             .maybeSingle();
 
         if (erroConsulta) {
@@ -1254,8 +1424,135 @@ app.get('/usuario/listar-sub_categoria', auditar('USER_LISTAR_SUB_CATEGORIA', re
         if (!consultaSubcategoria) {
             return res.status(404).json({ mensagem: "Essa subcategoria não existe" });
         }
+        console.log("/admin/listar-sub_categoria: Todas as subcategorias foram retornadas")
+        return res.status(200).json({ consultaSubcategoria })
+
     }
+
 });
+
+app.patch('/admin/editar-sub_categoria', auditar('ADMIN_EDITAR_SUB_CATEGORIA', req => req.usuario?.id_usuario, false), autenticar, somenteAdmin, validar(schemaIdSubcategoriaObrigatorio, schemaIdUsuarioObrigatorio, schemaNome, schemaDescricaoCategoria), async (req, res) => {
+
+    const { id_subcategoria, id_usuario, nome, descricao } = req.body;
+
+    // Verifica se a subcategoria pertence ao usuário informado
+    const { data: consultaSubcategoria, error: erroConsulta } = await supabase
+        .from('subcategorias')
+        .select(`
+                id_subcategoria,
+                nome,
+                categorias!inner(id_usuario)
+            `)
+        .eq('id_subcategoria', id_subcategoria)
+        .eq('categorias.id_usuario', id_usuario)
+        .maybeSingle();
+
+    if (erroConsulta) {
+        res.locals.auditoria.resultado = 'ERRO';
+
+        console.log("/admin/editar-sub_categoria: Erro ao verificar a tabela: " + erroConsulta.message);
+
+        return res.status(500).json({ mensagem: "Erro ao verificar a tabela, tente novamente mais tarde" });
+    }
+
+    if (!consultaSubcategoria) {
+        console.log("/admin/editar-sub_categoria: >>>>> A subcategoria não existe");
+
+        return res.status(404).json({ mensagem: "Essa subcategoria não existe" });
+    }
+
+    // Impede alteração da subcategoria padrão
+    if (consultaSubcategoria.nome.trim().toLowerCase() === "sem subcategoria") {
+        return res.status(403).json({ mensagem: "Essa subcategoria não pode ser editada!" });
+    }
+
+    // Impede utilização do nome reservado
+    if (nome.trim().toLowerCase() === "sem subcategoria") {
+        return res.status(409).json({ mensagem: "O nome 'Sem subcategoria' é reservado pelo sistema." });
+    }
+
+    // Verifica duplicidade somente dentro do usuário
+    const { data: subcategoriaExistente, error: erroDuplicidade } = await supabase
+        .from('subcategorias')
+        .select(`
+                id_subcategoria,
+                categorias!inner(id_usuario)
+            `)
+        .ilike('nome', nome)
+        .eq('categorias.id_usuario', id_usuario)
+        .neq('id_subcategoria', id_subcategoria)
+        .maybeSingle();
+
+    if (erroDuplicidade) {
+        res.locals.auditoria.resultado = 'ERRO';
+
+        console.log("/admin/editar-sub_categoria: >>>>> Erro ao verificar o nome da subcategoria.");
+
+        return res.status(500).json({ mensagem: "Erro ao verificar o nome da subcategoria." });
+    }
+
+    if (subcategoriaExistente) {
+        console.log("/admin/editar-sub_categoria: >>>>> Já existe outra subcategoria com esse nome.");
+
+        return res.status(409).json({ mensagem: "Já existe outra subcategoria com esse nome." });
+    }
+
+    // Atualiza
+    const { data: editarSubcategoria, error: errorEditar } = await supabase
+        .from('subcategorias')
+        .update({ nome, descricao })
+        .eq('id_subcategoria', id_subcategoria)
+        .select()
+        .single();
+
+    if (errorEditar) {
+        res.locals.auditoria.resultado = 'ERRO';
+        console.log("/admin/editar-sub_categoria: >>>>> Erro ao atualizar a subcategoria: "+ errorEditar.message);
+        return res.status(500).json({ mensagem: "Erro ao atualizar a subcategoria, por favor tente novamente mais tarde" });
+    }
+
+    return res.status(200).json({ mensagem: "Subcategoria atualizada com sucesso." });
+});
+
+app.delete('/admin/deletar-sub_categoria', auditar('USER_DELETAR_SUB_CATEGORIA', req => req.usuario?.id_usuario, false), autenticar, validar(schemaIdSubcategoriaObrigatorio, schemaIdUsuarioObrigatorio), async (req, res) => {
+    const { id_subcategoria, id_usuario } = req.body
+
+    // Verifica se a subcategoria existe
+    const { data: consulta, error: erroConsulta } = await supabase
+        .from('subcategorias')
+        .select('id_subcategoria, nome, categorias!inner(id_usuario)')
+        .eq('categorias.id_usuario', id_usuario)
+        .eq('id_subcategoria', id_subcategoria)
+        .maybeSingle()
+
+    if (erroConsulta) {
+        res.locals.auditoria.resultado = 'ERRO';
+        console.log("/usuario/deletar-sub_categoria: Erro ao verificar a subcategoria: " + erroConsulta.message)
+        return res.status(500).json({ mensagem: "Erro ao verificar a tabela, tente novamente mais tarde" })
+    }
+    if (!consulta) {
+        console.log("/usuario/deletar-categoria: >>>>> A subcategoria não existe")
+        return res.status(404).json({ mensagem: "Essa subcategoria não existe" })
+    }
+    if (consulta.nome.trim().toLowerCase() === "sem subcategoria") {
+        console.log("/usuario/deletar-categoria: >>>>> A subcategoria 'sem categoria' não pode ser deletada")
+        return res.status(403).json({ mensagem: "Essa subcategoria não pode ser deletada!" });
+    }
+
+    const { data: subcategoriaDeletada, error } = await supabase
+        .from('subcategorias')
+        .delete()
+        .eq('id_subcategoria', id_subcategoria)
+        .select('nome')
+        .single()
+    if (error) {
+        res.locals.auditoria.resultado = 'ERRO';
+        console.log("/usuario/deletar-sub_categoria: Erro ao deletar a subcategoria: " + error.message)
+        return res.status(500).json({ mensagem: "Erro ao deletar a subcategoria, tente novamente mais tarde" })
+    }
+    console.log("/usuario/deletar-sub_categoria: Subcategoria '" + subcategoriaDeletada.nome + "' deletada com sucesso")
+    return res.status(200).json({ mensagem: "Subcategoria deletada com sucesso" })
+})
 
 // IMPORTANTE: Ultima rota do sistema para redirecionar em caso de rota não existir
 app.use((req, res) => {

@@ -75,6 +75,20 @@ export const schemaIdSubcategoriaOpcional = Joi.object({
         })
 });
 
+export const schemaFiltroUsuario = Joi.object({
+    id_usuario: Joi.number()
+        .integer()
+        .min(0)
+        .optional()
+        .messages({
+            "number.base": "O ID do usuário deve ser um número válido.",
+            "number.integer": "O ID do usuário deve ser um número inteiro.",
+            "number.min": "O ID do usuário não pode ser menor que zero."
+        }),
+
+    pesquisa: Joi.any()
+        .optional()
+});
 // NOME
 export const schemaNome = Joi.object({
 
