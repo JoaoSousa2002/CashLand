@@ -353,6 +353,57 @@ ROTAS = [
                             {"nome": "pesquisa", "tipo": "str", "obrigatorio": False}
                         ],
                     },
+    {"nome": "Deletar subcategorias",
+                        "metodo": "DELETE",
+                        "caminho": "/usuario/deletar-sub_categoria",
+                        "login": True,
+                        "admin": False,
+                        "body": [
+                            {"nome": "id_subcategoria", "tipo": "int", "obrigatorio": True}
+                        ],
+                    },
+    {"nome": "Deletar categoria como ADMIN",
+                            "metodo": "DELETE",
+                            "caminho": "/admin/deletar-categoria",
+                            "login": True,
+                            "admin": True,
+                            "body": [
+                                {"nome": "id_categoria", "tipo": "int", "obrigatorio": True},
+                                {"nome": "id_usuario", "tipo": "int", "obrigatorio": True}
+                            ],
+                        },
+    {"nome": "Listar/Pesquisar subcategoria como ADMIN",
+                            "metodo": "GET",
+                            "caminho": "/admin/listar-sub_categoria",
+                            "login": True,
+                            "admin": True,
+                            "query": [
+                                {"nome": "pesquisa", "tipo": "stf", "obrigatorio": False},
+                                {"nome": "id_usuario", "tipo": "int", "obrigatorio": False}
+                            ],
+                        },
+    {"nome": "Deletar subcategoria como ADMIN",
+                                "metodo": "DELETE",
+                                "caminho": "/admin/deletar-sub_categoria",
+                                "login": True,
+                                "admin": True,
+                                "body": [
+                                    {"nome": "id_subcategoria", "tipo": "int", "obrigatorio": True},
+                                    {"nome": "id_usuario", "tipo": "int", "obrigatorio": True}
+                                ],
+                            },
+    {"nome": "Editar subcategoria como ADMIN",
+                                    "metodo": "PATCH",
+                                    "caminho": "/admin/editar-sub_categoria",
+                                    "login": True,
+                                    "admin": True,
+                                    "body": [
+                                        {"nome": "id_subcategoria", "tipo": "int", "obrigatorio": True},
+                                        {"nome": "id_usuario", "tipo": "int", "obrigatorio": True},
+                                        {"nome": "nome", "tipo": "stf", "obrigatorio": True},
+                                        {"nome": "descricao", "tipo": "str", "obrigatorio": False}
+                                    ],
+                                },
 ]
 
 
