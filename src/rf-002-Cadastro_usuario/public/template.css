@@ -1,0 +1,367 @@
+:root {
+    --fundo: #cadaf2;
+    --superficie: #ffffff;
+    --borda: #ccc;
+    --foco: #4a90d9;
+    --sombra: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+}
+
+body {
+    background-color: var(--fundo);
+    color: #222;
+    min-height: 100vh;
+    line-height: 1.5;
+}
+
+.container,
+#container-conteudo {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 24px;
+    min-width: 0;
+}
+
+.container,
+#container {
+    min-height: 100vh;
+}
+
+#container {
+    display: flex;
+    flex-direction: column;
+}
+
+#container-conteudo {
+    flex: 1;
+}
+
+#container-conteudo>div {
+    max-width: 100%;
+}
+
+.cartao,
+.loading-box {
+    background-color: var(--superficie);
+    border-radius: 12px;
+    box-shadow: var(--sombra);
+}
+
+.cartao {
+    padding: 40px;
+    width: 420px;
+    max-width: 100%;
+}
+
+.cartao form {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+#id-Titulo {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+h1 {
+    font-size: 32px;
+}
+
+h2 {
+    font-size: 24px;
+}
+
+h3 {
+    font-size: 18px;
+}
+
+a {
+    color: #285f9d;
+}
+
+a:hover {
+    color: #1b426e;
+}
+
+label {
+    display: block;
+    font-weight: bold;
+}
+
+.input-dados {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 5px;
+}
+
+.cartao form br {
+    display: none;
+}
+
+input,
+button,
+select {
+    min-width: 0;
+    max-width: 100%;
+    padding: 10px;
+    border: 1px solid var(--borda);
+    border-radius: 8px;
+    font-size: 14px;
+    color: inherit;
+}
+
+input:not([type="submit"]):not([type="button"]),
+select {
+    width: 100%;
+    background-color: var(--superficie);
+}
+
+input:disabled {
+    background-color: #eee !important;
+    color: #555;
+}
+
+input:focus,
+button:focus-visible,
+select:focus,
+a:focus-visible {
+    outline: 2px solid var(--foco);
+    outline-offset: 2px;
+    border-color: var(--foco);
+    box-shadow: 0 0 0 2px rgba(74, 144, 217, 0.2);
+}
+
+input[type="submit"],
+input[type="button"],
+button {
+    background-color: #f3f3f3;
+    cursor: pointer;
+}
+
+input[type="submit"]:hover,
+input[type="button"]:hover,
+button:hover {
+    background-color: #e4edf9;
+}
+
+#botao-Voltar {
+    padding: 6px 12px;
+}
+
+#input-submit {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+#input-submit input {
+    min-width: 100px;
+}
+
+.campo-senha {
+    position: relative;
+    width: 100%;
+    min-width: 0;
+    /* bottom: 10px; */
+}
+
+.campo-senha input {
+    padding-right: 44px;
+}
+
+.campo-senha button {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    border: none;
+    background: none;
+    padding: 2px;
+    font-size: 18px;
+}
+
+.campo-senha-reset input {
+    padding-right: 124px;
+}
+
+.campo-senha-reset button {
+    border: 1px solid var(--borda);
+    background-color: #f3f3f3;
+    padding: 5px 8px;
+    font-size: 13px;
+}
+
+.campo-senha-reset button:hover {
+    background-color: #e4edf9;
+}
+
+.campo-senha-reset button:active {
+    background-color: #cadaf2;
+}
+
+/* Os erros são inseridos pelos scripts com margens próprias. */
+[id^="erro-"] h5 {
+    margin-left: 0 !important;
+    overflow-wrap: anywhere;
+}
+
+#div-superior {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+    width: 100%;
+    padding: 12px 24px;
+    background-color: var(--superficie);
+    box-shadow: var(--sombra);
+}
+
+#div-nome-sistema {
+    flex-shrink: 0;
+}
+
+#div-nome-sistema a {
+    color: inherit;
+    text-decoration: none;
+}
+
+#div-nav {
+    flex: 1;
+    min-width: 0;
+}
+
+#div-nav nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+#div-nome-usuario {
+    overflow-wrap: anywhere;
+    min-width: 0;
+}
+
+#div-usuario {
+    display: flex;
+    align-items: center;
+}
+
+#div-usuario a {
+    display: flex;
+    cursor: pointer;
+}
+
+#div-usuario img {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+}
+
+#form-logout {
+    display: flex;
+    align-items: center;
+}
+
+.loading-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    padding: 20px;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 9999;
+    justify-content: center;
+    align-items: center;
+}
+
+.loading-box {
+    display: flex;
+    justify-content: center;
+    padding: 40px;
+    width: 400px;
+    max-width: 100%;
+    max-height: calc(100dvh - 40px);
+    overflow: auto;
+    font-size: 20px;
+    overflow-wrap: anywhere;
+}
+
+.loading-box>* {
+    min-width: 0;
+    max-width: 100%;
+}
+
+#div-resultado-overlay {
+    text-align: center;
+    gap: 20px;
+}
+
+.spinning-wheel {
+    flex-shrink: 0;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: 4px solid #f3f3f3;
+    border-top-color: #000;
+    animation: spin 1s linear infinite;
+    margin-left: 20px;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.cartao-erro {
+    text-align: center;
+}
+
+.cartao-erro p {
+    margin: 16px 0;
+}
+
+@media (max-width: 600px) {
+
+    .container,
+    #container-conteudo {
+        padding: 16px;
+    }
+
+    .cartao,
+    .loading-box {
+        padding: 24px;
+    }
+
+    #div-superior {
+        padding: 12px 16px;
+        gap: 12px;
+    }
+
+    #div-nav {
+        flex-basis: 100%;
+        order: 1;
+    }
+
+    #div-nav:has(nav:empty) {
+        display: none;
+    }
+
+    #div-nome-usuario {
+        flex: 1;
+    }
+}

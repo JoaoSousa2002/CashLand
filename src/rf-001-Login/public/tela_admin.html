@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin</title>
+    <link rel="stylesheet" href="/template.css">
+</head>
+
+<body>
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="loading-box">
+            <div style="margin: auto 0;">
+                <p>Carregando... </p>
+            </div>
+            <div class="spinning-wheel"></div>
+        </div>
+    </div>
+
+    <div class="loading-overlay" id="resultado-overlay">
+        <div class="loading-box" id="resultado-funcao">
+        </div>
+    </div>
+    <div id="container">
+        <div id="div-superior">
+
+            <div id="div-nome-sistema">
+                <a href="/tela-admin">
+                    <h1>CashLand</h1>
+                </a>
+            </div>
+
+            <div id="div-nav">
+                <nav>
+                    <a href="/tela-admin/listar-usuarios">Gerir Usuarios</a>
+                </nav>
+            </div>
+            <div id="div-nome-usuario">
+                <h3><span id="nome-usuario"></span></h3>
+            </div>
+            <div id="div-usuario">
+                <a onclick="redirecionaAdminEditar()">
+                    <img src="/User_icon_black.png" alt="icone usuario">
+                </a>
+            </div>
+            <div id="form-logout">
+                <form id="meuForm-Logout">
+                    <input type="submit" value="Sair">
+                </form>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        let retonarLogin = false;
+        let retonarTelaPrincipal = false;
+        const loading = document.getElementById("loading-overlay");
+        const resultado_overlay = document.getElementById("resultado-overlay");
+
+        loading.style.display = 'flex'
+
+        function MostrarResultado_Overlay(tipo, mensagem) {
+            if (tipo == 1) {
+                document.getElementById("resultado-funcao").innerHTML =
+                    `<div id="div-resultado-overlay"
+                    style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 20px;">
+                    <div>
+                        <h5 style="color: rgb(103, 198, 40); margin: 0;">${mensagem}</h5>
+                    </div>
+                    <div style="display: flex; align-items: center; justify-content: center;">
+                     <input style="width: 100px;" type="button" onclick="FechaResultado_overlay()" value="Continuar">
+                    </div>
+                </div>`
+            } else {
+                document.getElementById("resultado-funcao").innerHTML =
+                    `<div id="div-resultado-overlay"
+                    style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center gap: 20px;">
+                    <div>
+                        <h5 style="color: rgb(160, 2, 2); margin: 0;">${mensagem}</h5>
+                    </div>
+                    <div style="display: flex; align-items: center; justify-content: center;">
+                     <input style="width: 100px;" type="button" onclick="FechaResultado_overlay()" value="Continuar">
+                    </div>
+                </div>`
+            }
+        }
+        function FechaResultado_overlay() {
+            resultado_overlay.style.display = "none"
+            if (retonarLogin) {
+                window.location.href = "/login"
+            } else if (retonarTelaPrincipal) {
+                window.location.href = '/tela-principal';
+            }
+
+        }
+
+        async function redirecionaAdminEditar(){
+            const resultado = await protegerPagina()
+            window.location.href = `/tela-admin/editar-usuarios?id=${resultado.id_usuario}`
+        }
+        async function protegerPagina(tipoExigido = null) {
+            try {
+                const resposta = await fetch('/me', {
+                    method: 'GET',
+                    credentials: 'include',
+                });
+                const usuario = await resposta.json();
+                switch (resposta.status) {
+                    case 200:
+                        console.log("Usuario autenticado")
+                        loading.style.display = 'none'
+                        break;
+                    case 401:
+                        loading.style.display = 'none'
+                        resultado_overlay.style.display = "flex";
+                        MostrarResultado_Overlay(0, usuario.mensagem)
+                        console.log(usuario.mensagem)
+                        retonarLogin = true;
+                    default:
+                        break;
+                }
+
+                if (tipoExigido && usuario.tipo !== tipoExigido) {
+                    loading.style.display = 'none'
+                    console.log("Acesso negado")
+                    resultado_overlay.style.display = "flex";
+                    MostrarResultado_Overlay(0, "Acesso restrito a administradores!")
+                    retonarTelaPrincipal = true;
+                }
+
+                return usuario; // devolve os dados pra página usar (ex: mostrar nome)
+            } catch {
+                localStorage.removeItem('tipo');
+                window.location.href = '/login';
+            }
+        }
+
+        protegerPagina("Admin").then(usuario => {
+            document.getElementById('nome-usuario').textContent = usuario.nome.slice(0, 8);
+        });
+
+        document.getElementById("meuForm-Logout").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            resposta = await fetch('/logout', {
+                method: 'POST',
+                credentials: 'include'
+            });
+            console.log(resposta.mensagem)
+
+            localStorage.removeItem('tipo');
+            window.location.href = '/login';
+        });
+    </script>
+</body>
+
+</html>

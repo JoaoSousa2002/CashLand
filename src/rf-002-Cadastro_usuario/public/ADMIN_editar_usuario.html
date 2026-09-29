@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editar usuario</title>
+    <link rel="stylesheet" href="/template.css">
+</head>
+
+<body>
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="loading-box">
+            <div style="margin: auto 0;">
+                <p>Carregando... </p>
+            </div>
+            <div class="spinning-wheel"></div>
+        </div>
+    </div>
+
+    <div class="loading-overlay" id="resultado-overlay">
+        <div class="loading-box" id="resultado-funcao">
+        </div>
+    </div>
+    <div class="loading-overlay" id="confirmar-senha-overlay">
+    </div>
+    <div id="container">
+        <div id="div-superior">
+            <div id="div-nome-sistema">
+                <div>
+                    <a href="/tela-admin">
+                        <h1>CashLand</h1>
+                    </a>
+                </div>
+
+            </div>
+            <div id="div-nav">
+                <nav>
+                    <!-- <a href="/Usuarios">Usuarios</a> -->
+                </nav>
+            </div>
+            <div id="div-nome-usuario">
+                <h3><span id="nome-usuario"></span></h3>
+            </div>
+            <div id="div-usuario">
+                <a onclick="redirecionaAdminEditar()">
+                    <img src="/User_icon_black.png" alt="icone usuario">
+                </a>
+            </div>
+            <div id="form-logout">
+                <form id="meuForm-Logout">
+                    <input type="submit" value="Sair">
+                </form>
+            </div>
+        </div>
+
+        <div id="container-conteudo">
+            <div id="div-Cadastro" class="cartao">
+                <form id="meuForm-editar-cadastro">
+                    <div id="id-Titulo">
+                        <h2>Atualizar dados</h2>
+                        <input type="button" value="Voltar" id="botao-Voltar"
+                            onclick="location.href='/tela-admin/listar-usuarios'">
+                    </div>
+                    <div class="input-dados">
+                        <label for="Email">Nome:</label><br>
+                        <input type="text" name="Nome" id="nome" placeholder="Ex: Daniel">
+                    </div>
+                    <div id="erro-nome"></div>
+
+                    <div class="input-dados">
+                        <label for="Email">Email:</label><br>
+                        <input type="email" name="Email" id="email" placeholder="Ex: Daniel@gmail.com">
+                    </div>
+                    <div id="erro-email"></div>
+
+                    <div class="input-dados">
+                        <label for="senha">Senha </label><br>
+                        <div id="campo-senha" class="campo-senha campo-senha-reset">
+                            <input type="text" name="senha" id="senha" value="•••••••••••" disabled>
+                            <button type="button" onclick="confirmarResetSenha()">Resetar senha</button>
+                        </div>
+                    </div>
+
+                    <div class="input-dados">
+                        <label for="Email">Status: </label><br>
+                        <input type="text" name="status" id="status" disabled>
+                    </div>
+
+                    <div class="input-dados">
+                        <label for="data-criacao">data criacao: </label><br>
+                        <input type="text" name="data-criacao" id="data-criacao" disabled>
+                    </div>
+                    <div class="input-dados">
+                        <label for="data-inativacao">data inativação: </label><br>
+                        <input type="text" name="data-inativacao" id="data-inativacao" disabled>
+                    </div>
+
+                    <div id="input-submit">
+                        <input type="submit" value="Atualizar" id="botao-Enviar">
+                        <input type="button" onclick="confirmarDesativarConta()" value="Ativar/Desativar conta">
+                    </div>
+
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const idUsuario = params.get('id');
+
+        console.log("id recebido: " + idUsuario); // o ID que veio da página anterior
+
+        let retornarSenha = false;
+        const loading = document.getElementById("loading-overlay");
+        const resultado_overlay = document.getElementById("resultado-overlay");
+        const senha_overlay = document.getElementById("confirmar-senha-overlay");
+
+        loading.style.display = "flex";
+
+        function FechaResultado_overlay() {
+            if (!retornarSenha) {
+                resultado_overlay.style.display = "none"
+            } else if (retornarSenha) {
+                retornarSenha = false;
+                resultado_overlay.style.display = "none"
+                senha_overlay.style.display = 'flex'
+            }
+        }
+        function MostrarErro(id, mensagem) {
+            document.getElementById(id).innerHTML = `
+            <h5 style="color: rgb(160, 2, 2); margin-left: 80px; font-size:13px">${mensagem}</h5> `;
+        }
+
+
+        function MostrarResultado_Overlay(tipo, mensagem) {
+            if (tipo == 1) {
+                document.getElementById("resultado-funcao").innerHTML =
+                    `<div id="div-resultado-overlay"
+                    style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 20px;">
+                    <div>
+                        <h5 style="color: rgb(103, 198, 40); margin: 0;">${mensagem}</h5>
+                    </div>
+                    <div style="display: flex; align-items: center; justify-content: center;">
+                     <input style="width: 100px;" type="button" onclick="FechaResultado_overlay()" value="Continuar">
+                    </div>
+                </div>`
+            } else {
+                document.getElementById("resultado-funcao").innerHTML =
+                    `<div id="div-resultado-overlay"
+                    style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center gap: 20px;">
+                    <div>
+                        <h5 style="color: rgb(160, 2, 2); margin: 0;">${mensagem}</h5>
+                    </div>
+                    <div style="display: flex; align-items: center; justify-content: center;">
+                     <input style="width: 100px;" type="button" onclick="FechaResultado_overlay()" value="Continuar">
+                    </div>
+                </div>`
+            }
+        }
+        function confirmarResetSenha() {
+            resultado_overlay.style.display = "flex";
+            document.getElementById("resultado-funcao").innerHTML =
+                `<div id="div-resultado-overlay"
+                    style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 20px;">
+                    <div>
+                        <h5 style="color: rgb(160, 2, 2); margin: 0;">Tem certeza que deseja resetar a senha desse usuario?</h5>
+                        <p style="color: rgb(160, 2, 2); margin: 0; font-size: 13px">Essa ação não poderá ser desfeita</p>
+                    </div>
+                    <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+                     <input style="width: 100px;" type="button" onclick="redirecionaResetSenha()" value="Continuar">
+                     <input style="width: 100px;" type="button" onclick="resultado_overlay.style.display = 'none'" value="Cancelar">
+                    </div>
+                </div>`
+        }
+
+        async function confirmarDesativarConta() {
+            const response = await fetch(`/me?id_usuario=${idUsuario}`, {
+                method: 'GET',
+                credentials: "include"
+            })
+            resultado_overlay.style.display = "flex";
+            const usuario = await response.json()
+
+            console.log(usuario.status_usuario)
+            if (usuario.status_usuario === "Ativo") {
+                document.getElementById("resultado-funcao").innerHTML =
+                    `<div id="div-resultado-overlay"
+                        style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 20px;">
+                        <div>
+                            <h5 style="color: rgb(160, 2, 2); margin: 0;">Tem certeza que deseja desativar essa conta?</h5>
+                        </div>
+                        <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+                         <input style="width: 100px;" type="button" onclick="desativarConta()" value="Continuar">
+                         <input style="width: 100px;" type="button" onclick="resultado_overlay.style.display = 'none'" value="Cancelar">
+                        </div>
+                    </div>`
+            } else if (usuario.status_usuario === "Inativo") {
+                document.getElementById("resultado-funcao").innerHTML =
+                    `<div id="div-resultado-overlay"
+                        style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 20px;">
+                        <div>
+                            <h5 style="color: rgb(103, 198, 40); margin: 0;">Tem certeza que deseja Reativar essa conta?</h5>
+                        </div>
+                        <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+                         <input style="width: 100px;" type="button" onclick="AtivarConta()" value="Continuar">
+                         <input style="width: 100px;" type="button" onclick="resultado_overlay.style.display = 'none'" value="Cancelar">
+                        </div>
+                    </div>`
+            }
+        }
+        async function AtivarConta() {
+            resultado_overlay.style.display = "none";
+            loading.style.display = "flex"
+            const response = await fetch('/admin/reativar-usuario', {
+                method: 'PATCH',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id_usuario: idUsuario })
+            })
+            const resposta = await response.json()
+            if (resposta.status === 200) {
+                loading.style.display = "none"
+                resultado_overlay.style.display = "flex"
+                MostrarResultado_Overlay(2, resposta.mensagem)
+            } else {
+                loading.style.display = "none"
+                resultado_overlay.style.display = "flex"
+                MostrarResultado_Overlay(1, resposta.mensagem)
+            }
+        }
+        async function desativarConta() {
+            resultado_overlay.style.display = "none";
+            loading.style.display = "flex"
+            const response = await fetch('/admin/desativar-usuario', {
+                method: 'PATCH',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id_usuario: idUsuario })
+            })
+            const resposta = await response.json()
+            if (resposta.status === 200) {
+                loading.style.display = "none"
+                resultado_overlay.style.display = "flex"
+                MostrarResultado_Overlay(1, resposta.mensagem)
+            } else {
+                loading.style.display = "none"
+                resultado_overlay.style.display = "flex"
+                MostrarResultado_Overlay(2, resposta.mensagem)
+            }
+        }
+
+        async function redirecionaResetSenha() {
+            resultado_overlay.style.display = "none";
+            try {
+                loading.style.display = 'flex'
+
+                const response = await fetch('/admin/resetar-senha', {
+                    method: 'PATCH',
+                    credentials: "include",
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id_usuario: idUsuario })
+                })
+                const resposta = await response.json()
+                switch (response.status) {
+                    case 200:
+                        loading.style.display = "none";
+                        resultado_overlay.style.display = "flex";
+                        MostrarResultado_Overlay(1, resposta.mensagem)
+                        console.log(resposta.mensagem)
+                        break;
+                    case 400:
+                    case 500:
+                    case 501:
+                        loading.style.display = "none";
+                        resultado_overlay.style.display = "flex";
+                        MostrarResultado_Overlay(0, resposta.mensagem)
+                        console.log(resposta.mensagem)
+                        break;
+                    default:
+                        break;
+                }
+            } catch (error) {
+                console.log("ERRO logou: " + error)
+            }
+        }
+        async function preencherCampos() {
+            try {
+                const resposta = await fetch(`/admin/usuario?id_usuario=${idUsuario}`, {
+                    method: 'GET',
+                    credentials: 'include',
+                })
+                const usuario = await resposta.json()
+                console.log("dados recebidos")
+                if (resposta.status === 200) {
+                    document.getElementById("nome").value = usuario.nome
+                    document.getElementById("email").value = usuario.email
+                    document.getElementById("status").value = usuario.status_usuario
+                    document.getElementById("data-criacao").value = new Date(usuario.data_criacao).toLocaleDateString('pt-BR')
+                    document.getElementById("data-inativacao").value = usuario.data_inativacao ? new Date(usuario.data_inativacao).toLocaleDateString('pt-BR') : ''
+
+                } else {
+                    console.log(usuario.mensagem)
+                    loading.style.display = "none"
+                }
+            } catch (error) {
+                console.log("ERRO: " + error)
+                loading.style.display = 'none'
+            }
+
+        };
+        async function redirecionaAdminEditar() {
+            const resultado = await protegerPagina()
+            window.location.href = `/tela-admin/editar-usuarios?id=${resultado.id_usuario}`
+        }
+        async function protegerPagina(tipoExigido = null) {
+            try {
+                const resposta = await fetch('/me', {
+                    method: 'GET',
+                    credentials: 'include',
+                });
+                const usuario = await resposta.json();
+                switch (resposta.status) {
+                    case 200:
+                        loading.style.display = "none";
+                        console.log("Usuario autenticado")
+                        break;
+                    case 401:
+                        loading.style.display = "none";
+                        resultado_overlay.style.display = "flex";
+                        MostrarResultado_Overlay(0, usuario.mensagem)
+                        console.log(usuario.mensagem)
+                        retonarLogin = true;
+                        break
+                    default:
+                        break;
+                }
+
+                if (tipoExigido && usuario.tipo !== tipoExigido) {
+                    window.location.href = '/tela-principal'; // logado, mas sem permissão
+                    return;
+                }
+
+                return usuario; // devolve os dados pra página usar (ex: mostrar nome)
+            } catch {
+                localStorage.removeItem('tipo');
+                window.location.href = '/login';
+            }
+        }
+
+
+
+        async function confirmarEdicao() {
+            loading.style.display = "flex";
+            const nome = document.getElementById('nome').value
+            const email = document.getElementById('email').value
+
+            const resultado = await fetch('/admin/editar-usuario', {
+                method: 'PATCH',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id_usuario: idUsuario, nome, email })
+            })
+            const resposta = await resultado.json()
+            switch (resultado.status) {
+                case 200:
+                    loading.style.display = "none";
+                    resultado_overlay.style.display = "flex";
+                    MostrarResultado_Overlay(1, resposta.mensagem)
+                    console.log(resposta.mensagem)
+                    break;
+                case 400:
+                    loading.style.display = 'none'
+                    if (resposta.erros?.length) {
+                        MostrarErro("erro-nome", "");
+                        MostrarErro("erro-email", "");
+                        resposta.erros.forEach(erro => {
+                            MostrarErro(`erro-${erro.campo}`, erro.mensagem);
+                        });
+                    }
+                    break;
+                case 500:
+                    loading.style.display = "none";
+                    resultado_overlay.style.display = "flex";
+                    MostrarResultado_Overlay(0, resposta.mensagem)
+                    console.log(resposta.mensagem)
+                    break;
+                default:
+                    break;
+            }
+
+        }
+
+        function solicitarSenha() {
+            senha_overlay.style.display = 'flex'
+            document.getElementById("confirmar-senha-overlay").innerHTML = ` 
+            <div class="loading-box">
+    <form id="form-confirmar-senha" novalidate>
+        <h5>Digite sua senha</h5>
+        <div>
+            <label for="Senha" style="font-size: 0.83em; font-weight: bold;">Senha:</label>
+            <div class="campo-senha">
+                <input type="password" name="Senha" id="senha-confirmar" placeholder="No mínimo 10 caracteres"
+                    autocomplete="new-password" required>
+                <button type="button" id="mostrar-senha" aria-label="Mostrar ou ocultar senha">👁</button>
+            </div>
+            <div id="erro-senha"></div>
+        </div>
+        <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+            <input style="width: 100px;" type="submit" value="Confirmar">
+            <input style="width: 100px;" type="button" onclick="senha_overlay.style.display = 'none'" value="Cancelar">
+        </div>
+    </form>
+</div>`
+            const campoSenha = document.getElementById("senha-confirmar");
+            const mostrarSenha = document.getElementById("mostrar-senha");
+            mostrarSenha.addEventListener("click", () => {
+                if (campoSenha.type === "password") {
+                    campoSenha.type = "text";
+                    mostrarSenha.textContent = "🙈";
+                } else {
+                    campoSenha.type = "password";
+                    mostrarSenha.textContent = "👁";
+                }
+            });
+
+            document.getElementById("form-confirmar-senha").addEventListener("submit", async (e) => {
+                e.preventDefault();
+
+                const senha = document.getElementById("senha-confirmar").value.trim();
+                try {
+                    senha_overlay.style.display = 'none'
+                    loading.style.display = "flex";
+
+                    const response = await fetch('/confirmar-senha', {
+                        method: 'POST',
+                        credentials: "include",
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ senha })
+                    });
+                    const resultado = await response.json();
+
+                    switch (response.status) {
+                        case 200:
+                            console.log("Senha verificada: Correta")
+                            confirmarEdicao()
+                            break;
+                        case 400:
+                            loading.style.display = 'none'
+                            senha_overlay.style.display = 'flex'
+                            if (resultado.erros?.length) {
+                                MostrarErro("erro-senha", "");
+                                resultado.erros.forEach(erro => {
+                                    MostrarErro(`erro-${erro.campo}`, erro.mensagem);
+                                });
+                            }
+                            break;
+                        case 401:
+                            senha_overlay.style.display = 'none'
+                            loading.style.display = "none";
+                            resultado_overlay.style.display = "flex";
+                            MostrarResultado_Overlay(2, resultado.mensagem)
+                            console.log(resultado.mensagem)
+                            retornarSenha = true;
+                            break;
+                        case 429:
+                            resultado_overlay.style.display = "flex";
+                            MostrarResultado_Overlay(0, resultado.mensagem)
+                            console.log(resultado.mensagem)
+                        default:
+                            break;
+                    }
+                } catch (error) {
+                    MostrarResultado_Overlay(2, "Ocorreu um erro, por favor tente mais tarde");
+                } finally {
+                    loading.style.display = "none";
+                }
+
+            })
+        }
+        protegerPagina("Admin").then(usuario => {
+            document.getElementById('nome-usuario').textContent = usuario.nome.slice(0, 8);
+
+        });
+        preencherCampos()
+
+        document.getElementById("meuForm-editar-cadastro")
+            .addEventListener("submit", (e) => {
+                e.preventDefault();
+                solicitarSenha();
+
+            });
+
+        document.getElementById("meuForm-Logout").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const resposta = await fetch('/logout', {
+                method: 'POST',
+                credentials: 'include'
+            });
+            console.log(resposta.mensagem)
+
+            localStorage.removeItem('tipo');
+            window.location.href = '/login';
+        });
+
+
+    </script>
+</body>
+
+</html>
