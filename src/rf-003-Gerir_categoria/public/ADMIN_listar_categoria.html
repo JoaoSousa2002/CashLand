@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Categorias financeiras — Admin — CashLand</title>
+    <link rel="stylesheet" href="/template.css">
+</head>
+
+<body>
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="loading-box">
+            <div style="margin: auto 0;">
+                <p>Carregando... </p>
+            </div>
+            <div class="spinning-wheel"></div>
+        </div>
+    </div>
+
+    <div class="loading-overlay" id="resultado-overlay">
+        <div class="loading-box" id="resultado-funcao">
+            <div id="div-resultado-overlay"
+                class="dialogo-conteudo">
+                <div class="confirmacao-exclusao">
+                    <h5 id="resultado-mensagem" style="margin: 0; white-space: pre-line;"></h5>
+                    <p id="aviso-exclusao" hidden>Essa ação não poderá ser desfeita</p>
+                </div>
+                <div class="acoes-formulario">
+                    <input class="botao-dialogo" type="button" id="confirmar-exclusao" value="Continuar" onclick="excluirCategoria()" hidden>
+                    <input class="botao-dialogo" type="button" id="fechar-resultado" value="Continuar" onclick="FechaResultado_overlay()">
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="container">
+        <div id="div-superior">
+
+            <div id="div-nome-sistema">
+                <a href="/tela-admin">
+                    <h1>CashLand</h1>
+                </a>
+            </div>
+
+            <div id="div-nav">
+                <nav>
+                    <a href="/tela-admin/listar-usuarios">Gerir Usuarios</a>
+                </nav>
+            </div>
+            <div id="div-nome-usuario">
+                <h3><span id="nome-usuario"></span></h3>
+            </div>
+            <div id="div-usuario">
+                <a onclick="redirecionaTela()">
+                    <img src="/User_icon_black.png" alt="icone usuario">
+                </a>
+            </div>
+            <div id="form-logout">
+                <form id="meuForm-Logout">
+                    <input type="submit" value="Sair">
+                </form>
+            </div>
+        </div>
+        <div id="container-conteudo" class="pagina-listagem">
+            <div id="div-form-tabela">
+                <h2>Categorias financeiras</h2>
+                <form id="form-listar-categoria" novalidate>
+                    <label for="pesquisa-categoria">ID do usuário:
+                        <input type="text" inputmode="numeric" id="pesquisa-categoria" placeholder="Todos os usuários">
+                    </label>
+                    <input type="submit" value="Pesquisar">
+                    <input type="button" id="btn-limpar" value="Limpar filtro">
+                </form>
+            </div>
+            <div id="div-tabela">
+                <table class="tabela-listagem tabela-admin">
+                    <thead>
+                        <tr>
+                            <th scope="col" style="width: 80px;">ID categoria</th>
+                            <th scope="col">Nome</th>
+                            <th scope="col">Descrição</th>
+                            <th scope="col" style="width: 80px;">ID usuário</th>
+                            <th scope="col">Usuário</th>
+                            <th scope="col" style="width: 130px;">Data criação</th>
+                            <th scope="col" id="th-opcoes" style="width: 170px;">Opções</th>
+                        </tr>
+                    </thead>
+                    <tbody id="corpo-tabela"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="/protecao.js"></script>
+    <script>
+        let retornarLogin = false;
+        let sessaoPronta = false;
+        let carregando = false;
+        let excluindo = false;
+        let categoriaExcluir = null;
+        let recarregarPagina = false;
+        const loading = document.getElementById('loading-overlay');
+        const resultado_overlay = document.getElementById('resultado-overlay');
+        const filtro = document.getElementById('pesquisa-categoria');
+        const params = new URLSearchParams(window.location.search);
+        if (params.has('id')) {
+            filtro.value = params.get('id');
+        } else if (params.has('id_usuario')) {
+            filtro.value = params.get('id_usuario');
+        }
+
+        function MostrarResultado_Overlay(tipo, mensagem) {
+            document.getElementById('confirmar-exclusao').hidden = true;
+            document.getElementById('aviso-exclusao').hidden = true;
+            document.getElementById('fechar-resultado').value = 'Continuar';
+            const texto = document.getElementById('resultado-mensagem');
+            texto.textContent = mensagem;
+            if (tipo === 1) {
+                texto.style.color = 'var(--sucesso)';
+            } else {
+                texto.style.color = 'var(--erro)';
+            }
+            resultado_overlay.style.display = 'flex';
+        }
+
+        async function FechaResultado_overlay() {
+            if (excluindo) return;
+            categoriaExcluir = null;
+            resultado_overlay.style.display = 'none';
+            if (retornarLogin) {
+                window.location.href = '/login';
+            } else if (recarregarPagina) {
+                recarregarPagina = false;
+                await listarCategorias();
+            }
+        }
+
+        function mensagemResposta(resposta, dados) {
+            let mensagem = `Não foi possível concluir a operação (HTTP ${resposta.status}).`;
+            if (dados && dados.mensagem) {
+                mensagem = dados.mensagem;
+            } else if (dados && dados.erro) {
+                mensagem = dados.erro;
+            }
+            if (dados && Array.isArray(dados.erros)) {
+                dados.erros.forEach(erro => {
+                    mensagem += '\n' + erro.mensagem;
+                });
+            }
+            return mensagem;
+        }
+
+        async function redirecionaTela() {
+            const usuario = await protegerPagina('Admin');
+            if (!usuario) return;
+            window.location.href = `/tela-admin/editar-usuarios?id=${usuario.id_usuario}`;
+        }
+
+        function renderizarTabela(categorias) {
+            const corpo = document.getElementById('corpo-tabela');
+            corpo.replaceChildren();
+            if (categorias.length === 0) {
+                const linha = document.createElement('tr');
+                linha.id = 'linha-vazia';
+                const coluna = document.createElement('td');
+                coluna.colSpan = 7;
+                coluna.textContent = 'Nenhuma categoria encontrada.';
+                linha.appendChild(coluna);
+                corpo.appendChild(linha);
+                return;
+            }
+            categorias.forEach(categoria => {
+                const linha = document.createElement('tr');
+                let descricao = '---';
+                let nomeUsuario = '---';
+                let dataCriacao = '---';
+                if (categoria.descricao) {
+                    descricao = categoria.descricao;
+                }
+                if (categoria.usuarios && categoria.usuarios.nome) {
+                    nomeUsuario = categoria.usuarios.nome;
+                }
+                if (categoria.data_criacao) {
+                    dataCriacao = new Date(categoria.data_criacao).toLocaleDateString('pt-BR');
+                }
+                const valores = [categoria.id_categoria, categoria.nome, descricao,
+                    categoria.id_usuario, nomeUsuario, dataCriacao];
+                valores.forEach(valor => {
+                    const coluna = document.createElement('td');
+                    coluna.textContent = valor;
+                    coluna.title = coluna.textContent;
+                    linha.appendChild(coluna);
+                });
+                const opcoes = document.createElement('td');
+                opcoes.className = 'td-opcoes';
+                const acoes = document.createElement('div');
+                acoes.className = 'acoes-tabela';
+                const editar = document.createElement('button');
+                editar.type = 'button';
+                editar.textContent = 'Editar';
+                editar.addEventListener('click', () => {
+                    window.location.href = `/tela-admin/editar-categoria?id=${encodeURIComponent(categoria.id_categoria)}`;
+                });
+                acoes.appendChild(editar);
+                const excluir = document.createElement('button');
+                excluir.type = 'button';
+                excluir.textContent = 'Excluir';
+                excluir.className = 'botao-excluir';
+                excluir.addEventListener('click', () => confirmarDelete(categoria));
+                acoes.appendChild(excluir);
+                opcoes.appendChild(acoes);
+                linha.appendChild(opcoes);
+                corpo.appendChild(linha);
+            });
+        }
+
+        function confirmarDelete(categoria) {
+            if (!sessaoPronta || excluindo) return;
+            categoriaExcluir = categoria;
+            MostrarResultado_Overlay(0, `Tem certeza que deseja excluir a categoria "${categoria.nome}" (ID ${categoria.id_categoria})?`);
+            document.getElementById('confirmar-exclusao').hidden = false;
+            document.getElementById('aviso-exclusao').hidden = false;
+            document.getElementById('fechar-resultado').value = 'Cancelar';
+            document.getElementById('fechar-resultado').focus();
+        }
+
+        async function excluirCategoria() {
+            if (!sessaoPronta || excluindo || !categoriaExcluir) return;
+            excluindo = true;
+            const categoria = categoriaExcluir;
+            categoriaExcluir = null;
+            resultado_overlay.style.display = 'none';
+            loading.style.display = 'flex';
+            try {
+                const resposta = await fetch('/admin/deletar-categoria', {
+                    method: 'DELETE',
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        id_categoria: categoria.id_categoria,
+                        id_usuario: categoria.id_usuario
+                    })
+                });
+                const dados = await resposta.json();
+                switch (resposta.status) {
+                    case 200:
+                        recarregarPagina = true;
+                        MostrarResultado_Overlay(1, dados.mensagem);
+                        break;
+                    case 401:
+                        retornarLogin = true;
+                        sessaoPronta = false;
+                        MostrarResultado_Overlay(0, mensagemResposta(resposta, dados));
+                        break;
+                    case 400:
+                    case 403:
+                    case 404:
+                    case 500:
+                    default:
+                        MostrarResultado_Overlay(0, mensagemResposta(resposta, dados));
+                        break;
+                }
+            } catch {
+                MostrarResultado_Overlay(0, 'Não foi possível confirmar a exclusão. Pesquise novamente antes de tentar excluir outra vez.');
+            } finally {
+                excluindo = false;
+                loading.style.display = 'none';
+            }
+        }
+
+        async function listarCategorias() {
+            if (!sessaoPronta || carregando) return;
+            carregando = true;
+            loading.style.display = 'flex';
+            document.getElementById('corpo-tabela').replaceChildren();
+            try {
+                let rota = '/admin/listar-categoria';
+                const idUsuario = filtro.value.trim();
+                if (idUsuario !== '') {
+                    rota += `?id_usuario=${encodeURIComponent(idUsuario)}`;
+                }
+                const resposta = await fetch(rota, { method: 'GET', credentials: 'include' });
+                const dados = await resposta.json();
+                switch (resposta.status) {
+                    case 200:
+                        if (!Array.isArray(dados)) {
+                            throw new Error('Formato de resposta inesperado.');
+                        }
+                        renderizarTabela(dados);
+                        break;
+                    case 401:
+                        retornarLogin = true;
+                        sessaoPronta = false;
+                        MostrarResultado_Overlay(0, mensagemResposta(resposta, dados));
+                        break;
+                    case 404:
+                        renderizarTabela([]);
+                        MostrarResultado_Overlay(0, mensagemResposta(resposta, dados));
+                        break;
+                    case 400:
+                    case 403:
+                    case 500:
+                    default:
+                        MostrarResultado_Overlay(0, mensagemResposta(resposta, dados));
+                        break;
+                }
+            } catch {
+                MostrarResultado_Overlay(0, 'Não foi possível carregar as categorias. Tente novamente.');
+            } finally {
+                carregando = false;
+                loading.style.display = 'none';
+            }
+        }
+
+        document.getElementById('form-listar-categoria').addEventListener('submit', async (evento) => {
+            evento.preventDefault();
+            await listarCategorias();
+        });
+        document.getElementById('btn-limpar').addEventListener('click', async () => {
+            filtro.value = '';
+            window.history.replaceState(null, '', window.location.pathname);
+            await listarCategorias();
+        });
+        document.getElementById('meuForm-Logout').addEventListener('submit', async (evento) => {
+            evento.preventDefault();
+            loading.style.display = 'flex';
+            try {
+                const resposta = await fetch('/logout', { method: 'POST', credentials: 'include' });
+                const dados = await resposta.json();
+                switch (resposta.status) {
+                    case 200:
+                        localStorage.removeItem('tipo');
+                        window.location.href = '/login';
+                        break;
+                    case 401:
+                        retornarLogin = true;
+                        sessaoPronta = false;
+                        MostrarResultado_Overlay(0, mensagemResposta(resposta, dados));
+                        break;
+                    default:
+                        MostrarResultado_Overlay(0, mensagemResposta(resposta, dados));
+                        break;
+                }
+            } catch {
+                MostrarResultado_Overlay(0, 'Não foi possível sair. Tente novamente.');
+            } finally {
+                loading.style.display = 'none';
+            }
+        });
+
+        async function iniciar() {
+            loading.style.display = 'flex';
+            try {
+                const usuario = await protegerPagina('Admin');
+                if (!usuario) return;
+                document.getElementById('nome-usuario').textContent = usuario.nome.slice(0, 8);
+                sessaoPronta = true;
+                await listarCategorias();
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+        iniciar();
+    </script>
+</body>
+</html>

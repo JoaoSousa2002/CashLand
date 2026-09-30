@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minhas categorias</title>
+    <link rel="stylesheet" href="/template.css">
+</head>
+
+<body>
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="loading-box">
+            <div style="margin: auto 0;">
+                <p>Carregando... </p>
+            </div>
+            <div class="spinning-wheel"></div>
+        </div>
+    </div>
+
+    <div class="loading-overlay" id="resultado-overlay">
+        <div class="loading-box" id="resultado-funcao">
+        </div>
+    </div>
+
+    <div id="container">
+        <div id="div-superior">
+
+            <div id="div-nome-sistema">
+                <a href="/tela-principal">
+                    <h1>CashLand</h1>
+                </a>
+            </div>
+
+            <div id="div-nav">
+                <nav>
+                    <a href="/tela-principal/listar-categoria">Categorias</a>
+                </nav>
+            </div>
+            <div id="div-nome-usuario">
+                <h3><span id="nome-usuario"></span></h3>
+            </div>
+            <div id="div-usuario">
+                <a onclick="redirecionaTela()">
+                    <img src="/User_icon_black.png" alt="icone usuario">
+                </a>
+            </div>
+            <div id="form-logout">
+                <form id="meuForm-Logout">
+                    <input type="submit" value="Sair">
+                </form>
+            </div>
+        </div>
+
+        <div id="container-conteudo" class="pagina-listagem">
+            <div id="div-form-tabela">
+                <form id="form-listar-categoria">
+                    <label for="pesquisa-categoria">Nome ou id da categoria:
+                        <input type="text" id="pesquisa-categoria" placeholder="Ex.: Alimentação ou 3">
+                    </label>
+                    <input type="submit" value="Pesquisar">
+                </form>
+                <button type="button" id="botao-nova-categoria" onclick="window.location.href='/tela-principal/criar-categoria'">+ Nova
+                    categoria</button>
+            </div>
+
+            <div id="div-tabela">
+                <table class="tabela-listagem">
+                    <thead>
+                        <tr>
+                            <th scope="col" style="width: 70px;">id</th>
+                            <th scope="col" style="width: 220px;">nome</th>
+                            <th scope="col">descrição</th>
+                            <th scope="col" style="width: 130px;">data criação</th>
+                            <th id="th-opcoes" scope="col" style="width: 170px;">Opções</th>
+                        </tr>
+                    </thead>
+                    <tbody id="corpo-tabela">
+                        <!-- Preenchido dinamicamente pela função de listagem -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let retornarLogin = false;
+        let recarregarPagina = false;
+        const loading = document.getElementById("loading-overlay");
+        const resultado_overlay = document.getElementById("resultado-overlay");
+
+        loading.style.display = 'flex'
+
+        function MostrarResultado_Overlay(tipo, mensagem) {
+            if (tipo == 1) {
+                document.getElementById("resultado-funcao").innerHTML =
+                    `<div id="div-resultado-overlay"
+                    class="dialogo-conteudo">
+                    <div>
+                        <h5 style="color: var(--sucesso); margin: 0;">${mensagem}</h5>
+                    </div>
+                    <div class="acoes-formulario">
+                     <input class="botao-dialogo" type="button" onclick="FechaResultado_overlay(1)" value="Continuar">
+                    </div>
+                </div>`
+            } else {
+                document.getElementById("resultado-funcao").innerHTML =
+                    `<div id="div-resultado-overlay"
+                    class="dialogo-conteudo">
+                    <div>
+                        <h5 style="color: var(--erro); margin: 0;">${mensagem}</h5>
+                    </div>
+                    <div class="acoes-formulario">
+                     <input class="botao-dialogo" type="button" onclick="FechaResultado_overlay(1)" value="Continuar">
+                    </div>
+                </div>`
+            }
+        }
+
+        function FechaResultado_overlay(num) {
+            if (num === 1) {
+                resultado_overlay.style.display = "none"
+                if (retornarLogin) {
+                    window.location.href = "/login"
+                } else if (recarregarPagina) {
+                    recarregarPagina = false;
+                    listarCategorias(document.getElementById("pesquisa-categoria").value);
+                }
+            }
+        }
+
+        async function protegerPagina(tipoExigido = null) {
+            try {
+                const resposta = await fetch('/me', {
+                    method: 'GET',
+                    credentials: 'include',
+                });
+                const usuario = await resposta.json();
+                switch (resposta.status) {
+                    case 200:
+                        loading.style.display = 'none'
+                        console.log("Usuario autenticado")
+                        break;
+                    case 401:
+                        loading.style.display = 'none'
+                        resultado_overlay.style.display = "flex";
+                        MostrarResultado_Overlay(0, usuario.mensagem)
+                        console.log(usuario.mensagem)
+                        retornarLogin = true;
+                    default:
+                        break;
+                }
+
+                if (tipoExigido && usuario.tipo !== tipoExigido) {
+                    window.location.href = '/tela-principal';
+                    return;
+                }
+
+                return usuario;
+            } catch {
+                localStorage.removeItem('tipo');
+                window.location.href = '/login';
+            }
+        }
+
+        async function redirecionaTela() {
+            const data = await protegerPagina()
+            if (data.tipo === 'Comum') {
+                window.location.href = '/tela-principal/editar-usuario'
+            } else if (data.tipo === 'Admin') {
+                window.location.href = `/tela-admin/editar-usuarios?id=${data.id_usuario}`
+            }
+        }
+
+        protegerPagina().then(usuario => {
+            document.getElementById('nome-usuario').textContent = usuario.nome.slice(0, 8);
+            listarCategorias();
+        });
+
+        document.getElementById("meuForm-Logout").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            await fetch('/logout', {
+                method: 'POST',
+                credentials: 'include'
+            });
+            localStorage.removeItem('tipo');
+            window.location.href = '/login';
+        });
+
+        function renderizarTabela(categorias) {
+            if (!categorias || categorias.length === 0) {
+                document.getElementById('corpo-tabela').innerHTML =
+                    `<tr id="linha-vazia"><td colspan="5">Nenhuma categoria encontrada.</td></tr>`;
+                return;
+            }
+            document.getElementById('corpo-tabela').innerHTML = categorias.map(c =>
+                `<tr>
+                    <td>${c.id_categoria}</td>
+                    <td>${c.nome}</td>
+                    <td>${c.descricao ?? '---'}</td>
+                    <td>${c.data_criacao ? new Date(c.data_criacao).toLocaleDateString('pt-BR') : '---'}</td>
+                    <td class="td-opcoes"><div class="acoes-tabela">
+                        <button onclick="window.location.href='/tela-principal/editar-categoria?id=${c.id_categoria}'">Editar</button>
+                        <button class="botao-excluir" onclick="confirmarDelete(${c.id_categoria})">Excluir</button>
+                    </div></td>
+                </tr>`
+            ).join("");
+        }
+
+        async function listarCategorias(pesquisa = "") {
+            const resposta = await fetch(`/usuario/listar-categoria?pesquisa=${encodeURIComponent(pesquisa)}`, {
+                method: 'GET',
+                credentials: 'include'
+            });
+            const dados = await resposta.json();
+
+            switch (resposta.status) {
+                case 200:
+                    renderizarTabela(dados);
+                    break;
+                case 404:
+                    renderizarTabela([]);
+                    break;
+                default:
+                    resultado_overlay.style.display = "flex";
+                    MostrarResultado_Overlay(0, dados.mensagem ?? "Erro ao listar categorias");
+                    break;
+            }
+        }
+
+        document.getElementById("form-listar-categoria").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const pesquisa = document.getElementById("pesquisa-categoria").value;
+            await listarCategorias(pesquisa);
+        });
+
+        function confirmarDelete(id) {
+            resultado_overlay.style.display = "flex";
+            document.getElementById("resultado-funcao").innerHTML =
+                `<div id="div-resultado-overlay"
+                    class="dialogo-conteudo">
+                    <div class="confirmacao-exclusao">
+                        <h5>Tem certeza que deseja excluir essa categoria?</h5>
+                        <p>Essa ação não poderá ser desfeita</p>
+                    </div>
+                    <div class="acoes-formulario">
+                     <input class="botao-dialogo" type="button" onclick="excluirCategoria(${id})" value="Continuar">
+                     <input class="botao-dialogo" type="button" onclick="resultado_overlay.style.display = 'none'" value="Cancelar">
+                    </div>
+                </div>`
+        }
+
+        async function excluirCategoria(id_categoria) {
+            resultado_overlay.style.display = "none";
+            const resposta = await fetch('/usuario/deletar-categoria', {
+                method: 'DELETE',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id_categoria })
+            });
+            const dados = await resposta.json();
+
+            resultado_overlay.style.display = "flex";
+            if (resposta.status === 200) {
+                MostrarResultado_Overlay(1, dados.mensagem);
+                recarregarPagina = true;
+            } else {
+                MostrarResultado_Overlay(0, dados.mensagem ?? "Erro ao excluir categoria");
+            }
+        }
+    </script>
+</body>
+
+</html>

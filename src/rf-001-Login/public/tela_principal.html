@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Início — CashLand</title>
     <link rel="stylesheet" href="/template.css">
 </head>
 
@@ -33,7 +33,7 @@
 
             <div id="div-nav">
                 <nav>
-                    <!-- <a href="/Usuarios">Usuarios</a> -->
+                    <a href="/tela-principal/listar-categoria">Categorias</a>
                 </nav>
             </div>
             <div id="div-nome-usuario">
@@ -66,23 +66,23 @@
             if (tipo == 1) {
                 document.getElementById("resultado-funcao").innerHTML =
                     `<div id="div-resultado-overlay"
-                    style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 20px;">
+                    class="dialogo-conteudo">
                     <div>
-                        <h5 style="color: rgb(103, 198, 40); margin: 0;">${mensagem}</h5>
+                        <h5 style="color: var(--sucesso); margin: 0;">${mensagem}</h5>
                     </div>
-                    <div style="display: flex; align-items: center; justify-content: center;">
-                     <input style="width: 100px;" type="button" onclick="FechaResultado_overlay()" value="Continuar">
+                    <div class="acoes-formulario">
+                     <input class="botao-dialogo" type="button" onclick="FechaResultado_overlay()" value="Continuar">
                     </div>
                 </div>`
             } else {
                 document.getElementById("resultado-funcao").innerHTML =
                     `<div id="div-resultado-overlay"
-                    style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center gap: 20px;">
+                    class="dialogo-conteudo">
                     <div>
-                        <h5 style="color: rgb(160, 2, 2); margin: 0;">${mensagem}</h5>
+                        <h5 style="color: var(--erro); margin: 0;">${mensagem}</h5>
                     </div>
-                    <div style="display: flex; align-items: center; justify-content: center;">
-                     <input style="width: 100px;" type="button" onclick="FechaResultado_overlay()" value="Continuar">
+                    <div class="acoes-formulario">
+                     <input class="botao-dialogo" type="button" onclick="FechaResultado_overlay()" value="Continuar">
                     </div>
                 </div>`
             }

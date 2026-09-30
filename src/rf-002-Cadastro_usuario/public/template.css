@@ -3,6 +3,11 @@
     --superficie: #ffffff;
     --borda: #ccc;
     --foco: #4a90d9;
+    --texto: #222;
+    --texto-suave: #596575;
+    --sucesso: #277335;
+    --erro: #a00202;
+    --raio: 12px;
     --sombra: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
@@ -15,7 +20,7 @@
 
 body {
     background-color: var(--fundo);
-    color: #222;
+    color: var(--texto);
     min-height: 100vh;
     line-height: 1.5;
 }
@@ -50,7 +55,7 @@ body {
 .cartao,
 .loading-box {
     background-color: var(--superficie);
-    border-radius: 12px;
+    border-radius: var(--raio);
     box-shadow: var(--sombra);
 }
 
@@ -63,7 +68,7 @@ body {
 .cartao form {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 12px;
 }
 
 #id-Titulo {
@@ -113,7 +118,8 @@ label {
 
 input,
 button,
-select {
+select,
+textarea {
     min-width: 0;
     max-width: 100%;
     padding: 10px;
@@ -124,7 +130,8 @@ select {
 }
 
 input:not([type="submit"]):not([type="button"]),
-select {
+select,
+textarea {
     width: 100%;
     background-color: var(--superficie);
 }
@@ -137,6 +144,7 @@ input:disabled {
 input:focus,
 button:focus-visible,
 select:focus,
+textarea:focus,
 a:focus-visible {
     outline: 2px solid var(--foco);
     outline-offset: 2px;
@@ -296,7 +304,7 @@ button:hover {
     max-width: 100%;
     max-height: calc(100dvh - 40px);
     overflow: auto;
-    font-size: 20px;
+    font-size: 16px;
     overflow-wrap: anywhere;
 }
 
@@ -364,4 +372,304 @@ button:hover {
     #div-nome-usuario {
         flex: 1;
     }
+}
+
+
+/* Componentes comuns a todas as telas. */
+[hidden] {
+    display: none !important;
+}
+
+h1, h2, h3, h4 {
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+}
+
+.cartao > h2,
+.cartao > .texto-auxiliar {
+    margin-bottom: 20px;
+}
+
+.cartao form > h4 {
+    margin-bottom: 8px;
+}
+
+textarea {
+    min-height: 90px;
+    resize: vertical;
+}
+
+input[type="color"] {
+    width: 48px !important;
+    height: 42px;
+    padding: 4px;
+    flex-shrink: 0;
+}
+
+button:disabled,
+input[type="submit"]:disabled,
+input[type="button"]:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+input[type="submit"],
+.btn-primary,
+#botao-nova-categoria {
+    background-color: var(--fundo);
+    font-weight: 600;
+}
+
+input[type="submit"]:hover:not(:disabled),
+.btn-primary:hover:not(:disabled),
+#botao-nova-categoria:hover {
+    background-color: #b3c8ea;
+}
+
+#form-logout input {
+    background-color: #f3f3f3;
+    font-weight: normal;
+}
+
+#div-nav a {
+    text-underline-offset: 4px;
+}
+
+#div-usuario a {
+    border-radius: 8px;
+}
+
+.texto-auxiliar {
+    color: var(--texto-suave);
+    font-size: 14px;
+}
+
+.cartao-acoes {
+    margin-top: 24px;
+    text-align: center;
+}
+
+.acoes-formulario {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+form > .acoes-formulario {
+    margin-top: 12px;
+}
+
+.dialogo-conteudo,
+#div-resultado-overlay {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 20px;
+    width: 100%;
+}
+
+.loading-box.dialogo-conteudo {
+    width: 400px;
+}
+
+.dialogo-conteudo h5,
+#div-resultado-overlay h5 {
+    font-size: 16px;
+    line-height: 1.5;
+}
+
+.botao-dialogo {
+    min-width: 100px;
+}
+
+[id^="erro-"] h5,
+.error-message {
+    color: var(--erro);
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.error-message {
+    display: none;
+}
+
+.campos-lado-a-lado {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.campos-lado-a-lado > .input-dados {
+    flex: 1 1 140px;
+    min-width: 0;
+}
+
+.color-picker-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Filtros e tabelas mantêm a largura ampla das listagens. */
+#container-conteudo.pagina-listagem {
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: stretch;
+    gap: 24px;
+}
+
+#div-form-tabela,
+#div-tabela {
+    width: 100%;
+    max-width: 1800px;
+    margin: 0 auto;
+    padding: 24px;
+    background-color: var(--superficie);
+    border-radius: var(--raio);
+    box-shadow: var(--sombra);
+}
+
+#div-form-tabela,
+#div-form-tabela form {
+    display: flex;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+#div-form-tabela h2 {
+    flex-basis: 100%;
+}
+
+#div-form-tabela form {
+    flex: 1 1 260px;
+    min-width: 0;
+}
+
+#div-form-tabela label {
+    flex: 1 1 240px;
+    min-width: 0;
+}
+
+#div-form-tabela label input {
+    margin-top: 5px;
+}
+
+#div-tabela {
+    overflow-x: auto;
+}
+
+.tabela-listagem {
+    width: 100%;
+    min-width: 760px;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    letter-spacing: 0.01em;
+    table-layout: fixed;
+}
+
+.tabela-admin {
+    min-width: 1000px;
+}
+
+.tabela-usuarios {
+    min-width: 1400px;
+}
+
+.tabela-listagem thead tr {
+    border-bottom: 2px solid var(--texto);
+}
+
+.tabela-listagem th {
+    padding: 12px 8px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #444;
+}
+
+.tabela-listagem td {
+    padding: 12px 8px;
+    border-bottom: 1px solid #e8e8e8;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.tabela-listagem tbody tr:hover {
+    background-color: #f7f7f7;
+}
+
+#th-opcoes,
+.td-opcoes {
+    text-align: center;
+}
+
+.acoes-tabela {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+}
+
+.acoes-tabela button {
+    padding: 6px 10px;
+    font-size: 13px;
+}
+
+.botao-excluir {
+    background-color: rgb(250, 176, 176);
+}
+
+.botao-excluir:hover {
+    background-color: rgb(240, 156, 156);
+}
+
+#linha-vazia td {
+    text-align: center;
+    color: var(--texto-suave);
+    white-space: normal;
+}
+
+.loading-box #form-categoria {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    text-align: left;
+    width: 320px;
+    max-width: 100%;
+}
+
+@media (max-width: 600px) {
+    #div-form-tabela,
+    #div-tabela {
+        padding: 16px;
+    }
+
+    .campos-lado-a-lado {
+        flex-direction: column;
+    }
+
+    .campos-lado-a-lado > .input-dados {
+        flex-basis: auto;
+    }
+}
+
+
+/* Confirmações de exclusão seguem o diálogo de administração de usuários. */
+.confirmacao-exclusao h5 {
+    color: var(--erro);
+    margin: 0;
+}
+
+.confirmacao-exclusao p {
+    color: var(--erro);
+    margin: 0;
+    font-size: 13px;
 }

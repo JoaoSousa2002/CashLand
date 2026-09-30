@@ -35,3 +35,7 @@ create table public.usuarios (
     )
   )
 ) TABLESPACE pg_default;
+
+create trigger trigger_criar_categoria_padrao
+after INSERT on usuarios for EACH row
+execute FUNCTION criar_categoria_padrao_usuario ();

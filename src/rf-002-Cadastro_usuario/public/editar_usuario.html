@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Editar usuario</title>
+    <title>Editar usuário — CashLand</title>
     <link rel="stylesheet" href="/template.css">
 </head>
 
@@ -99,6 +99,10 @@
 
                     </form>
                 </div>
+                <div class="cartao cartao-acoes">
+                    <input type="button" value="Categorias financeiras"
+                        onclick="location.href='/tela-principal/listar-categoria'">
+                </div>
             </div>
         </div>
     </div>
@@ -125,7 +129,7 @@
         }
         function MostrarErro(id, mensagem) {
             document.getElementById(id).innerHTML = `
-            <h5 style="color: rgb(160, 2, 2); margin-left: 80px; font-size:13px">${mensagem}</h5> `;
+            <h5 style="color: var(--erro); margin-left: 80px; font-size:13px">${mensagem}</h5> `;
         }
 
 
@@ -133,23 +137,23 @@
             if (tipo == 1) {
                 document.getElementById("resultado-funcao").innerHTML =
                     `<div id="div-resultado-overlay"
-                    style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 20px;">
+                    class="dialogo-conteudo">
                     <div>
-                        <h5 style="color: rgb(103, 198, 40); margin: 0;">${mensagem}</h5>
+                        <h5 style="color: var(--sucesso); margin: 0;">${mensagem}</h5>
                     </div>
-                    <div style="display: flex; align-items: center; justify-content: center;">
-                     <input style="width: 100px;" type="button" onclick="FechaResultado_overlay()" value="Continuar">
+                    <div class="acoes-formulario">
+                     <input class="botao-dialogo" type="button" onclick="FechaResultado_overlay()" value="Continuar">
                     </div>
                 </div>`
             } else {
                 document.getElementById("resultado-funcao").innerHTML =
                     `<div id="div-resultado-overlay"
-                    style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center gap: 20px;">
+                    class="dialogo-conteudo">
                     <div>
-                        <h5 style="color: rgb(160, 2, 2); margin: 0;">${mensagem}</h5>
+                        <h5 style="color: var(--erro); margin: 0;">${mensagem}</h5>
                     </div>
-                    <div style="display: flex; align-items: center; justify-content: center;">
-                     <input style="width: 100px;" type="button" onclick="FechaResultado_overlay()" value="Continuar">
+                    <div class="acoes-formulario">
+                     <input class="botao-dialogo" type="button" onclick="FechaResultado_overlay()" value="Continuar">
                     </div>
                 </div>`
             }
@@ -158,14 +162,14 @@
             resultado_overlay.style.display = "flex";
             document.getElementById("resultado-funcao").innerHTML =
                 `<div id="div-resultado-overlay"
-                    style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 20px;">
+                    class="dialogo-conteudo">
                     <div>
-                        <h5 style="color: rgb(160, 2, 2); margin: 0;">Tem certeza que deseja resetar a senha?</h5>
-                        <hp style="color: rgb(160, 2, 2); margin: 0; font-size: 13px">Sua sessão será encerrada e você será redirecionado para outra tela</hp>
+                        <h5 style="color: var(--erro); margin: 0;">Tem certeza que deseja resetar a senha?</h5>
+                        <hp style="color: var(--erro); margin: 0; font-size: 13px">Sua sessão será encerrada e você será redirecionado para outra tela</hp>
                     </div>
-                    <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
-                     <input style="width: 100px;" type="button" onclick="redirecionaResetSenha()" value="Continuar">
-                     <input style="width: 100px;" type="button" onclick="resultado_overlay.style.display = 'none'" value="Cancelar">
+                    <div class="acoes-formulario">
+                     <input class="botao-dialogo" type="button" onclick="redirecionaResetSenha()" value="Continuar">
+                     <input class="botao-dialogo" type="button" onclick="resultado_overlay.style.display = 'none'" value="Cancelar">
                     </div>
                 </div>`
         }
@@ -174,14 +178,14 @@
             resultado_overlay.style.display = "flex";
             document.getElementById("resultado-funcao").innerHTML =
                 `<div id="div-resultado-overlay"
-                    style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 20px;">
+                    class="dialogo-conteudo">
                     <div>
-                        <h5 style="color: rgb(160, 2, 2); margin: 0;">Tem certeza que deseja desativar sua conta?</h5>
-                        <hp style="color: rgb(160, 2, 2); margin: 0; font-size: 13px">Sua sessão será encerrada e só um administrador poderá reativar</hp>
+                        <h5 style="color: var(--erro); margin: 0;">Tem certeza que deseja desativar sua conta?</h5>
+                        <hp style="color: var(--erro); margin: 0; font-size: 13px">Sua sessão será encerrada e só um administrador poderá reativar</hp>
                     </div>
-                    <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
-                     <input style="width: 100px;" type="button" onclick="desativarConta()" value="Continuar">
-                     <input style="width: 100px;" type="button" onclick="resultado_overlay.style.display = 'none'" value="Cancelar">
+                    <div class="acoes-formulario">
+                     <input class="botao-dialogo" type="button" onclick="desativarConta()" value="Continuar">
+                     <input class="botao-dialogo" type="button" onclick="resultado_overlay.style.display = 'none'" value="Cancelar">
                     </div>
                 </div>`
         }
@@ -336,9 +340,9 @@
             </div>
             <div id="erro-senha"></div>
         </div>
-        <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
-            <input style="width: 100px;" type="submit" value="Confirmar">
-            <input style="width: 100px;" type="button" onclick="senha_overlay.style.display = 'none'" value="Cancelar">
+        <div class="acoes-formulario">
+            <input class="botao-dialogo" type="submit" value="Confirmar">
+            <input class="botao-dialogo" type="button" onclick="senha_overlay.style.display = 'none'" value="Cancelar">
         </div>
     </form>
 </div>`

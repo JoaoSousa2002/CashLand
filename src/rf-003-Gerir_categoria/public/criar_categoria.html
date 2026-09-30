@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Criar categoria — CashLand</title>
+    <link rel="stylesheet" href="/template.css">
+</head>
+
+<body>
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="loading-box">
+            <div style="margin: auto 0;">
+                <p>Carregando... </p>
+            </div>
+            <div class="spinning-wheel"></div>
+        </div>
+    </div>
+
+    <div class="loading-overlay" id="resultado-overlay">
+        <div class="loading-box" id="resultado-funcao">
+            <div id="div-resultado-overlay"
+                class="dialogo-conteudo">
+                <h5 id="resultado-mensagem" style="margin: 0;"></h5>
+                <input class="botao-dialogo" type="button" onclick="FechaResultado_overlay()" value="Continuar">
+            </div>
+        </div>
+    </div>
+    <div id="container">
+        <div id="div-superior">
+
+            <div id="div-nome-sistema">
+                <a href="/tela-principal">
+                    <h1>CashLand</h1>
+                </a>
+            </div>
+
+            <div id="div-nav">
+                <nav>
+                    <a href="/tela-principal/listar-categoria">Categorias</a>
+                </nav>
+            </div>
+            <div id="div-nome-usuario">
+                <h3><span id="nome-usuario"></span></h3>
+            </div>
+            <div id="div-usuario">
+                <a onclick="redirecionaTela()">
+                    <img src="/User_icon_black.png" alt="icone usuario">
+                </a>
+            </div>
+            <div id="form-logout">
+                <form id="meuForm-Logout">
+                    <input type="submit" value="Sair">
+                </form>
+            </div>
+        </div>
+        <div id="container-conteudo">
+            <div id="div-Cadastro" class="cartao">
+                <div id="id-Titulo">
+                    <h2>Criar categoria</h2>
+                    <input type="button" value="Voltar" id="botao-Voltar"
+                        onclick="location.href='/tela-principal/listar-categoria'">
+                </div>
+                <form id="meuForm" novalidate>
+                    <div class="input-dados">
+                        <label for="nome">Nome:</label>
+                        <input type="text" name="nome" id="nome" placeholder="Ex: Alimentação" required minlength="3"
+                            maxlength="100" aria-describedby="erro-nome">
+                    </div>
+                    <div id="erro-nome" aria-live="polite"></div>
+                    <div class="input-dados">
+                        <label for="descricao">Descrição (opcional):</label>
+                        <input type="text" name="descricao" id="descricao" placeholder="Ex: Compras do mês"
+                            minlength="3" maxlength="100" aria-describedby="erro-descricao">
+                    </div>
+                    <div id="erro-descricao" aria-live="polite"></div>
+                    <div id="input-submit">
+                        <input type="submit" value="Criar categoria" id="botao-Enviar" disabled>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="/protecao.js"></script>
+    <script>
+        let retonarLogin = false;
+        let sessaoPronta = false;
+        let enviando = false;
+        const loading = document.getElementById('loading-overlay');
+        const resultado_overlay = document.getElementById('resultado-overlay');
+        const form = document.getElementById('meuForm');
+        const botaoEnviar = document.getElementById('botao-Enviar');
+
+        function MostrarErro(id, mensagem) {
+            const elemento = document.getElementById(id);
+            if (!elemento) return;
+            elemento.replaceChildren();
+            if (mensagem) {
+                const texto = document.createElement('h5');
+                texto.style.color = 'var(--erro)';
+                texto.textContent = mensagem;
+                elemento.appendChild(texto);
+            }
+        }
+
+        function MostrarResultado_Overlay(tipo, mensagem) {
+            const texto = document.getElementById('resultado-mensagem');
+            texto.textContent = mensagem;
+            if (tipo === 1) {
+                texto.style.color = 'var(--sucesso)';
+            } else {
+                texto.style.color = 'var(--erro)';
+            }
+            resultado_overlay.style.display = 'flex';
+        }
+
+        function FechaResultado_overlay() {
+            resultado_overlay.style.display = 'none';
+            if (retonarLogin) {
+                window.location.href = '/login';
+            }
+        }
+
+        function mensagemResposta(resposta, dados) {
+            if (resposta.status === 401) {
+                retonarLogin = true;
+                sessaoPronta = false;
+                botaoEnviar.disabled = true;
+            }
+            if (dados && dados.mensagem) {
+                return dados.mensagem;
+            } else if (dados && dados.erro) {
+                return dados.erro;
+            } else {
+                return `Não foi possível concluir a operação (HTTP ${resposta.status}).`;
+            }
+        }
+
+        async function redirecionaTela() {
+            const usuario = await protegerPagina();
+            if (!usuario) return;
+            if (usuario.tipo === 'Comum') {
+                window.location.href = '/tela-principal/editar-usuario';
+            } else if (usuario.tipo === 'Admin') {
+                window.location.href = `/tela-admin/editar-usuarios?id=${usuario.id_usuario}`;
+            }
+        }
+
+        form.addEventListener('submit', async (evento) => {
+            evento.preventDefault();
+            if (!sessaoPronta || enviando) return;
+            enviando = true;
+            botaoEnviar.disabled = true;
+            loading.style.display = 'flex';
+            MostrarErro('erro-nome', '');
+            MostrarErro('erro-descricao', '');
+            const nome = document.getElementById('nome').value.trim();
+            const descricao = document.getElementById('descricao').value.trim();
+            try {
+                const resposta = await fetch('/usuario/criar-categoria', {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nome, descricao })
+                });
+                const dados = await resposta.json();
+                if (resposta.status === 200 || resposta.status === 201) {
+                    form.reset();
+                    MostrarResultado_Overlay(1, dados.mensagem);
+                } else {
+                    if (resposta.status === 400 && Array.isArray(dados.erros)) {
+                        dados.erros.forEach(erro => {
+                            MostrarErro(`erro-${erro.campo}`, erro.mensagem);
+                        });
+                    }
+                    MostrarResultado_Overlay(0, mensagemResposta(resposta, dados));
+                }
+            } catch {
+                MostrarResultado_Overlay(0, 'Não foi possível confirmar o cadastro. Consulte suas categorias antes de tentar novamente.');
+            } finally {
+                loading.style.display = 'none';
+                enviando = false;
+                botaoEnviar.disabled = !sessaoPronta;
+            }
+        });
+
+        document.getElementById('meuForm-Logout').addEventListener('submit', async (evento) => {
+            evento.preventDefault();
+            loading.style.display = 'flex';
+            try {
+                const resposta = await fetch('/logout', { method: 'POST', credentials: 'include' });
+                const dados = await resposta.json();
+                if (resposta.status === 200) {
+                    localStorage.removeItem('tipo');
+                    window.location.href = '/login';
+                } else {
+                    MostrarResultado_Overlay(0, mensagemResposta(resposta, dados));
+                }
+            } catch {
+                MostrarResultado_Overlay(0, 'Não foi possível sair. Tente novamente.');
+            } finally {
+                loading.style.display = 'none';
+            }
+        });
+
+        async function iniciar() {
+            loading.style.display = 'flex';
+            try {
+                const usuario = await protegerPagina();
+                if (!usuario) return;
+                document.getElementById('nome-usuario').textContent = usuario.nome.slice(0, 8);
+                sessaoPronta = true;
+                botaoEnviar.disabled = !sessaoPronta;
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        iniciar();
+    </script>
+</body>
+
+</html>

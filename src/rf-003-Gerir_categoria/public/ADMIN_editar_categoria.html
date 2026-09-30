@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editar categoria — CashLand</title>
+    <link rel="stylesheet" href="/template.css">
+</head>
+
+<body>
+    <div class="loading-overlay" id="loading-overlay" role="status">
+        <div class="loading-box">
+            <p>Carregando...</p>
+            <div class="spinning-wheel" aria-hidden="true"></div>
+        </div>
+    </div>
+
+    <div class="loading-overlay" id="resultado-overlay" role="dialog" aria-modal="true"
+        aria-labelledby="resultado-titulo" style="display: none;">
+        <div class="loading-box dialogo-conteudo">
+            <h2 id="resultado-titulo"></h2>
+            <p id="resultado-mensagem" style="white-space: pre-line;"></p>
+            <button id="fechar-resultado" type="button">Continuar</button>
+        </div>
+    </div>
+
+    <div id="container" hidden>
+        <div id="div-superior">
+
+            <div id="div-nome-sistema">
+                <a href="/tela-admin">
+                    <h1>CashLand</h1>
+                </a>
+            </div>
+
+            <div id="div-nav">
+                <nav>
+                    <a href="/tela-admin/listar-usuarios">Gerir Usuarios</a>
+                </nav>
+            </div>
+            <div id="div-nome-usuario">
+                <h3><span id="nome-usuario"></span></h3>
+            </div>
+            <div id="div-usuario">
+                <a onclick="redirecionaAdminEditar()">
+                    <img src="/User_icon_black.png" alt="icone usuario">
+                </a>
+            </div>
+            <div id="form-logout">
+                <form id="meuForm-Logout">
+                    <input type="submit" value="Sair">
+                </form>
+            </div>
+
+        </div>
+
+        <main id="container-conteudo">
+            <div class="cartao">
+                <h2>Editar categoria</h2>
+                <form id="form-categoria">
+                    <label for="id_categoria">ID da Categoria</label>
+                    <input id="id_categoria" readonly disabled>
+
+                    <label for="nome">Nome</label>
+                    <input id="nome" required minlength="3" maxlength="100">
+
+                    <label for="descricao">Descrição</label>
+                    <input id="descricao" minlength="3" maxlength="100">
+
+                    <div class="acoes-formulario">
+                        <button type="button" onclick="window.history.back()"
+                            class="btn-secondary">Voltar</button>
+                        <button id="salvar" type="submit" disabled>Salvar Alterações</button>
+                    </div>
+                </form>
+            </div>
+        </main>
+    </div>
+
+    <script src="/protecao.js"></script>
+    <script>
+        // Captura os parâmetros corretos da URL
+        const urlParams = new URLSearchParams(location.search);
+        const idCat = urlParams.get('id');
+
+        const loading = document.getElementById('loading-overlay');
+        const resultado = document.getElementById('resultado-overlay');
+        const conteudo = document.getElementById('container');
+        const form = document.getElementById('form-categoria');
+        const salvar = document.getElementById('salvar');
+        const fechar = document.getElementById('fechar-resultado');
+
+        const idCategoriaRecebido = new URLSearchParams(location.search).get('id');
+
+        let voltarAoLogin = false;
+        let sessaoPronta = false;
+        let enviando = false;
+        let usuarioGlobal = null;
+
+        function mostrarResultado(sucesso, mensagem) {
+            const titulo = document.getElementById('resultado-titulo');
+            titulo.textContent = sucesso ? 'Sucesso' : 'Não foi possível concluir';
+            titulo.style.color = sucesso ? 'green' : 'darkred';
+            document.getElementById('resultado-mensagem').textContent = mensagem;
+            resultado.style.display = 'flex';
+            conteudo.inert = true;
+            fechar.focus();
+        }
+
+        fechar.addEventListener('click', () => {
+            resultado.style.display = 'none';
+            conteudo.inert = false;
+            if (voltarAoLogin) location.href = '/login';
+            else salvar.focus();
+        });
+
+        async function redirecionaAdminEditar() {
+            const usuario = await protegerPagina("Admin");
+            if (!usuario) return;
+            window.location.href = `/tela-admin/editar-usuarios?id=${usuario.id_usuario}`;
+        }
+
+        document.getElementById('meuForm-Logout').addEventListener('submit', async (evento) => {
+            evento.preventDefault();
+            loading.style.display = 'flex';
+            try {
+                const resposta = await fetch('/logout', {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                if (!resposta.ok) throw new Error('Falha ao sair. Tente novamente.');
+
+                localStorage.removeItem('tipo');
+                window.location.href = '/login';
+            } catch (erro) {
+                mostrarResultado(false, erro.message);
+            } finally {
+                loading.style.display = 'none';
+            }
+        });
+
+        async function carregarDadosCategoria() {
+            try {
+                // Faz a requisição enviando id_categoria e id_usuario conforme o Servidor.js espera
+                const resposta = await fetch(`/admin/listar-categoria?id_categoria=${idCat}`, {
+                    method: 'GET',
+                    credentials: 'include'
+                });
+
+                if (!resposta.ok) {
+                    throw new Error('Falha ao carregar categorias. ');
+                }
+
+                const dadosResposta = await resposta.json();
+                console.log(dadosResposta)
+
+                // O servidor do teu colega devolve um objeto { consultaTudo } quando mandamos ambos os IDs
+
+                if (!dadosResposta) {
+                    mostrarResultado(false, 'Categoria não encontrada. Verifique os IDs.');
+                    salvar.disabled = true;
+                    return;
+                }
+
+                console.log(dadosResposta.id_categoria)
+                document.getElementById('id_categoria').value = dadosResposta.id_categoria;
+                document.getElementById('nome').value = dadosResposta.nome;
+                document.getElementById('descricao').value = dadosResposta.descricao || '';
+            } catch (erro) {
+                mostrarResultado(false, 'Erro ao comunicar com a API para buscar dados.' + erro.message);
+            }
+        }
+
+        async function iniciar() {
+            if (!idCategoriaRecebido) {
+                alert('ID da categoria não fornecido na URL.');
+                window.history.back();
+                return;
+            }
+
+            loading.style.display = 'flex';
+            try {
+                const usuario = await protegerPagina("Admin");
+                if (!usuario) return;
+
+                usuarioGlobal = usuario;
+                document.getElementById('nome-usuario').textContent = usuario.nome.slice(0, 8);
+                await carregarDadosCategoria();
+
+                conteudo.hidden = false;
+                sessaoPronta = true;
+                salvar.disabled = false;
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        form.addEventListener('submit', async (evento) => {
+            evento.preventDefault();
+            if (!sessaoPronta || enviando) return;
+
+            enviando = true;
+            salvar.disabled = true;
+            loading.style.display = 'flex';
+
+            try {
+                // Ajustado para a rota admin de edição exigindo os IDs e dados
+                const resposta = await fetch('/admin/editar-categoria', {
+                    method: 'PATCH',
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        id_categoria: parseInt(idCategoriaRecebido),
+                        nome: document.getElementById('nome').value.trim(),
+                        descricao: document.getElementById('descricao').value.trim()
+                    })
+                });
+
+                const tipo = resposta.headers.get('content-type') || '';
+                if (!tipo.includes('application/json')) {
+                    mostrarResultado(false, `Resposta inesperada da API (HTTP ${resposta.status}).`);
+                    return;
+                }
+
+                const dados = await resposta.json();
+                const detalhes = Array.isArray(dados.erros)
+                    ? dados.erros.map(erro => erro.mensagem).join('\n') : '';
+                const mensagem = dados.mensagem || dados.erro ||
+                    (resposta.ok ? 'Operação concluída.' : `Falha (HTTP ${resposta.status}).`);
+
+                if (!resposta.ok) {
+                    voltarAoLogin = resposta.status === 401;
+                    mostrarResultado(false, detalhes ? `${mensagem}\n${detalhes}` : mensagem);
+                    return;
+                }
+
+                mostrarResultado(true, mensagem);
+            } catch {
+                mostrarResultado(false, 'Não foi possível confirmar o resultado. Verifique a conexão.');
+            } finally {
+                loading.style.display = 'none';
+                enviando = false;
+                salvar.disabled = voltarAoLogin;
+            }
+        });
+
+        iniciar();
+    </script>
+</body>
+
+</html>

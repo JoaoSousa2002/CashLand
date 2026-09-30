@@ -121,6 +121,11 @@ app.get('/tela-principal/editar-usuario', (req, res) => {
     res.sendFile(path.join(__dirname, '../rf-002-Cadastro_usuario/public/editar_usuario.html'));
 });
 
+app.get('/tela-principal/listar-categoria', (req, res) => {
+    res.sendFile(path.join(__dirname, '../rf-003-Gerir_categoria/public/listar_categoria.html'));
+});
+
+
 app.get('/tela-admin', (req, res) => {
     res.sendFile(path.join(__dirname, 'public/tela_admin.html'));
 });
@@ -132,6 +137,28 @@ app.get('/tela-admin/listar-usuarios', (req, res) => {
 app.get('/tela-admin/editar-usuarios', (req, res) => {
     res.sendFile(path.join(__dirname, '../rf-002-Cadastro_usuario/public/ADMIN_editar_usuario.html'));
 });
+
+// RF003 - Gerir Categorias ====================================================================================
+
+// OK
+app.get('/tela-admin/editar-categoria', (req, res) => {
+    res.sendFile(path.join(__dirname, '../rf-003-Gerir_categoria/public/ADMIN_editar_categoria.html'));
+});
+
+app.get('/tela-admin/listar-categoria', (req, res) => {
+    res.sendFile(path.join(__dirname, '../rf-003-Gerir_categoria/public/ADMIN_listar_categoria.html'));
+});
+
+// 
+app.get('/tela-principal/criar-categoria', (req, res) => {
+    res.sendFile(path.join(__dirname, '../rf-003-Gerir_categoria/public/criar_categoria.html'));
+});
+
+app.get('/tela-principal/editar-categoria', (req, res) => {
+    res.sendFile(path.join(__dirname, '../rf-003-Gerir_categoria/public/editar_categoria.html'));
+});
+
+
 
 
 const supabase = createClient(
@@ -1205,14 +1232,15 @@ app.get('/admin/listar-categoria', auditar('ADMIN_LISTAR_CATEGORIA', req => req.
             .from('categorias')
             .select('*, usuarios (id_usuario, nome)')
             .eq('id_categoria', id_categoria)
-            .order('id_categoria', { ascending: true });
+            .maybeSingle();
 
         if (error) {
             console.log("/admin/listar-categoria(Com ID): >>>>> Erro ao consultar a categoria: " + error);
             return res.status(500).json({ mensagem: "Ocorreu um erro ao consultar a categoria" });
         }
         console.log("/admin/listar-categoria: Dados da categoria retornados");
-        return res.status(200).json({ consultaPorID });
+        console.log(consultaPorID)
+        return res.status(200).json(consultaPorID);
     }
 
     // Verifica se recebeu apenas o id_usuario
@@ -1234,14 +1262,14 @@ app.get('/admin/listar-categoria', auditar('ADMIN_LISTAR_CATEGORIA', req => req.
             .from('categorias')
             .select('*, usuarios (id_usuario, nome)')
             .eq('id_usuario', id_usuario)
-            .order('id_categoria', { ascending: true })
+            .order('id_categoria', { ascending: true });
 
         if (error) {
-            console.log("/admin/listar-categoria(Com ID): >>>>> Erro em consultar as categorias do usuario: " + error)
+            console.log("/admin/listar-categoria(Com ID): >>>>> Erro em consultar as categorias do usuario: " + error.message)
             return res.status(500).json({ mensagem: "Ocorreu um erro ao consultar as categorias do usuario" })
         }
         console.log("/admin/listar-usuario: Dados do usuario retornados")
-        return res.status(200).json({ consultaPorID })
+        return res.status(200).json( consultaPorID )
     }
 
     if (id_categoria && id_usuario) {
@@ -1260,7 +1288,7 @@ app.get('/admin/listar-categoria', auditar('ADMIN_LISTAR_CATEGORIA', req => req.
             return res.status(404).json({ mensagem: "Categoria não encontrada para o usuário informado" });
         }
 
-        return res.status(200).json({ consultaTudo });
+        return res.status(200).json(consultaTudo );
     }
     // retorna TODAS as categorias
     const { data: consultaPorID, error } = await supabase
@@ -1273,7 +1301,7 @@ app.get('/admin/listar-categoria', auditar('ADMIN_LISTAR_CATEGORIA', req => req.
         return res.status(500).json({ mensagem: "Ocorreu um erro ao consultar as categorias" })
     }
     console.log("Sucesso em consultar as categorias")
-    return res.status(200).json({ consultaPorID })
+    return res.status(200).json( consultaPorID )
 })
 
 app.patch('/admin/editar-categoria', auditar('ADMIN_EDITAR_CATEGORIA', req => req.usuario?.id_usuario, false), autenticar, somenteAdmin, validar(schemaIdCategoriaObrigatorio, schemaNome, schemaDescricaoCategoria), async (req, res) => {

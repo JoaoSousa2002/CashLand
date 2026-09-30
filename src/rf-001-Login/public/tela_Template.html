@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Administração — CashLand</title>
+    <title>CashLand</title>
     <link rel="stylesheet" href="/template.css">
 </head>
 
@@ -26,21 +26,21 @@
         <div id="div-superior">
 
             <div id="div-nome-sistema">
-                <a href="/tela-admin">
+                <a href="/tela-principal">
                     <h1>CashLand</h1>
                 </a>
             </div>
 
             <div id="div-nav">
                 <nav>
-                    <a href="/tela-admin/listar-usuarios">Gerir Usuarios</a>
+                    <a href="/tela-principal/listar-categoria">Categorias</a>
                 </nav>
             </div>
             <div id="div-nome-usuario">
                 <h3><span id="nome-usuario"></span></h3>
             </div>
             <div id="div-usuario">
-                <a onclick="redirecionaAdminEditar()">
+                <a onclick="redirecionaTela()">
                     <img src="/User_icon_black.png" alt="icone usuario">
                 </a>
             </div>
@@ -49,13 +49,14 @@
                     <input type="submit" value="Sair">
                 </form>
             </div>
+        </div>
+        <div id="container-conteudo">
 
         </div>
     </div>
 
     <script>
         let retonarLogin = false;
-        let retonarTelaPrincipal = false;
         const loading = document.getElementById("loading-overlay");
         const resultado_overlay = document.getElementById("resultado-overlay");
 
@@ -87,20 +88,14 @@
             }
         }
         function FechaResultado_overlay() {
-            resultado_overlay.style.display = "none"
-            if (retonarLogin) {
+            if (!retonarLogin) {
+                resultado_overlay.style.display = "none"
+            } else if (retonarLogin) {
                 window.location.href = "/login"
-            } else if (retonarTelaPrincipal) {
-                window.location.href = '/tela-principal';
             }
-
-        }
-
-        async function redirecionaAdminEditar(){
-            const resultado = await protegerPagina()
-            window.location.href = `/tela-admin/editar-usuarios?id=${resultado.id_usuario}`
         }
         async function protegerPagina(tipoExigido = null) {
+
             try {
                 const resposta = await fetch('/me', {
                     method: 'GET',
@@ -109,8 +104,8 @@
                 const usuario = await resposta.json();
                 switch (resposta.status) {
                     case 200:
-                        console.log("Usuario autenticado")
                         loading.style.display = 'none'
+                        console.log("Usuario autenticado")
                         break;
                     case 401:
                         loading.style.display = 'none'
@@ -123,11 +118,8 @@
                 }
 
                 if (tipoExigido && usuario.tipo !== tipoExigido) {
-                    loading.style.display = 'none'
-                    console.log("Acesso negado")
-                    resultado_overlay.style.display = "flex";
-                    MostrarResultado_Overlay(0, "Acesso restrito a administradores!")
-                    retonarTelaPrincipal = true;
+                    window.location.href = '/tela-principal'; // logado, mas sem permissão
+                    return;
                 }
 
                 return usuario; // devolve os dados pra página usar (ex: mostrar nome)
@@ -137,7 +129,15 @@
             }
         }
 
-        protegerPagina("Admin").then(usuario => {
+        async function redirecionaTela(){
+            const data = await protegerPagina()
+            if (data.tipo === 'Comum') {
+                window.location.href = '/tela-principal/editar-usuario'
+            } else if (data.tipo === 'Admin') {
+                window.location.href = `/tela-admin/editar-usuarios?id=${data.id_usuario}`
+            }
+        }
+        protegerPagina().then(usuario => {
             document.getElementById('nome-usuario').textContent = usuario.nome.slice(0, 8);
         });
 

@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CashLand - Editar Categoria</title>
+    
+    <link rel="stylesheet" href="/template.css">
+</head>
+<body>
+
+    <div id="container">
+    <header id="div-superior">
+        <div id="div-nome-sistema">
+            <a href="/tela-principal"><h1>CashLand</h1></a>
+        </div>
+        <div id="div-nav"><nav>
+            <a href="/tela-principal">Início</a>
+            <a href="/tela-principal/listar-categoria">Categorias</a>
+            <a href="/login" class="btn-logout">Sair</a>
+        </nav></div>
+    </header>
+
+    <main id="container-conteudo">
+        <section class="cartao">
+            <h2>Editar Categoria</h2>
+            <p class="texto-auxiliar">Atualize os detalhes da categoria selecionada.</p>
+
+            <form id="form-editar-categoria" onsubmit="salvarCategoria(event)">
+                <input type="hidden" id="categoria-id" name="id" value="">
+
+                <div class="input-dados">
+                    <label for="nome">Nome da Categoria</label>
+                    <input 
+                        type="text" 
+                        id="nome" 
+                        name="nome" 
+                        placeholder="Ex: Alimentação, Salário, Lazer..." 
+                        required
+                    >
+                    <span class="error-message" id="erro-nome">O nome da categoria é obrigatório.</span>
+                </div>
+
+                <div class="campos-lado-a-lado">
+                    <div class="input-dados">
+                        <label for="tipo">Tipo de Categoria</label>
+                        <select id="tipo" name="tipo" required>
+                            <option value="DESPESA">Despesa</option>
+                            <option value="RECEITA">Receita</option>
+                        </select>
+                    </div>
+
+                    <div class="input-dados">
+                        <label for="cor">Cor da Categoria</label>
+                        <div class="color-picker-wrapper">
+                            <input 
+                                type="color" 
+                                id="cor" 
+                                name="cor" 
+                                value="#3b82f6"
+                            >
+                            <span class="texto-auxiliar">Clique para alterar</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="input-dados">
+                    <label for="descricao">Descrição (Opcional)</label>
+                    <textarea 
+                        id="descricao" 
+                        name="descricao" 
+                        placeholder="Descreva a finalidade desta categoria..."
+                    ></textarea>
+                </div>
+
+                <div class="input-dados">
+                    <label for="status">Estado</label>
+                    <select id="status" name="status" required>
+                        <option value="ATIVA">Ativa</option>
+                        <option value="INATIVA">Inativa</option>
+                    </select>
+                </div>
+
+                <div class="acoes-formulario">
+                    <button type="button" class="btn-secondary" onclick="window.history.back()">Cancelar</button>
+                    <button type="submit" class="btn-primary">Guardar Alterações</button>
+                </div>
+            </form>
+        </section>
+    </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const categoriaId = urlParams.get('id');
+
+            if (categoriaId) {
+                document.getElementById('categoria-id').value = categoriaId;
+                carregarDadosCategoria(categoriaId);
+            }
+        });
+
+        async function carregarDadosCategoria(id) {
+            try {
+                const response = await fetch(`/api/categorias/${id}`);
+                if (response.ok) {
+                    const categoria = await response.json();
+                    document.getElementById('nome').value = categoria.nome || '';
+                    document.getElementById('tipo').value = categoria.tipo || 'DESPESA';
+                    document.getElementById('cor').value = categoria.cor || '#3b82f6';
+                    document.getElementById('descricao').value = categoria.descricao || '';
+                    document.getElementById('status').value = categoria.status || 'ATIVA';
+                }
+            } catch (error) {
+                console.error('Erro ao carregar dados da categoria:', error);
+            }
+        }
+
+        async function salvarCategoria(event) {
+            event.preventDefault();
+
+            const id = document.getElementById('categoria-id').value;
+            const nome = document.getElementById('nome').value;
+            const tipo = document.getElementById('tipo').value;
+            const cor = document.getElementById('cor').value;
+            const descricao = document.getElementById('descricao').value;
+            const status = document.getElementById('status').value;
+
+            if (!nome.trim()) {
+                document.getElementById('erro-nome').style.display = 'block';
+                return;
+            }
+
+            const dados = { nome, tipo, cor, descricao, status };
+
+            try {
+                const resposta = await fetch(`/api/categorias/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(dados)
+                });
+
+                if (resposta.ok) {
+                    alert('Categoria atualizada com sucesso!');
+                    window.location.href = 'tela.html';
+                } else {
+                    alert('Erro ao atualizar a categoria.');
+                }
+            } catch (erro) {
+                console.error('Erro na ligação:', erro);
+                alert('Erro ao ligar ao servidor.');
+            }
+        }
+    </script>
+</body>
+</html>

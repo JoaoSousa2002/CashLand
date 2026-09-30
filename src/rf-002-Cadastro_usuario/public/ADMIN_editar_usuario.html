@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Editar usuario</title>
+    <title>Editar usuário — Admin — CashLand</title>
     <link rel="stylesheet" href="/template.css">
 </head>
 
@@ -55,53 +55,59 @@
         </div>
 
         <div id="container-conteudo">
-            <div id="div-Cadastro" class="cartao">
-                <form id="meuForm-editar-cadastro">
-                    <div id="id-Titulo">
-                        <h2>Atualizar dados</h2>
-                        <input type="button" value="Voltar" id="botao-Voltar"
-                            onclick="location.href='/tela-admin/listar-usuarios'">
-                    </div>
-                    <div class="input-dados">
-                        <label for="Email">Nome:</label><br>
-                        <input type="text" name="Nome" id="nome" placeholder="Ex: Daniel">
-                    </div>
-                    <div id="erro-nome"></div>
-
-                    <div class="input-dados">
-                        <label for="Email">Email:</label><br>
-                        <input type="email" name="Email" id="email" placeholder="Ex: Daniel@gmail.com">
-                    </div>
-                    <div id="erro-email"></div>
-
-                    <div class="input-dados">
-                        <label for="senha">Senha </label><br>
-                        <div id="campo-senha" class="campo-senha campo-senha-reset">
-                            <input type="text" name="senha" id="senha" value="•••••••••••" disabled>
-                            <button type="button" onclick="confirmarResetSenha()">Resetar senha</button>
+            <div>
+                <div id="div-Cadastro" class="cartao">
+                    <form id="meuForm-editar-cadastro">
+                        <div id="id-Titulo">
+                            <h2>Atualizar dados</h2>
+                            <input type="button" value="Voltar" id="botao-Voltar"
+                                onclick="location.href='/tela-admin/listar-usuarios'">
                         </div>
-                    </div>
+                        <div class="input-dados">
+                            <label for="Email">Nome:</label><br>
+                            <input type="text" name="Nome" id="nome" placeholder="Ex: Daniel">
+                        </div>
+                        <div id="erro-nome"></div>
 
-                    <div class="input-dados">
-                        <label for="Email">Status: </label><br>
-                        <input type="text" name="status" id="status" disabled>
-                    </div>
+                        <div class="input-dados">
+                            <label for="Email">Email:</label><br>
+                            <input type="email" name="Email" id="email" placeholder="Ex: Daniel@gmail.com">
+                        </div>
+                        <div id="erro-email"></div>
 
-                    <div class="input-dados">
-                        <label for="data-criacao">data criacao: </label><br>
-                        <input type="text" name="data-criacao" id="data-criacao" disabled>
-                    </div>
-                    <div class="input-dados">
-                        <label for="data-inativacao">data inativação: </label><br>
-                        <input type="text" name="data-inativacao" id="data-inativacao" disabled>
-                    </div>
+                        <div class="input-dados">
+                            <label for="senha">Senha </label><br>
+                            <div id="campo-senha" class="campo-senha campo-senha-reset">
+                                <input type="text" name="senha" id="senha" value="•••••••••••" disabled>
+                                <button type="button" onclick="confirmarResetSenha()">Resetar senha</button>
+                            </div>
+                        </div>
 
-                    <div id="input-submit">
-                        <input type="submit" value="Atualizar" id="botao-Enviar">
-                        <input type="button" onclick="confirmarDesativarConta()" value="Ativar/Desativar conta">
-                    </div>
+                        <div class="input-dados">
+                            <label for="Email">Status: </label><br>
+                            <input type="text" name="status" id="status" disabled>
+                        </div>
 
-                </form>
+                        <div class="input-dados">
+                            <label for="data-criacao">data criacao: </label><br>
+                            <input type="text" name="data-criacao" id="data-criacao" disabled>
+                        </div>
+                        <div class="input-dados">
+                            <label for="data-inativacao">data inativação: </label><br>
+                            <input type="text" name="data-inativacao" id="data-inativacao" disabled>
+                        </div>
+
+                        <div id="input-submit">
+                            <input type="submit" value="Atualizar" id="botao-Enviar">
+                            <input type="button" onclick="confirmarDesativarConta()" value="Ativar/Desativar conta">
+                        </div>
+
+                    </form>
+                </div>
+                <div class="cartao cartao-acoes">
+                    <input type="button" value="Categorias financeiras"
+                        onclick="location.href='/tela-admin/listar-categoria?id=' + encodeURIComponent(idUsuario)">
+                </div>
             </div>
         </div>
     </div>
@@ -130,7 +136,7 @@
         }
         function MostrarErro(id, mensagem) {
             document.getElementById(id).innerHTML = `
-            <h5 style="color: rgb(160, 2, 2); margin-left: 80px; font-size:13px">${mensagem}</h5> `;
+            <h5 style="color: var(--erro); margin-left: 80px; font-size:13px">${mensagem}</h5> `;
         }
 
 
@@ -138,23 +144,23 @@
             if (tipo == 1) {
                 document.getElementById("resultado-funcao").innerHTML =
                     `<div id="div-resultado-overlay"
-                    style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 20px;">
+                    class="dialogo-conteudo">
                     <div>
-                        <h5 style="color: rgb(103, 198, 40); margin: 0;">${mensagem}</h5>
+                        <h5 style="color: var(--sucesso); margin: 0;">${mensagem}</h5>
                     </div>
-                    <div style="display: flex; align-items: center; justify-content: center;">
-                     <input style="width: 100px;" type="button" onclick="FechaResultado_overlay()" value="Continuar">
+                    <div class="acoes-formulario">
+                     <input class="botao-dialogo" type="button" onclick="FechaResultado_overlay()" value="Continuar">
                     </div>
                 </div>`
             } else {
                 document.getElementById("resultado-funcao").innerHTML =
                     `<div id="div-resultado-overlay"
-                    style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center gap: 20px;">
+                    class="dialogo-conteudo">
                     <div>
-                        <h5 style="color: rgb(160, 2, 2); margin: 0;">${mensagem}</h5>
+                        <h5 style="color: var(--erro); margin: 0;">${mensagem}</h5>
                     </div>
-                    <div style="display: flex; align-items: center; justify-content: center;">
-                     <input style="width: 100px;" type="button" onclick="FechaResultado_overlay()" value="Continuar">
+                    <div class="acoes-formulario">
+                     <input class="botao-dialogo" type="button" onclick="FechaResultado_overlay()" value="Continuar">
                     </div>
                 </div>`
             }
@@ -163,14 +169,14 @@
             resultado_overlay.style.display = "flex";
             document.getElementById("resultado-funcao").innerHTML =
                 `<div id="div-resultado-overlay"
-                    style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 20px;">
+                    class="dialogo-conteudo">
                     <div>
-                        <h5 style="color: rgb(160, 2, 2); margin: 0;">Tem certeza que deseja resetar a senha desse usuario?</h5>
-                        <p style="color: rgb(160, 2, 2); margin: 0; font-size: 13px">Essa ação não poderá ser desfeita</p>
+                        <h5 style="color: var(--erro); margin: 0;">Tem certeza que deseja resetar a senha desse usuario?</h5>
+                        <p style="color: var(--erro); margin: 0; font-size: 13px">Essa ação não poderá ser desfeita</p>
                     </div>
-                    <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
-                     <input style="width: 100px;" type="button" onclick="redirecionaResetSenha()" value="Continuar">
-                     <input style="width: 100px;" type="button" onclick="resultado_overlay.style.display = 'none'" value="Cancelar">
+                    <div class="acoes-formulario">
+                     <input class="botao-dialogo" type="button" onclick="redirecionaResetSenha()" value="Continuar">
+                     <input class="botao-dialogo" type="button" onclick="resultado_overlay.style.display = 'none'" value="Cancelar">
                     </div>
                 </div>`
         }
@@ -187,25 +193,25 @@
             if (usuario.status_usuario === "Ativo") {
                 document.getElementById("resultado-funcao").innerHTML =
                     `<div id="div-resultado-overlay"
-                        style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 20px;">
+                        class="dialogo-conteudo">
                         <div>
-                            <h5 style="color: rgb(160, 2, 2); margin: 0;">Tem certeza que deseja desativar essa conta?</h5>
+                            <h5 style="color: var(--erro); margin: 0;">Tem certeza que deseja desativar essa conta?</h5>
                         </div>
-                        <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
-                         <input style="width: 100px;" type="button" onclick="desativarConta()" value="Continuar">
-                         <input style="width: 100px;" type="button" onclick="resultado_overlay.style.display = 'none'" value="Cancelar">
+                        <div class="acoes-formulario">
+                         <input class="botao-dialogo" type="button" onclick="desativarConta()" value="Continuar">
+                         <input class="botao-dialogo" type="button" onclick="resultado_overlay.style.display = 'none'" value="Cancelar">
                         </div>
                     </div>`
             } else if (usuario.status_usuario === "Inativo") {
                 document.getElementById("resultado-funcao").innerHTML =
                     `<div id="div-resultado-overlay"
-                        style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 20px;">
+                        class="dialogo-conteudo">
                         <div>
-                            <h5 style="color: rgb(103, 198, 40); margin: 0;">Tem certeza que deseja Reativar essa conta?</h5>
+                            <h5 style="color: var(--sucesso); margin: 0;">Tem certeza que deseja Reativar essa conta?</h5>
                         </div>
-                        <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
-                         <input style="width: 100px;" type="button" onclick="AtivarConta()" value="Continuar">
-                         <input style="width: 100px;" type="button" onclick="resultado_overlay.style.display = 'none'" value="Cancelar">
+                        <div class="acoes-formulario">
+                         <input class="botao-dialogo" type="button" onclick="AtivarConta()" value="Continuar">
+                         <input class="botao-dialogo" type="button" onclick="resultado_overlay.style.display = 'none'" value="Cancelar">
                         </div>
                     </div>`
             }
@@ -407,9 +413,9 @@
             </div>
             <div id="erro-senha"></div>
         </div>
-        <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
-            <input style="width: 100px;" type="submit" value="Confirmar">
-            <input style="width: 100px;" type="button" onclick="senha_overlay.style.display = 'none'" value="Cancelar">
+        <div class="acoes-formulario">
+            <input class="botao-dialogo" type="submit" value="Confirmar">
+            <input class="botao-dialogo" type="button" onclick="senha_overlay.style.display = 'none'" value="Cancelar">
         </div>
     </form>
 </div>`
@@ -479,6 +485,7 @@
 
             })
         }
+        
         protegerPagina("Admin").then(usuario => {
             document.getElementById('nome-usuario').textContent = usuario.nome.slice(0, 8);
 
