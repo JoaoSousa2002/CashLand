@@ -133,10 +133,28 @@ app.get('/tela-admin/editar-usuarios', (req, res) => {
     res.sendFile(path.join(__dirname, '../rf-002-Cadastro_usuario/public/ADMIN_editar_usuario.html'));
 });
 
+app.get('/tela-principal/categorias', (req, res) => {
+    res.sendFile(path.join(__dirname, '../rf-003-Gerir_categoria/public/listar_categoria.html'));
+});
+
+app.get('/tela-admin/categorias', (req, res) => {
+    res.sendFile(path.join(__dirname, '../rf-003-Gerir_categoria/public/listar_categoria.html'));
+});
+
+
+const supabaseUrl = process.env.SUPABASE_URL
+    ?? process.env.SUPABASE_URL_3
+    ?? process.env.SUPABASE_URL_2
+    ?? process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseSecretKey = process.env.SUPABASE_SECRET_KEY
+    ?? process.env.SUPABASE_SECRET_KEY_3
+    ?? process.env.SUPABASE_SECRET_KEY_2
+    ?? process.env.SUPABASE_SERVICE_ROLE_KEY
+    ?? process.env.SUPABASE_SECRET_KEY_2;
 
 const supabase = createClient(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_SECRET_KEY,
+    supabaseUrl,
+    supabaseSecretKey,
     {
         realtime: {
             transport: ws
@@ -184,6 +202,7 @@ function somenteAdmin(req, res, next) {
 
 app.use(Express.static(path.join(__dirname, 'public')));
 app.use(Express.static(path.join(__dirname, '../rf-002-Cadastro_usuario/public')));
+app.use(Express.static(path.join(__dirname, '../rf-003-Gerir_categoria/public')));
 app.use(Express.static(path.join(__dirname, '../img')));
 
 

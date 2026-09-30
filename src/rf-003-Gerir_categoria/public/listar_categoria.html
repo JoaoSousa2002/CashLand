@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minhas categorias</title>
+    <link rel="stylesheet" href="/template.css">
+    <style>
+        #div-form-tabela,
+        #div-tabela {
+            background-color: var(--superficie);
+            border-radius: 12px;
+            box-shadow: var(--sombra);
+        }
+
+        #div-form-tabela,
+        #div-tabela {
+            width: calc(100% - 20px);
+            max-width: 1200px;
+            margin: 24px auto 0;
+            padding: 24px;
+        }
+
+        #div-form-tabela {
+            display: flex;
+            align-items: flex-end;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        #form-listar-categoria {
+            display: flex;
+            align-items: flex-end;
+            flex-wrap: wrap;
+            gap: 10px;
+            flex: 1 1 260px;
+        }
+
+        #form-listar-categoria label {
+            flex: 1 1 240px;
+        }
+
+        #form-listar-categoria label input {
+            margin-top: 5px;
+        }
+
+        #botao-nova-categoria {
+            font-weight: bold;
+            background-color: #cadaf2;
+            flex-shrink: 0;
+        }
+
+        #botao-nova-categoria:hover {
+            background-color: #b3c8ea;
+        }
+
+        #div-tabela {
+            overflow-x: auto;
+            margin-bottom: 24px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+            letter-spacing: 0.01em;
+            table-layout: fixed;
+        }
+
+        thead tr {
+            border-bottom: 2px solid #111;
+        }
+
+        th {
+            padding: 0.6rem 6px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #444;
+        }
+
+        #th-opcoes {
+            text-align: center;
+        }
+
+        td {
+            padding: 0.6rem 6px;
+            border-bottom: 1px solid #e8e8e8;
+            color: #111;
+            max-width: 220px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        td:last-of-type {
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        tbody tr:hover {
+            background-color: #f7f7f7;
+        }
+
+        #td-button {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        #td-button button {
+            padding: 6px 10px;
+            font-size: 13px;
+        }
+
+        #linha-vazia td {
+            text-align: center;
+            color: #666;
+            white-space: normal;
+        }
+
+        #form-categoria {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            text-align: left;
+            width: 320px;
+            max-width: 100%;
+        }
+
+        #form-categoria label {
+            display: block;
+        }
+
+        #form-categoria textarea {
+            width: 100%;
+            min-width: 0;
+            max-width: 100%;
+            padding: 10px;
+            border: 1px solid var(--borda);
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            color: inherit;
+            resize: vertical;
+        }
+
+        @media (max-width: 600px) {
+
+            #div-form-tabela,
+            #div-tabela {
+                width: calc(100% - 32px);
+                padding: 16px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="loading-box">
+            <div style="margin: auto 0;">
+                <p>Carregando... </p>
+            </div>
+            <div class="spinning-wheel"></div>
+        </div>
+    </div>
+
+    <div class="loading-overlay" id="resultado-overlay">
+        <div class="loading-box" id="resultado-funcao">
+        </div>
+    </div>
+
+    <div id="container">
+        <div id="div-superior">
+
+            <div id="div-nome-sistema">
+                <a href="/tela-principal">
+                    <h1>CashLand</h1>
+                </a>
+            </div>
+
+            <div id="div-nav">
+                <nav>
+                    <a href="/tela-principal/categorias">Categorias</a>
+                </nav>
+            </div>
+            <div id="div-nome-usuario">
+                <h3><span id="nome-usuario"></span></h3>
+            </div>
+            <div id="div-usuario">
+                <a onclick="redirecionaTela()">
+                    <img src="/User_icon_black.png" alt="icone usuario">
+                </a>
+            </div>
+            <div id="form-logout">
+                <form id="meuForm-Logout">
+                    <input type="submit" value="Sair">
+                </form>
+            </div>
+        </div>
+
+        <div id="div-form-tabela">
+            <form id="form-listar-categoria">
+                <label for="pesquisa-categoria">Nome ou id da categoria:
+                    <input type="text" id="pesquisa-categoria" placeholder="Ex.: Alimentação ou 3">
+                </label>
+                <input type="submit" value="Pesquisar">
+            </form>
+            <button type="button" id="botao-nova-categoria" onclick="abrirFormularioCategoria()">+ Nova
+                categoria</button>
+        </div>
+
+        <div id="div-tabela">
+            <table>
+                <thead>
+                    <tr>
+                        <th scope="col" style="width: 70px;">id</th>
+                        <th scope="col" style="width: 220px;">nome</th>
+                        <th scope="col">descrição</th>
+                        <th scope="col" style="width: 130px;">data criação</th>
+                        <th id="th-opcoes" scope="col" style="width: 140px;">Opções</th>
+                    </tr>
+                </thead>
+                <tbody id="corpo-tabela">
+                    <!-- Preenchido dinamicamente pela função de listagem -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        let retornarLogin = false;
+        let recarregarPagina = false;
+        const loading = document.getElementById("loading-overlay");
+        const resultado_overlay = document.getElementById("resultado-overlay");
+
+        loading.style.display = 'flex'
+
+        function MostrarResultado_Overlay(tipo, mensagem) {
+            if (tipo == 1) {
+                document.getElementById("resultado-funcao").innerHTML =
+                    `<div id="div-resultado-overlay"
+                    style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 20px;">
+                    <div>
+                        <h5 style="color: rgb(103, 198, 40); margin: 0;">${mensagem}</h5>
+                    </div>
+                    <div style="display: flex; align-items: center; justify-content: center;">
+                     <input style="width: 100px;" type="button" onclick="FechaResultado_overlay(1)" value="Continuar">
+                    </div>
+                </div>`
+            } else {
+                document.getElementById("resultado-funcao").innerHTML =
+                    `<div id="div-resultado-overlay"
+                    style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 20px;">
+                    <div>
+                        <h5 style="color: rgb(160, 2, 2); margin: 0;">${mensagem}</h5>
+                    </div>
+                    <div style="display: flex; align-items: center; justify-content: center;">
+                     <input style="width: 100px;" type="button" onclick="FechaResultado_overlay(1)" value="Continuar">
+                    </div>
+                </div>`
+            }
+        }
+
+        function FechaResultado_overlay(num) {
+            if (num === 1) {
+                resultado_overlay.style.display = "none"
+                if (retornarLogin) {
+                    window.location.href = "/login"
+                } else if (recarregarPagina) {
+                    recarregarPagina = false;
+                    listarCategorias(document.getElementById("pesquisa-categoria").value);
+                }
+            }
+        }
+
+        async function protegerPagina(tipoExigido = null) {
+            try {
+                const resposta = await fetch('/me', {
+                    method: 'GET',
+                    credentials: 'include',
+                });
+                const usuario = await resposta.json();
+                switch (resposta.status) {
+                    case 200:
+                        loading.style.display = 'none'
+                        console.log("Usuario autenticado")
+                        break;
+                    case 401:
+                        loading.style.display = 'none'
+                        resultado_overlay.style.display = "flex";
+                        MostrarResultado_Overlay(0, usuario.mensagem)
+                        console.log(usuario.mensagem)
+                        retornarLogin = true;
+                    default:
+                        break;
+                }
+
+                if (tipoExigido && usuario.tipo !== tipoExigido) {
+                    window.location.href = '/tela-principal';
+                    return;
+                }
+
+                return usuario;
+            } catch {
+                localStorage.removeItem('tipo');
+                window.location.href = '/login';
+            }
+        }
+
+        async function redirecionaTela() {
+            const data = await protegerPagina()
+            if (data.tipo === 'Comum') {
+                window.location.href = '/tela-principal/editar-usuario'
+            } else if (data.tipo === 'Admin') {
+                window.location.href = `/tela-admin/editar-usuarios?id=${data.id_usuario}`
+            }
+        }
+
+        protegerPagina().then(usuario => {
+            document.getElementById('nome-usuario').textContent = usuario.nome.slice(0, 8);
+            listarCategorias();
+        });
+
+        document.getElementById("meuForm-Logout").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            await fetch('/logout', {
+                method: 'POST',
+                credentials: 'include'
+            });
+            localStorage.removeItem('tipo');
+            window.location.href = '/login';
+        });
+
+        function renderizarTabela(categorias) {
+            if (!categorias || categorias.length === 0) {
+                document.getElementById('corpo-tabela').innerHTML =
+                    `<tr id="linha-vazia"><td colspan="5">Nenhuma categoria encontrada.</td></tr>`;
+                return;
+            }
+            document.getElementById('corpo-tabela').innerHTML = categorias.map(c =>
+                `<tr>
+                    <td>${c.id_categoria}</td>
+                    <td>${c.nome}</td>
+                    <td>${c.descricao ?? '---'}</td>
+                    <td>${c.data_criacao ? new Date(c.data_criacao).toLocaleDateString('pt-BR') : '---'}</td>
+                    <td id="td-button">
+                        <button onclick='abrirFormularioCategoria(${JSON.stringify(c).replace(/'/g, "&#39;")})'>Editar</button>
+                        <button style="background-color: rgb(250, 176, 176);" onclick="confirmarDelete(${c.id_categoria})">Excluir</button>
+                    </td>
+                </tr>`
+            ).join("");
+        }
+
+        async function listarCategorias(pesquisa = "") {
+            const resposta = await fetch(`/usuario/listar-categoria?pesquisa=${encodeURIComponent(pesquisa)}`, {
+                method: 'GET',
+                credentials: 'include'
+            });
+            const dados = await resposta.json();
+
+            switch (resposta.status) {
+                case 200:
+                    renderizarTabela(dados);
+                    break;
+                case 404:
+                    renderizarTabela([]);
+                    break;
+                default:
+                    resultado_overlay.style.display = "flex";
+                    MostrarResultado_Overlay(0, dados.mensagem ?? "Erro ao listar categorias");
+                    break;
+            }
+        }
+
+        document.getElementById("form-listar-categoria").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const pesquisa = document.getElementById("pesquisa-categoria").value;
+            await listarCategorias(pesquisa);
+        });
+
+        function abrirFormularioCategoria(categoria = null) {
+            const editando = !!categoria;
+            resultado_overlay.style.display = "flex";
+            document.getElementById("resultado-funcao").innerHTML =
+                `<form id="form-categoria" onsubmit="return false;">
+                    <h3>${editando ? 'Editar categoria' : 'Nova categoria'}</h3>
+                    <div class="input-dados">
+                        <label for="input-nome-categoria">Nome:
+                            <input type="text" id="input-nome-categoria" value="${editando ? categoria.nome : ''}" maxlength="60" required>
+                        </label>
+                    </div>
+                    <div class="input-dados">
+                        <label for="input-descricao-categoria">Descrição:
+                            <textarea id="input-descricao-categoria" rows="3" maxlength="255">${editando ? (categoria.descricao ?? '') : ''}</textarea>
+                        </label>
+                    </div>
+                    <div id="input-submit">
+                        <input type="button" onclick="salvarCategoria(${editando ? categoria.id_categoria : 'null'})" value="Salvar">
+                        <input type="button" onclick="resultado_overlay.style.display = 'none'" value="Cancelar">
+                    </div>
+                </form>`
+        }
+
+        async function salvarCategoria(id_categoria) {
+            const nome = document.getElementById("input-nome-categoria").value.trim();
+            const descricao = document.getElementById("input-descricao-categoria").value.trim();
+
+            if (!nome) {
+                MostrarResultado_Overlay(0, "Informe o nome da categoria");
+                return;
+            }
+
+            const editando = id_categoria !== null;
+            const url = editando ? '/usuario/editar-categoria' : '/usuario/criar-categoria';
+            const metodo = editando ? 'PATCH' : 'POST';
+            const corpo = editando ? { id_categoria, nome, descricao } : { nome, descricao };
+
+            const resposta = await fetch(url, {
+                method: metodo,
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(corpo)
+            });
+            const dados = await resposta.json();
+
+            if (resposta.status === 200) {
+                MostrarResultado_Overlay(1, dados.mensagem);
+                recarregarPagina = true;
+            } else {
+                MostrarResultado_Overlay(0, dados.mensagem ?? "Erro ao salvar categoria");
+            }
+        }
+
+        function confirmarDelete(id) {
+            resultado_overlay.style.display = "flex";
+            document.getElementById("resultado-funcao").innerHTML =
+                `<div id="div-resultado-overlay"
+                    style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 20px;">
+                    <div>
+                        <h5 style="color: rgb(160, 2, 2); margin: 0;">Tem certeza que deseja excluir essa categoria?</h5>
+                        <p style="color: rgb(160, 2, 2); margin: 0; font-size: 13px">Essa ação não poderá ser desfeita</p>
+                    </div>
+                    <div style="display: flex; align-items: center; justify-content: center; gap:10px">
+                     <input style="width: 100px;" type="button" onclick="excluirCategoria(${id})" value="Continuar">
+                     <input style="width: 100px;" type="button" onclick="resultado_overlay.style.display = 'none'" value="Cancelar">
+                    </div>
+                </div>`
+        }
+
+        async function excluirCategoria(id_categoria) {
+            resultado_overlay.style.display = "none";
+            const resposta = await fetch('/usuario/deletar-categoria', {
+                method: 'DELETE',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id_categoria })
+            });
+            const dados = await resposta.json();
+
+            resultado_overlay.style.display = "flex";
+            if (resposta.status === 200) {
+                MostrarResultado_Overlay(1, dados.mensagem);
+                recarregarPagina = true;
+            } else {
+                MostrarResultado_Overlay(0, dados.mensagem ?? "Erro ao excluir categoria");
+            }
+        }
+    </script>
+</body>
+
+</html>
