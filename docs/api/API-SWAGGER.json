@@ -3,7 +3,7 @@
   "info": {
     "title": "CashLand API",
     "version": "1.0.0",
-    "description": "API de autenticação e gerenciamento do CashLand. A sessão usa o cookie HttpOnly token. POST /login e POST /confirmar-senha compartilham 5 requisições por IP a cada 5 minutos. POST /confirmar-cadastro permite 5 requisições por IP a cada 15 minutos. POST /logout, POST /solicitar-codigo, POST /solicitar-reset-senha e POST /confirmar-reset-senha compartilham 5 requisições por IP a cada 15 minutos. As rotas /admin não usam esses limitadores e exigem tipo Admin no JWT. Páginas HTML (/tela-admin e /tela-principal, incluindo suas subrotas) e a interface /api-docs não são operações desta API."
+    "description": "API de autenticação, gerenciamento de usuários e categorias do CashLand. A sessão usa o cookie HttpOnly token. POST /login e POST /confirmar-senha compartilham 8 requisições por IP a cada 5 minutos. POST /confirmar-cadastro permite 8 requisições por IP a cada 15 minutos. POST /logout, POST /solicitar-codigo, POST /solicitar-reset-senha e POST /confirmar-reset-senha compartilham 8 requisições por IP a cada 15 minutos. As rotas /admin não usam esses limitadores e exigem tipo Admin no JWT. Páginas HTML (/tela-admin e /tela-principal, incluindo suas subrotas) e a interface /api-docs não são operações desta API."
   },
   "servers": [
     {
@@ -70,16 +70,16 @@
                     "usuario": {
                       "type": "object",
                       "properties": {
-                        "id": {
-                          "type": "integer",
-                          "example": 1
-                        },
                         "nome": {
                           "type": "string"
                         },
                         "tipo": {
                           "type": "string",
                           "example": "Admin"
+                        },
+                        "id_usuario": {
+                          "type": "integer",
+                          "example": 1
                         }
                       }
                     }
@@ -89,14 +89,7 @@
             }
           },
           "400": {
-            "description": "Email e senha são obrigatórios",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Mensagem"
-                }
-              }
-            }
+            "$ref": "#/components/responses/DadosInvalidos"
           },
           "401": {
             "description": "Email ou senha inválidos",
@@ -206,14 +199,7 @@
             }
           },
           "400": {
-            "description": "Dados inválidos ou incompletos",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Mensagem"
-                }
-              }
-            }
+            "$ref": "#/components/responses/DadosInvalidos"
           },
           "401": {
             "description": "Código não solicitado, expirado ou incorreto.",
@@ -259,7 +245,8 @@
                 "type": "object",
                 "required": [
                   "nome",
-                  "email"
+                  "email",
+                  "senha"
                 ],
                 "properties": {
                   "nome": {
@@ -269,6 +256,12 @@
                   "email": {
                     "type": "string",
                     "example": "usuario@exemplo.com"
+                  },
+                  "senha": {
+                    "type": "string",
+                    "minLength": 10,
+                    "maxLength": 128,
+                    "example": "minhaSenha123"
                   }
                 }
               }
@@ -287,14 +280,7 @@
             }
           },
           "400": {
-            "description": "Dados inválidos ou incompletos",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Mensagem"
-                }
-              }
-            }
+            "$ref": "#/components/responses/DadosInvalidos"
           },
           "409": {
             "description": "Esse email já está cadastrado",
@@ -360,14 +346,7 @@
             }
           },
           "400": {
-            "description": "Email inválido ou não informado",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Mensagem"
-                }
-              }
-            }
+            "$ref": "#/components/responses/DadosInvalidos"
           },
           "404": {
             "description": "Email não cadastrado",
@@ -445,14 +424,7 @@
             }
           },
           "400": {
-            "description": "Dados inválidos ou incompletos (código inválido/expirado ou senha menor que 10 caracteres)",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Mensagem"
-                }
-              }
-            }
+            "$ref": "#/components/responses/DadosInvalidos"
           },
           "404": {
             "description": "Usuário não encontrado",
@@ -473,6 +445,19 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Mensagem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Código inexistente, incorreto ou expirado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                },
+                "example": {
+                  "mensagem": "codigo expirado"
                 }
               }
             }
@@ -575,12 +560,13 @@
         },
         "parameters": [
           {
-            "name": "id",
+            "name": "id_usuario",
             "in": "query",
             "required": false,
             "description": "ID a consultar; somente administradores podem informar este parâmetro.",
             "schema": {
-              "type": "integer"
+              "type": "integer",
+              "minimum": 0
             }
           }
         ]
@@ -648,7 +634,13 @@
             }
           },
           "400": {
-            "description": "Senha incorreta",
+            "$ref": "#/components/responses/DadosInvalidos"
+          },
+          "429": {
+            "$ref": "#/components/responses/LimiteLogin"
+          },
+          "401": {
+            "description": "Senha incorreta, sessão ausente ou token inválido/expirado.",
             "content": {
               "application/json": {
                 "schema": {
@@ -659,12 +651,6 @@
                 }
               }
             }
-          },
-          "429": {
-            "$ref": "#/components/responses/LimiteLogin"
-          },
-          "401": {
-            "$ref": "#/components/responses/NaoAutenticado"
           }
         },
         "requestBody": {
@@ -931,7 +917,7 @@
     "/admin/deletar-usuario": {
       "delete": {
         "summary": "Exclui permanentemente um usuário (Admin)",
-        "description": "Exige tipo Admin no token. Recebe o ID pela query string. Retorna sucesso mesmo quando nenhum usuário corresponde ao ID informado.",
+        "description": "Exige tipo Admin no token. Recebe id_usuario pela query string. Verifica a existência da conta e recusa a exclusão de contas Admin, incluindo a própria conta administrativa.",
         "tags": [
           "Administração de usuários"
         ],
@@ -967,23 +953,27 @@
             }
           },
           "400": {
-            "description": "Backend não recebeu o id",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Mensagem"
-                },
-                "example": {
-                  "mensagem": "Backend não recebeu o id"
-                }
-              }
-            }
+            "$ref": "#/components/responses/DadosInvalidos"
           },
           "401": {
             "$ref": "#/components/responses/NaoAutenticado"
           },
           "403": {
-            "$ref": "#/components/responses/SomenteAdmin"
+            "description": "Perfil não autorizado ou tentativa de excluir conta Admin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/Mensagem"
+                    },
+                    {
+                      "$ref": "#/components/schemas/Erro"
+                    }
+                  ]
+                }
+              }
+            }
           },
           "500": {
             "description": "Erro ao deletar o usuario, verifique o banco de dados",
@@ -994,6 +984,19 @@
                 },
                 "example": {
                   "mensagem": "Erro ao deletar o usuario, verifique o banco de dados"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Usuário não encontrado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                },
+                "example": {
+                  "mensagem": "Usuário não encontrado"
                 }
               }
             }
@@ -1043,12 +1046,13 @@
         },
         "parameters": [
           {
-            "name": "id",
+            "name": "id_usuario",
             "in": "query",
             "required": false,
             "description": "ID do usuário. Se omitido, usa o ID do JWT.",
             "schema": {
-              "type": "integer"
+              "type": "integer",
+              "minimum": 0
             }
           }
         ]
@@ -1057,7 +1061,7 @@
     "/admin/editar-usuario": {
       "patch": {
         "summary": "Atualiza nome e email de um usuário (Admin)",
-        "description": "Seleciona o usuário pelo id do corpo. Atualiza nome e email. Não há validação explícita dos campos nem verificação de linha atualizada; pode retornar sucesso sem correspondência para o ID.",
+        "description": "Seleciona o usuário pelo id_usuario do corpo. Nome, email e ID são validados pelo Joi. Pode retornar sucesso mesmo sem correspondência para o ID.",
         "tags": [
           "Administração de usuários"
         ],
@@ -1095,6 +1099,9 @@
           },
           "403": {
             "$ref": "#/components/responses/SomenteAdmin"
+          },
+          "400": {
+            "$ref": "#/components/responses/DadosInvalidos"
           }
         },
         "requestBody": {
@@ -1104,15 +1111,11 @@
               "schema": {
                 "type": "object",
                 "required": [
-                  "id",
+                  "id_usuario",
                   "nome",
                   "email"
                 ],
                 "properties": {
-                  "id": {
-                    "type": "integer",
-                    "example": 1
-                  },
                   "nome": {
                     "type": "string",
                     "example": "João Sousa"
@@ -1120,6 +1123,11 @@
                   "email": {
                     "type": "string",
                     "example": "joao@exemplo.com"
+                  },
+                  "id_usuario": {
+                    "type": "integer",
+                    "example": 1,
+                    "minimum": 0
                   }
                 }
               }
@@ -1207,12 +1215,13 @@
               "schema": {
                 "type": "object",
                 "required": [
-                  "id"
+                  "id_usuario"
                 ],
                 "properties": {
-                  "id": {
+                  "id_usuario": {
                     "type": "integer",
-                    "example": 1
+                    "example": 1,
+                    "minimum": 0
                   }
                 }
               }
@@ -1284,12 +1293,13 @@
               "schema": {
                 "type": "object",
                 "required": [
-                  "id"
+                  "id_usuario"
                 ],
                 "properties": {
-                  "id": {
+                  "id_usuario": {
                     "type": "integer",
-                    "example": 1
+                    "example": 1,
+                    "minimum": 0
                   }
                 }
               }
@@ -1403,14 +1413,586 @@
               "schema": {
                 "type": "object",
                 "required": [
-                  "id"
+                  "id_usuario"
                 ],
                 "properties": {
-                  "id": {
+                  "id_usuario": {
                     "type": "integer",
-                    "example": 1
+                    "example": 1,
+                    "minimum": 0
                   }
                 }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/usuario/criar-categoria": {
+      "post": {
+        "summary": "Cria uma categoria do usuário autenticado",
+        "description": "O proprietário é obtido do JWT. Rejeita o nome reservado Sem categoria e nomes já cadastrados para o mesmo usuário. Não recebe id_usuario no corpo.",
+        "tags": [
+          "Categorias"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Categoria criada com sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                },
+                "example": {
+                  "mensagem": "Categoria criada com sucesso"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/DadosInvalidos"
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "409": {
+            "description": "Nome reservado ou categoria já existente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                },
+                "example": {
+                  "mensagem": "Já existe uma categoria com esse nome"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro ao consultar ou criar a categoria.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CriarCategoria"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/usuario/listar-categoria": {
+      "get": {
+        "summary": "Lista categorias do usuário autenticado",
+        "description": "Retorna sempre um array, inclusive quando há apenas uma categoria. Sem pesquisa, lista todas; com pesquisa, filtra por nome parcial sem diferenciar maiúsculas e minúsculas. Se o termo for numérico, também pesquisa pelo ID e retorna 404 quando esse ID não pertence ao usuário. Resultados ordenados por id_categoria crescente.",
+        "tags": [
+          "Categorias"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de categorias; pode ser vazia.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Categoria"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "example": "no-store"
+                },
+                "description": "Impede cache da listagem."
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "404": {
+            "description": "Categoria não encontrada para o usuário.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                },
+                "example": {
+                  "mensagem": "Essa categoria não existe"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro na consulta.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/Mensagem"
+                    },
+                    {
+                      "$ref": "#/components/schemas/Erro"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "pesquisa",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Nome parcial ou ID da categoria. Omitido ou vazio lista todas.",
+            "example": "Alimentação"
+          }
+        ]
+      }
+    },
+    "/usuario/editar-categoria": {
+      "patch": {
+        "summary": "Edita uma categoria do usuário autenticado",
+        "description": "Atualiza nome e descrição da categoria identificada por id_categoria e pertencente ao usuário do JWT. Nome duplicado retorna 409. Informar Sem categoria como novo nome retorna 403 na implementação atual.",
+        "tags": [
+          "Categorias"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Categoria atualizada com sucesso.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                },
+                "example": {
+                  "mensagem": "Categoria atualizada com sucesso."
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/DadosInvalidos"
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "description": "Nome reservado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                },
+                "example": {
+                  "mensagem": "Essa categoria não pode ser editada!"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Categoria não encontrada para o usuário.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                },
+                "example": {
+                  "mensagem": "Essa categoria não existe"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Nome duplicado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                },
+                "example": {
+                  "mensagem": "Já existe outra categoria com esse nome."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro ao consultar ou atualizar a categoria.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EditarCategoria"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/usuario/deletar-categoria": {
+      "delete": {
+        "summary": "Exclui uma categoria do usuário autenticado",
+        "description": "Recebe id_categoria no corpo JSON. O proprietário é obtido do JWT. A categoria Sem categoria não pode ser excluída.",
+        "tags": [
+          "Categorias"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Categoria deletada com sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                },
+                "example": {
+                  "mensagem": "Categoria deletada com sucesso"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/DadosInvalidos"
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "description": "Categoria protegida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                },
+                "example": {
+                  "mensagem": "Essa categoria não pode ser deletada!"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Categoria não encontrada para o usuário.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                },
+                "example": {
+                  "mensagem": "Essa categoria não existe"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro ao consultar ou excluir a categoria.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExcluirCategoria"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/listar-categoria": {
+      "get": {
+        "summary": "Lista ou consulta categorias (Admin)",
+        "description": "Exige tipo Admin no JWT. Sem filtros: array com todas as categorias. Apenas id_usuario: array com as categorias desse usuário, que pode estar vazio. Com id_categoria, isolado ou junto de id_usuario: um objeto de categoria. Inclui o usuário relacionado em usuarios. Com ambos os IDs, exige que a categoria pertença ao usuário informado. IDs iguais a zero são aceitos pelo Joi, mas tratados como filtro ausente pelos condicionais atuais.",
+        "tags": [
+          "Administração de categorias"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Array na listagem ou objeto na consulta por categoria.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/CategoriaAdministrativa"
+                      }
+                    },
+                    {
+                      "$ref": "#/components/schemas/CategoriaAdministrativa"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/DadosInvalidos"
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SomenteAdmin"
+          },
+          "404": {
+            "description": "Usuário ou categoria não encontrado, ou categoria não pertencente ao usuário informado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro ao consultar categorias.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id_usuario",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "example": 1
+            },
+            "description": "Filtra pelo proprietário da categoria."
+          },
+          {
+            "name": "id_categoria",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "example": 1
+            },
+            "description": "Seleciona uma categoria específica."
+          }
+        ]
+      }
+    },
+    "/admin/editar-categoria": {
+      "patch": {
+        "summary": "Edita uma categoria (Admin)",
+        "description": "Exige tipo Admin no JWT. Atualiza nome e descrição pelo id_categoria, independentemente do proprietário. Não recebe id_usuario.",
+        "tags": [
+          "Administração de categorias"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Categoria editada com sucesso.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                },
+                "example": {
+                  "mensagem": "Categora editada com sucesso"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/DadosInvalidos"
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SomenteAdmin"
+          },
+          "404": {
+            "description": "Categoria não encontrada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                },
+                "example": {
+                  "mensagem": "Essa categoria não existe"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro ao consultar ou atualizar a categoria.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EditarCategoria"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/deletar-categoria": {
+      "delete": {
+        "summary": "Exclui uma categoria (Admin)",
+        "description": "Exige tipo Admin no JWT e os dois IDs no corpo JSON. A categoria deve pertencer ao id_usuario informado. A categoria Sem categoria não pode ser excluída.",
+        "tags": [
+          "Administração de categorias"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Categoria deletada com sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                },
+                "example": {
+                  "mensagem": "Categoria deletada com sucesso"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/DadosInvalidos"
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "description": "Acesso restrito a administradores ou categoria protegida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/Erro"
+                    },
+                    {
+                      "$ref": "#/components/schemas/Mensagem"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Categoria não encontrada para o usuário.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                },
+                "example": {
+                  "mensagem": "Essa categoria não existe"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro ao consultar ou excluir a categoria.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExcluirCategoriaAdmin"
               }
             }
           }
@@ -1526,6 +2108,182 @@
             "nullable": true
           }
         }
+      },
+      "ErroValidacao": {
+        "type": "object",
+        "required": [
+          "mensagem",
+          "erros"
+        ],
+        "properties": {
+          "mensagem": {
+            "type": "string",
+            "example": "Dados inválidos."
+          },
+          "erros": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "campo",
+                "mensagem"
+              ],
+              "properties": {
+                "campo": {
+                  "type": "string",
+                  "example": "nome"
+                },
+                "mensagem": {
+                  "type": "string",
+                  "example": "O nome deve possuir pelo menos 3 caracteres."
+                }
+              }
+            }
+          }
+        }
+      },
+      "Categoria": {
+        "type": "object",
+        "properties": {
+          "id_categoria": {
+            "type": "integer",
+            "minimum": 0,
+            "example": 1
+          },
+          "nome": {
+            "type": "string",
+            "example": "Alimentação"
+          },
+          "descricao": {
+            "type": "string",
+            "nullable": true,
+            "example": "Compras do mês"
+          },
+          "data_criacao": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CategoriaAdministrativa": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Categoria"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id_usuario": {
+                "type": "integer",
+                "minimum": 0,
+                "example": 1
+              },
+              "usuarios": {
+                "type": "object",
+                "nullable": true,
+                "properties": {
+                  "id_usuario": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "example": 1
+                  },
+                  "nome": {
+                    "type": "string",
+                    "example": "João"
+                  }
+                },
+                "additionalProperties": true,
+                "description": "ID e nome do usuário relacionado. Quando os dois filtros são informados, a implementação seleciona todos os campos de usuarios."
+              }
+            }
+          }
+        ]
+      },
+      "CriarCategoria": {
+        "type": "object",
+        "required": [
+          "nome"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "nome": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 100,
+            "example": "Alimentação",
+            "description": "Espaços nas extremidades são removidos antes da validação."
+          },
+          "descricao": {
+            "type": "string",
+            "maxLength": 100,
+            "pattern": "^(?:[\\s\\S]{0}|[\\s\\S]{3,100})$",
+            "example": "Compras do mês",
+            "description": "Opcional. Aceita texto vazio ou de 3 a 100 caracteres após remover espaços nas extremidades."
+          }
+        }
+      },
+      "EditarCategoria": {
+        "type": "object",
+        "required": [
+          "id_categoria",
+          "nome"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id_categoria": {
+            "type": "integer",
+            "minimum": 0,
+            "example": 1
+          },
+          "nome": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 100,
+            "example": "Alimentação",
+            "description": "Espaços nas extremidades são removidos antes da validação."
+          },
+          "descricao": {
+            "type": "string",
+            "maxLength": 100,
+            "pattern": "^(?:[\\s\\S]{0}|[\\s\\S]{3,100})$",
+            "example": "Compras do mês",
+            "description": "Opcional. Aceita texto vazio ou de 3 a 100 caracteres após remover espaços nas extremidades."
+          }
+        }
+      },
+      "ExcluirCategoria": {
+        "type": "object",
+        "required": [
+          "id_categoria"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id_categoria": {
+            "type": "integer",
+            "minimum": 0,
+            "example": 1
+          }
+        }
+      },
+      "ExcluirCategoriaAdmin": {
+        "type": "object",
+        "required": [
+          "id_categoria",
+          "id_usuario"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id_categoria": {
+            "type": "integer",
+            "minimum": 0,
+            "example": 1
+          },
+          "id_usuario": {
+            "type": "integer",
+            "minimum": 0,
+            "example": 1
+          }
+        }
       }
     },
     "responses": {
@@ -1553,7 +2311,7 @@
         }
       },
       "LimiteCodigo": {
-        "description": "Limite compartilhado de 5 requisições por IP a cada 15 minutos atingido",
+        "description": "Limite compartilhado de 8 requisições por IP a cada 15 minutos atingido",
         "content": {
           "application/json": {
             "schema": {
@@ -1566,7 +2324,7 @@
         }
       },
       "LimiteLogin": {
-        "description": "Limite compartilhado entre login e confirmação de senha: 5 requisições por IP a cada 5 minutos.",
+        "description": "Limite compartilhado entre login e confirmação de senha: 8 requisições por IP a cada 5 minutos.",
         "content": {
           "application/json": {
             "schema": {
@@ -1587,6 +2345,25 @@
             },
             "example": {
               "mensagem": "Muitas tentativas de cadastro realizadas. Tente novamente em 15 minutos."
+            }
+          }
+        }
+      },
+      "DadosInvalidos": {
+        "description": "Dados rejeitados pela validação Joi.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErroValidacao"
+            },
+            "example": {
+              "mensagem": "Dados inválidos.",
+              "erros": [
+                {
+                  "campo": "nome",
+                  "mensagem": "O nome deve possuir pelo menos 3 caracteres."
+                }
+              ]
             }
           }
         }

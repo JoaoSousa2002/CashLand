@@ -36,7 +36,8 @@
 
             <div id="div-nav">
                 <nav>
-                    <a href="/tela-admin/listar-usuarios">Gerir Usuarios</a>
+                    <a href="/tela-admin/listar-usuarios">Gerir usuários</a>
+                    <a href="/tela-admin/listar-categoria">Gerir categorias</a>
                 </nav>
             </div>
             <div id="div-nome-usuario">
@@ -58,15 +59,17 @@
         <main id="container-conteudo">
             <div class="cartao">
                 <h2>Editar categoria</h2>
-                <form id="form-categoria">
+                <form id="form-categoria" novalidate>
                     <label for="id_categoria">ID da Categoria</label>
                     <input id="id_categoria" readonly disabled>
 
                     <label for="nome">Nome</label>
-                    <input id="nome" required minlength="3" maxlength="100">
+                    <input id="nome" required minlength="3" maxlength="100" aria-describedby="erro-nome">
+                    <div id="erro-nome" aria-live="polite"></div>
 
                     <label for="descricao">Descrição</label>
-                    <input id="descricao" minlength="3" maxlength="100">
+                    <input id="descricao" minlength="3" maxlength="100" aria-describedby="erro-descricao">
+                    <div id="erro-descricao" aria-live="polite"></div>
 
                     <div class="acoes-formulario">
                         <button type="button" onclick="window.history.back()"
@@ -98,10 +101,41 @@
         let enviando = false;
         let usuarioGlobal = null;
 
+        function MostrarErro(id, mensagem) {
+            const elemento = document.getElementById(id);
+            elemento.replaceChildren();
+            if (mensagem) {
+                const texto = document.createElement('h5');
+                texto.textContent = mensagem;
+                elemento.appendChild(texto);
+            }
+        }
+
+        function mostrarErrosCampos(status, dados) {
+            let exibiuErro = false;
+            if (status === 400 && Array.isArray(dados.erros)) {
+                dados.erros.forEach(erro => {
+                    if (erro.campo === 'nome' || erro.campo === 'descricao') {
+                        MostrarErro(`erro-${erro.campo}`, erro.mensagem);
+                        exibiuErro = true;
+                    }
+                });
+            } else if (status === 409 && dados.mensagem) {
+                MostrarErro('erro-nome', dados.mensagem);
+                exibiuErro = true;
+            }
+            return exibiuErro;
+        }
+
         function mostrarResultado(sucesso, mensagem) {
             const titulo = document.getElementById('resultado-titulo');
-            titulo.textContent = sucesso ? 'Sucesso' : 'Não foi possível concluir';
-            titulo.style.color = sucesso ? 'green' : 'darkred';
+            if (sucesso) {
+                titulo.textContent = 'Sucesso';
+                titulo.style.color = 'var(--sucesso)';
+            } else {
+                titulo.textContent = 'Não foi possível concluir';
+                titulo.style.color = 'var(--erro)';
+            }
             document.getElementById('resultado-mensagem').textContent = mensagem;
             resultado.style.display = 'flex';
             conteudo.inert = true;
@@ -142,7 +176,6 @@
 
         async function carregarDadosCategoria() {
             try {
-                // Faz a requisição enviando id_categoria e id_usuario conforme o Servidor.js espera
                 const resposta = await fetch(`/admin/listar-categoria?id_categoria=${idCat}`, {
                     method: 'GET',
                     credentials: 'include'
@@ -155,20 +188,21 @@
                 const dadosResposta = await resposta.json();
                 console.log(dadosResposta)
 
-                // O servidor do teu colega devolve um objeto { consultaTudo } quando mandamos ambos os IDs
 
                 if (!dadosResposta) {
                     mostrarResultado(false, 'Categoria não encontrada. Verifique os IDs.');
                     salvar.disabled = true;
-                    return;
+                    return false;
                 }
 
                 console.log(dadosResposta.id_categoria)
                 document.getElementById('id_categoria').value = dadosResposta.id_categoria;
                 document.getElementById('nome').value = dadosResposta.nome;
                 document.getElementById('descricao').value = dadosResposta.descricao || '';
+                return true;
             } catch (erro) {
-                mostrarResultado(false, 'Erro ao comunicar com a API para buscar dados.' + erro.message);
+                mostrarResultado(false, 'Erro ao comunicar com a API para buscar dados. ' + erro.message);
+                return false;
             }
         }
 
@@ -186,11 +220,11 @@
 
                 usuarioGlobal = usuario;
                 document.getElementById('nome-usuario').textContent = usuario.nome.slice(0, 8);
-                await carregarDadosCategoria();
+                const categoriaCarregada = await carregarDadosCategoria();
 
                 conteudo.hidden = false;
-                sessaoPronta = true;
-                salvar.disabled = false;
+                sessaoPronta = categoriaCarregada;
+                salvar.disabled = !sessaoPronta;
             } finally {
                 loading.style.display = 'none';
             }
@@ -200,6 +234,8 @@
             evento.preventDefault();
             if (!sessaoPronta || enviando) return;
 
+            MostrarErro('erro-nome', '');
+            MostrarErro('erro-descricao', '');
             enviando = true;
             salvar.disabled = true;
             loading.style.display = 'flex';
@@ -224,14 +260,24 @@
                 }
 
                 const dados = await resposta.json();
-                const detalhes = Array.isArray(dados.erros)
-                    ? dados.erros.map(erro => erro.mensagem).join('\n') : '';
-                const mensagem = dados.mensagem || dados.erro ||
-                    (resposta.ok ? 'Operação concluída.' : `Falha (HTTP ${resposta.status}).`);
+                let mensagem = dados.mensagem || dados.erro;
+                if (!mensagem) {
+                    if (resposta.ok) {
+                        mensagem = 'Operação concluída.';
+                    } else {
+                        mensagem = `Falha (HTTP ${resposta.status}).`;
+                    }
+                }
 
                 if (!resposta.ok) {
                     voltarAoLogin = resposta.status === 401;
-                    mostrarResultado(false, detalhes ? `${mensagem}\n${detalhes}` : mensagem);
+                    const exibiuErro = mostrarErrosCampos(resposta.status, dados);
+                    if (!exibiuErro) {
+                        if (Array.isArray(dados.erros)) {
+                            mensagem += '\n' + dados.erros.map(erro => erro.mensagem).join('\n');
+                        }
+                        mostrarResultado(false, mensagem);
+                    }
                     return;
                 }
 

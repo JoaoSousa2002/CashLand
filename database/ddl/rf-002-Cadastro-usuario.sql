@@ -1,41 +1,22 @@
-create table public.usuarios (
-  id_usuario integer generated always as identity not null,
-  nome character varying(150) not null,
+create table public.codigos_verificacao (
+  id uuid not null default gen_random_uuid (),
   email character varying(150) not null,
-  senha_hash character varying(255) not null,
-  tipo character varying(10) not null default 'Comum'::character varying,
-  status_usuario character varying(10) not null default 'Ativo'::character varying,
-  data_criacao timestamp with time zone not null default now(),
-  data_inativacao timestamp with time zone null,
-  status_reset_senha boolean not null default false,
-  constraint usuarios_pkey primary key (id_usuario),
-  constraint usuarios_email_key unique (email),
-  constraint usuarios_status_usuario_check check (
+  codigo_hash text not null,
+  finalidade character varying(30) not null,
+  criado_em timestamp with time zone not null default now(),
+  expira_em timestamp with time zone not null default (now() + '00:10:00'::interval),
+  constraint codigos_verificacao_pkey primary key (id),
+  constraint codigo_unico_por_finalidade unique (email, finalidade),
+  constraint finalidade_valida check (
     (
-      (status_usuario)::text = any (
+      (finalidade)::text = any (
         (
           array[
-            'Ativo'::character varying,
-            'Inativo'::character varying
-          ]
-        )::text[]
-      )
-    )
-  ),
-  constraint usuarios_tipo_check check (
-    (
-      (tipo)::text = any (
-        (
-          array[
-            'Comum'::character varying,
-            'Admin'::character varying
+            'cadastro'::character varying,
+            'recuperacao_senha'::character varying
           ]
         )::text[]
       )
     )
   )
 ) TABLESPACE pg_default;
-
-create trigger trigger_criar_categoria_padrao
-after INSERT on usuarios for EACH row
-execute FUNCTION criar_categoria_padrao_usuario ();

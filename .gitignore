@@ -3,3 +3,6 @@ node_modules/
 
 logs/
 *.log
+
+old.js
+src/testar_rotas_cashland.py
