@@ -6,10 +6,10 @@ export const schemaIdUsuarioObrigatorio = Joi.object({
         .min(0)
         .required()
         .messages({
-            "any.required": "O ID é obrigatório.",
-            "number.base": "O ID deve ser um número válido.",
-            "number.integer": "O ID deve ser um número inteiro.",
-            "number.min": "O ID deve ser maior ou igual a zero."
+            "any.required": "O ID do usuario é obrigatório.",
+            "number.base": "O ID do usuario deve ser um número válido.",
+            "number.integer": "O ID do usuario deve ser um número inteiro.",
+            "number.min": "O ID do usuario deve ser maior ou igual a zero."
         })
 });
 
@@ -19,9 +19,9 @@ export const schemaIdUsuarioOpcional = Joi.object({
         .min(0)
         .optional()
         .messages({
-            "number.base": "O ID deve ser um número válido.",
-            "number.integer": "O ID deve ser um número inteiro.",
-            "number.min": "O ID deve ser maior ou igual a zero."
+            "number.base": "O ID do usuario deve ser um número válido.",
+            "number.integer": "O ID do usuario deve ser um número inteiro.",
+            "number.min": "O ID do usuario deve ser maior ou igual a zero."
         })
 });
 
@@ -31,10 +31,10 @@ export const schemaIdCategoriaObrigatorio = Joi.object({
         .min(0)
         .required()
         .messages({
-            "any.required": "O ID é obrigatório.",
-            "number.base": "O ID deve ser um número válido.",
-            "number.integer": "O ID deve ser um número inteiro.",
-            "number.min": "O ID deve ser maior ou igual a zero."
+            "any.required": "O ID da categoria é obrigatório.",
+            "number.base": "O ID da categoria deve ser um número válido.",
+            "number.integer": "O ID da categoria deve ser um número inteiro.",
+            "number.min": "O ID da categoria deve ser maior ou igual a zero."
         })
 });
 
@@ -44,9 +44,9 @@ export const schemaIdCategoriaOpcional = Joi.object({
         .min(0)
         .optional()
         .messages({
-            "number.base": "O ID deve ser um número válido.",
-            "number.integer": "O ID deve ser um número inteiro.",
-            "number.min": "O ID deve ser maior ou igual a zero."
+            "number.base": "O ID da categoria deve ser um número válido.",
+            "number.integer": "O ID da categoria deve ser um número inteiro.",
+            "number.min": "O ID da categoria deve ser maior ou igual a zero."
         })
 });
 
@@ -108,12 +108,12 @@ export const schemaSenha = Joi.object({
 
     senha: Joi.string()
         .min(10)
-        .max(128)
+        .max(256)
         .required()
         .messages({
             "string.empty": "A senha é obrigatória.",
             "string.min": "A senha deve possuir pelo menos 10 caracteres.",
-            "string.max": "A senha deve possuir no máximo 128 caracteres.",
+            "string.max": "A senha deve possuir no máximo 256 caracteres.",
             "any.required": "A senha é obrigatória."
         })
 
@@ -122,12 +122,12 @@ export const schemaNovaSenha = Joi.object({
 
     novaSenha: Joi.string()
         .min(10)
-        .max(128)
+        .max(256)
         .required()
         .messages({
             "string.empty": "A senha é obrigatória.",
             "string.min": "A senha deve possuir pelo menos 10 caracteres.",
-            "string.max": "A senha deve possuir no máximo 128 caracteres.",
+            "string.max": "A senha deve possuir no máximo 256 caracteres.",
             "any.required": "A senha é obrigatória."
         })
 

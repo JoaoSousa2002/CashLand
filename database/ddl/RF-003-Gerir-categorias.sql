@@ -19,3 +19,6 @@ create table public.categorias (
     )
   )
 ) TABLESPACE pg_default;
+
+DROP TRIGGER trigger_criar_subcategoria_padrao ON categorias;
+DROP FUNCTION criar_subcategoria_padrao();

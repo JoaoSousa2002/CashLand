@@ -252,19 +252,20 @@
 
         async function excluirCategoria(id_categoria) {
             resultado_overlay.style.display = "none";
-            const resposta = await fetch('/usuario/deletar-categoria', {
+            loading.style.display = "flex"
+            const resposta = await fetch(`/usuario/deletar-categoria/${id_categoria}`, {
                 method: 'DELETE',
-                credentials: 'include',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id_categoria })
+                credentials: 'include'
             });
             const dados = await resposta.json();
 
             resultado_overlay.style.display = "flex";
             if (resposta.status === 200) {
+                loading.style.display = "none"
                 MostrarResultado_Overlay(1, dados.mensagem);
                 recarregarPagina = true;
             } else {
+                loading.style.display = "none"
                 MostrarResultado_Overlay(0, dados.mensagem ?? "Erro ao excluir categoria");
             }
         }

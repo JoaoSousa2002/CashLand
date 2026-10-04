@@ -233,14 +233,9 @@
             resultado_overlay.style.display = 'none';
             loading.style.display = 'flex';
             try {
-                const resposta = await fetch('/admin/deletar-categoria', {
+                const resposta = await fetch(`/admin/deletar-categoria/${categoria.id_categoria}/${categoria.id_usuario}`, {
                     method: 'DELETE',
-                    credentials: 'include',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        id_categoria: categoria.id_categoria,
-                        id_usuario: categoria.id_usuario
-                    })
+                    credentials: 'include'
                 });
                 const dados = await resposta.json();
                 switch (resposta.status) {

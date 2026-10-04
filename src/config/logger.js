@@ -22,6 +22,11 @@ const logger = winston.createLogger({
 
     format: combine(
         timestamp(),
+        winston.format((info) => {
+            info.data_hora = info.timestamp;
+            delete info.timestamp;
+            return info;
+        })(),
         errors({ stack: true }),
         json()
     ),

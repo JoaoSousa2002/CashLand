@@ -7,17 +7,16 @@ function idSeguro(id) {
 }
 
 export function registrarAuditoria({
-    usuarioId = null, acao, recurso, recursoId = null, resultado,
+    usuarioId = null,rota, recursoId = null, resultado,
     detalhes = {}, requestId = null
 }) {
     try {
         logger.info('Evento de auditoria', {
             tipo_evento: 'AUDITORIA',
-            usuario_id: idSeguro(usuarioId),
-            ator_tipo: idSeguro(usuarioId) == null ? 'ANONIMO' : 'AUTENTICADO',
-            acao,
-            recurso,
-            recurso_id: idSeguro(recursoId),
+            id_usuario: idSeguro(usuarioId),
+            ator_tipo: idSeguro(usuarioId) == null ? 'NÃO AUTENTICADO' : 'AUTENTICADO',
+            rota,
+            id_usuario: idSeguro(recursoId),
             resultado,
             request_id: requestId,
             // Lista permitida: nunca serialize body, credenciais ou erros brutos.

@@ -205,19 +205,22 @@
         // =======================================================================================================
         async function excluir(id) {
             resultado_overlay.style.display = "none";
+            loading.style.display = "flex"
 
-            const response = await fetch(`/admin/deletar-usuario/?id_usuario=${id}`, {
+            const response = await fetch(`/admin/deletar-usuario/${id}`, {
                 method: 'DELETE',
                 credentials: 'include'
             })
             const data = await response.json()
 
             if (response.status === 200) {
+                loading.style.display = "none"
                 resultado_overlay.style.display = "flex";
                 MostrarResultado_Overlay(1, data.mensagem)
                 recarregarPagina = true;
                 console.log(data.mensagem)
             } else {
+                loading.style.display = "none"
                 resultado_overlay.style.display = "flex";
                 MostrarResultado_Overlay(2, data.mensagem)
                 console.log(data.mensagem)

@@ -20,6 +20,7 @@
     "test:supabase": "node tests/integracao/codigos-supabase.js --executar"
   },
   "devDependencies": {
-    "esbuild": "^0.28.2"
+    "esbuild": "^0.28.2",
+    "supabase": "^2.119.0"
   }
 }

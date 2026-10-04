@@ -40,31 +40,79 @@ import { readFileSync } from 'fs';
 import rateLimit from 'express-rate-limit';
 import cookieParser from 'cookie-parser';
 
+function handlerRateLimit(nomeLimitador, mensagem) {
+    return (req, res) => {
+
+        if (res.locals.auditoria) {
+            res.locals.auditoria.motivo =
+                `RATE_LIMIT_${nomeLimitador}_EXCEDIDO`;
+        }
+
+        logger.warn('Rate limit excedido', {
+            tipo_evento: 'SEGURANCA',
+            evento: 'RATE_LIMIT_EXCEDIDO',
+            limitador: nomeLimitador,
+            request_id: res.locals.requestId,
+            metodo: req.method,
+            rota: req.route?.path,
+            status_http: 429
+        });
+
+        return res.status(429).json({
+            mensagem
+        });
+    };
+}
 
 const limitadorLogin = rateLimit({
-    windowMs: 5 * 60 * 1000,
-    max: 8, // só 8 tentativas de login por IP a cada 5 min
-    handler: (req, res) => {
-        console.log("Operação processada; consulte o evento de auditoria e o status HTTP.");
-        res.status(429).json({ mensagem: 'Muitas tentativas de login realizadas. Tente novamente em 5 minutos.' });
-    }
-});
-const limitadorCadastro = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 8, // só 5 tentativas de login por IP a cada 15 min
-    handler: (req, res) => {
-        console.log("Operação processada; consulte o evento de auditoria e o status HTTP.");
-        res.status(429).json({ mensagem: 'Muitas tentativas de cadastro realizadas. Tente novamente em 15 minutos.' });
-    }
+    max: 10, // só 10 tentativas de login por IP a cada 15 min
+    handler: handlerRateLimit(
+        'LOGIN',
+        'Muitas tentativas de login realizadas. Tente novamente em 15 minutos.'
+    )
 });
-const limitadorCodigo = rateLimit({
+const limitadorSenha = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 8, // só 5 tentativas de login por IP a cada 15 min
-    handler: (req, res) => {
-        console.log("Operação processada; consulte o evento de auditoria e o status HTTP.");
-        res.status(429).json({ mensagem: 'Muitas tentativas de realizadas para esta operação. Tente novamente em 15 minutos.' });
-    }
+    max: 5, // só 10 tentativas de login por IP a cada 15 min
+    handler:  handlerRateLimit(
+        'CONFIRMAR_SENHA',
+        'Muitas tentativas de confirmar senha realizadas. Tente novamente em 15 minutos.'
+    )
 });
+const limitadorSolicitarCodigo = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 5, // só 5 tentativas de login por IP a cada 15 min
+    handler:  handlerRateLimit(
+        'SOLICITAR_CODIGO',
+        'Muitas tentativas de envio de codigo realizadas. Tente novamente em 15 minutos.'
+    )
+});
+const limitadorVerificarCodigo = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 5, // só 5 tentativas de login por IP a cada 5 min
+    handler:  handlerRateLimit(
+        'VERIFICAR_CODIGO',
+        'Muitas tentativas de verificar codigo realizadas. Tente novamente em 15 minutos.'
+    )
+});
+const limitadorGenericoSimples = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 15, // só 15 tentativas de login por IP a cada 15 min
+    handler:  handlerRateLimit(
+        'GENERICO_SIMPLES',
+        'Muitas solicitações para essa ação realizadas. Tente novamente em 15 minutos.'
+    )
+});
+const limitadorGenericoCritico = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 5, // só 5 tentativas de login por IP a cada 15 min
+    handler:  handlerRateLimit(
+        'GENERICO_CRITICO',
+        'Muitas solicitações para essa ação realizadas. Tente novamente em 15 minutos.'
+    )
+});
+
 
 // Array com as CORS local
 let origemAutorizada = [];
@@ -255,7 +303,7 @@ async function emitirCodigo(email, nome, finalidade) {
     }
 }
 
-app.get('/me', auditar('CONSULTAR_SESSAO', req => req.query.id_usuario ?? req.usuario?.id_usuario, false), autenticar, validar(schemaIdUsuarioOpcional), async (req, res) => {
+app.get('/me', auditar('CONSULTAR_SESSAO', req => req.query.id_usuario ?? req.usuario?.id_usuario, false), limitadorGenericoSimples, autenticar, validar(schemaIdUsuarioOpcional), async (req, res) => {
     const { id_usuario } = req.query
 
     if (id_usuario !== undefined && req.usuario.tipo !== 'Admin') {
@@ -341,7 +389,7 @@ app.post('/login', auditar('LOGIN', undefined, true), limitadorLogin, validar(sc
     });
 });
 
-app.post('/confirmar-senha', auditar('CONFIRMAR_SENHA', req => req.usuario?.id_usuario, false), limitadorLogin, autenticar, validar(schemaSenha), async (req, res) => {
+app.post('/confirmar-senha', auditar('CONFIRMAR_SENHA', req => req.usuario?.id_usuario, false), limitadorSenha, autenticar, validar(schemaSenha), async (req, res) => {
     const { senha } = req.body
     const { data: usuario } = await supabase
         .from('usuarios')
@@ -359,7 +407,7 @@ app.post('/confirmar-senha', auditar('CONFIRMAR_SENHA', req => req.usuario?.id_u
     return res.status(200).json({ mensagem: "Senha correta" })
 })
 // ROTA DE LOGOUT
-app.post('/logout', auditar('LOGOUT', undefined, false), limitadorCodigo, (req, res) => {
+app.post('/logout', auditar('LOGOUT', undefined, false), limitadorGenericoCritico, (req, res) => {
     try {
         const usuario = verificarToken(req.cookies.token);
         Object.assign(res.locals.auditoria, { usuarioId: usuario.id_usuario, recursoId: usuario.id_usuario });
@@ -369,7 +417,7 @@ app.post('/logout', auditar('LOGOUT', undefined, false), limitadorCodigo, (req, 
     return res.status(200).json({ mensagem: 'Logout realizado' });
 });
 
-app.post('/solicitar-codigo', auditar('SOLICITAR_CODIGO_CADASTRO', undefined, false), limitadorCodigo, validar(schemaNome, schemaEmail, schemaSenha), async (req, res) => {
+app.post('/solicitar-codigo', auditar('SOLICITAR_CODIGO_CADASTRO', undefined, false), limitadorSolicitarCodigo, validar(schemaNome, schemaEmail, schemaSenha), async (req, res) => {
     const { nome } = req.body;
     const email = normalizarEmail(req.body?.email);
     try {
@@ -386,7 +434,7 @@ app.post('/solicitar-codigo', auditar('SOLICITAR_CODIGO_CADASTRO', undefined, fa
     }
 });
 
-app.post('/confirmar-cadastro', auditar('CADASTRAR_USUARIO', undefined, true), limitadorCadastro, validar(schemaNome, schemaEmail, schemaCodigo, schemaSenha), async (req, res) => {
+app.post('/confirmar-cadastro', auditar('CADASTRAR_USUARIO', undefined, true), limitadorVerificarCodigo, validar(schemaNome, schemaEmail, schemaCodigo, schemaSenha), async (req, res) => {
     const { nome, senha, codigoDigitado } = req.body ?? {};
     const email = normalizarEmail(req.body?.email);
     try {
@@ -421,7 +469,7 @@ app.post('/confirmar-cadastro', auditar('CADASTRAR_USUARIO', undefined, true), l
     }
 });
 
-app.post('/solicitar-reset-senha', auditar('SOLICITAR_RECUPERACAO_SENHA', undefined, false), limitadorCodigo, validar(schemaEmail), async (req, res) => {
+app.post('/solicitar-reset-senha', auditar('SOLICITAR_RECUPERACAO_SENHA', undefined, false), limitadorSolicitarCodigo, validar(schemaEmail), async (req, res) => {
     const email = normalizarEmail(req.body?.email);
     try {
         const usuario = await buscarUsuario(email);
@@ -442,7 +490,7 @@ app.post('/solicitar-reset-senha', auditar('SOLICITAR_RECUPERACAO_SENHA', undefi
     }
 });
 
-app.post('/confirmar-reset-senha', auditar('REDEFINIR_SENHA', undefined, true), limitadorCodigo, validar(schemaEmail, schemaCodigo, schemaNovaSenha), async (req, res) => {
+app.post('/confirmar-reset-senha', auditar('REDEFINIR_SENHA', undefined, true), limitadorGenericoCritico, validar(schemaEmail, schemaCodigo, schemaNovaSenha), async (req, res) => {
     const { codigoDigitado, novaSenha } = req.body ?? {};
     const email = normalizarEmail(req.body?.email);
     try {
@@ -483,7 +531,7 @@ app.post('/confirmar-reset-senha', auditar('REDEFINIR_SENHA', undefined, true), 
 
 // ROTAS ACESSO USUARIO COMUM
 
-app.get('/usuario', auditar('CONSULTAR_USUARIO', req => req.usuario?.id_usuario, false), autenticar, async (req, res) => {
+app.get('/usuario', auditar('CONSULTAR_USUARIO', req => req.usuario?.id_usuario, false), limitadorGenericoSimples, autenticar, async (req, res) => {
     const { data, error } = await supabase
         .from('usuarios')
         .select('id_usuario, nome, email, status_usuario, data_criacao')
@@ -499,7 +547,7 @@ app.get('/usuario', auditar('CONSULTAR_USUARIO', req => req.usuario?.id_usuario,
     return res.status(200).json(data);
 })
 
-app.patch('/usuario/desativar-usuario', auditar('DESATIVAR_USUARIO', req => req.usuario?.id_usuario, true), autenticar, async (req, res) => {
+app.patch('/usuario/desativar-usuario', auditar('DESATIVAR_USUARIO', req => req.usuario?.id_usuario, true), limitadorGenericoCritico, autenticar, async (req, res) => {
 
     const { data: consulta } = await supabase
         .from('usuarios')
@@ -529,7 +577,7 @@ app.patch('/usuario/desativar-usuario', auditar('DESATIVAR_USUARIO', req => req.
     return res.status(200).json({ mensagem: "Usuario desativado com sucesso" })
 })
 
-app.patch('/usuario/atualizar-dados', auditar('ATUALIZAR_USUARIO', req => req.usuario?.id_usuario, true), autenticar, validar(schemaNome), async (req, res) => {
+app.patch('/usuario/atualizar-dados', auditar('ATUALIZAR_USUARIO', req => req.usuario?.id_usuario, true), limitadorGenericoCritico, autenticar, validar(schemaNome), async (req, res) => {
     const { nome } = req.body
 
     const { data: alterados, error } = await supabase
@@ -552,7 +600,7 @@ app.patch('/usuario/atualizar-dados', auditar('ATUALIZAR_USUARIO', req => req.us
 // =================================== RF003 CATEGORIAS E SUBCATEGORIAS ================================================
 // =====================================================================================================================
 
-app.post('/usuario/criar-categoria', auditar('CRIAR_CATEGORIA', req => req.usuario?.id_usuario, false), autenticar, validar(schemaNome, schemaDescricaoCategoria), async (req, res) => {
+app.post('/usuario/criar-categoria', auditar('CRIAR_CATEGORIA', req => req.usuario?.id_usuario, false), limitadorGenericoSimples, autenticar, validar(schemaNome, schemaDescricaoCategoria), async (req, res) => {
     const { nome, descricao } = req.body
 
     if (nome.trim().toLowerCase() === "sem categoria") {
@@ -598,7 +646,7 @@ app.post('/usuario/criar-categoria', auditar('CRIAR_CATEGORIA', req => req.usuar
     }
 });
 
-app.get('/usuario/listar-categoria', auditar('USER_LISTAR_CATEGORIA', req => req.usuario?.id_usuario, false), autenticar, async (req, res) => {
+app.get('/usuario/listar-categoria', auditar('USER_LISTAR_CATEGORIA', req => req.usuario?.id_usuario, false), limitadorGenericoSimples, autenticar, async (req, res) => {
     res.set('Cache-Control', 'no-store');
     const { pesquisa } = req.query;
 
@@ -654,7 +702,7 @@ app.get('/usuario/listar-categoria', auditar('USER_LISTAR_CATEGORIA', req => req
     return res.status(200).json(data);
 });
 
-app.patch('/usuario/editar-categoria', auditar('USER_EDITAR_CATEGORIA', req => req.usuario?.id_usuario, false), autenticar, validar(schemaIdCategoriaObrigatorio, schemaNome, schemaDescricaoCategoria), async (req, res) => {
+app.patch('/usuario/editar-categoria', auditar('USER_EDITAR_CATEGORIA', req => req.usuario?.id_usuario, true), limitadorGenericoSimples, autenticar, validar(schemaIdCategoriaObrigatorio, schemaNome, schemaDescricaoCategoria), async (req, res) => {
     const { id_categoria, nome, descricao } = req.body
 
 
@@ -721,8 +769,8 @@ app.patch('/usuario/editar-categoria', auditar('USER_EDITAR_CATEGORIA', req => r
     return res.status(200).json({ mensagem: "Categoria atualizada com sucesso." });
 })
 
-app.delete('/usuario/deletar-categoria', auditar('USER_DELETAR_CATEGORIA', req => req.usuario?.id_usuario, false), autenticar, validar(schemaIdCategoriaObrigatorio), async (req, res) => {
-    const { id_categoria } = req.body
+app.delete('/usuario/deletar-categoria/:id_categoria', auditar('USER_DELETAR_CATEGORIA', req => req.usuario?.id_usuario, true), limitadorGenericoCritico, autenticar, validar(schemaIdCategoriaObrigatorio), async (req, res) => {
+    const { id_categoria } = req.params
 
     // Verifica se a categoria existe
     const { data: consultaCategoria, error: erroConsulta } = await supabase
@@ -765,7 +813,7 @@ app.delete('/usuario/deletar-categoria', auditar('USER_DELETAR_CATEGORIA', req =
 
 // ROTAS DE ACESSO RESTRITO (Admin)
 
-app.get('/admin/listar-usuarios', auditar('LISTAR_USUARIOS', undefined, false), autenticar, somenteAdmin, async (req, res) => {
+app.get('/admin/listar-usuarios', auditar('LISTAR_USUARIOS', undefined, false), limitadorGenericoSimples, autenticar, somenteAdmin, async (req, res) => {
     res.set('Cache-Control', 'no-store');
     const { pesquisa } = req.query;
 
@@ -802,7 +850,7 @@ app.get('/admin/listar-usuarios', auditar('LISTAR_USUARIOS', undefined, false), 
     return res.status(201).json(data);
 });
 
-app.get('/admin/usuario', auditar('CONSULTAR_USUARIO', req => req.query.id_usuario ?? req.usuario?.id_usuario, false), autenticar, somenteAdmin, validar(schemaIdUsuarioOpcional), async (req, res) => {
+app.get('/admin/usuario', auditar('CONSULTAR_USUARIO', req => req.query.id_usuario ?? req.usuario?.id_usuario, false), limitadorGenericoSimples, autenticar, somenteAdmin, validar(schemaIdUsuarioOpcional), async (req, res) => {
     const { id_usuario } = req.query
     // req.usuario já vem do middleware, mas revalida contra o banco
     // pra pegar dados atualizados (ex: se foi inativado depois do token ser emitido)
@@ -838,7 +886,7 @@ app.get('/admin/usuario', auditar('CONSULTAR_USUARIO', req => req.query.id_usuar
     }
 })
 
-app.patch('/admin/editar-usuario', auditar('ATUALIZAR_USUARIO', req => req.body?.id_usuario, true), autenticar, somenteAdmin, validar(schemaIdUsuarioObrigatorio, schemaNome, schemaEmail), async (req, res) => {
+app.patch('/admin/editar-usuario', auditar('ATUALIZAR_USUARIO', req => req.body?.id_usuario, false), limitadorGenericoSimples, autenticar, somenteAdmin, validar(schemaIdUsuarioObrigatorio, schemaNome, schemaEmail), async (req, res) => {
     const { id_usuario, nome, email } = req.body
 
     const { data: alterados, error } = await supabase
@@ -857,7 +905,7 @@ app.patch('/admin/editar-usuario', auditar('ATUALIZAR_USUARIO', req => req.body?
     return res.status(200).json({ mensagem: "Dados atualizados com sucesso" })
 })
 
-app.patch('/admin/resetar-senha', auditar('SOLICITAR_RESET_ADMIN', req => req.body?.id_usuario, true), autenticar, somenteAdmin, validar(schemaIdUsuarioObrigatorio), async (req, res) => {
+app.patch('/admin/resetar-senha', auditar('SOLICITAR_RESET_ADMIN', req => req.body?.id_usuario, true), limitadorGenericoCritico, autenticar, somenteAdmin, validar(schemaIdUsuarioObrigatorio), async (req, res) => {
     const { id_usuario } = req.body
 
     //Verifica que o reset já foi solicitado
@@ -891,7 +939,7 @@ app.patch('/admin/resetar-senha', auditar('SOLICITAR_RESET_ADMIN', req => req.bo
 
 })
 
-app.patch('/admin/reativar-usuario', auditar('REATIVAR_USUARIO', req => req.body?.id_usuario, true), autenticar, somenteAdmin, validar(schemaIdUsuarioObrigatorio), async (req, res) => {
+app.patch('/admin/reativar-usuario', auditar('REATIVAR_USUARIO', req => req.body?.id_usuario, true), limitadorGenericoCritico, autenticar, somenteAdmin, validar(schemaIdUsuarioObrigatorio), async (req, res) => {
     const { id_usuario } = req.body
     const { data: consulta } = await supabase
         .from('usuarios')
@@ -921,7 +969,7 @@ app.patch('/admin/reativar-usuario', auditar('REATIVAR_USUARIO', req => req.body
     return res.status(200).json({ mensagem: "Usuario reativado com sucesso" })
 })
 
-app.patch('/admin/desativar-usuario', auditar('DESATIVAR_USUARIO', req => req.body?.id_usuario, true), autenticar, somenteAdmin, validar(schemaIdUsuarioObrigatorio), async (req, res) => {
+app.patch('/admin/desativar-usuario', auditar('DESATIVAR_USUARIO', req => req.body?.id_usuario, true), limitadorGenericoCritico, autenticar, somenteAdmin, validar(schemaIdUsuarioObrigatorio), async (req, res) => {
     const { id_usuario } = req.body || {};
 
 
@@ -963,8 +1011,8 @@ app.patch('/admin/desativar-usuario', auditar('DESATIVAR_USUARIO', req => req.bo
     return res.status(200).json({ mensagem: "Usuario desativado com sucesso" });
 })
 
-app.delete('/admin/deletar-usuario', auditar('EXCLUIR_USUARIO', req => req.query.id_usuario, true), autenticar, somenteAdmin, validar(schemaIdUsuarioObrigatorio), async (req, res) => {
-    const { id_usuario } = req.query
+app.delete('/admin/deletar-usuario/:id_usuario', auditar('EXCLUIR_USUARIO', req => req.query.id_usuario, true), limitadorGenericoCritico, autenticar, somenteAdmin, validar(schemaIdUsuarioObrigatorio), async (req, res) => {
+    const { id_usuario } = req.params
 
     const { data: consulta, error: erroConsulta } = await supabase
         .from('usuarios')
@@ -989,7 +1037,7 @@ app.delete('/admin/deletar-usuario', auditar('EXCLUIR_USUARIO', req => req.query
 
     if (error) {
         res.locals.auditoria.resultado = 'ERRO';
-        console.log("admin/deletar-usuario: Erro a deletar o ususario, verifique o banco de dados")
+        console.log("admin/deletar-usuario: Erro a deletar o ususario, verifique o banco de dados: "+error.message)
         return res.status(500).json({ mensagem: "Erro ao deletar o usuario, verifique o banco de dados" })
     }
     console.log("/admin/deletar-usuario: Exclusão processada")
@@ -998,7 +1046,7 @@ app.delete('/admin/deletar-usuario', auditar('EXCLUIR_USUARIO', req => req.query
 })
 
 
-app.get('/admin/listar-categoria', auditar('ADMIN_LISTAR_CATEGORIA', req => req.usuario?.id_usuario, false), autenticar, somenteAdmin, validar(schemaIdUsuarioOpcional, schemaIdCategoriaOpcional), async (req, res) => {
+app.get('/admin/listar-categoria', auditar('ADMIN_LISTAR_CATEGORIA', req => req.usuario?.id_usuario, false), limitadorGenericoSimples, autenticar, somenteAdmin, validar(schemaIdUsuarioOpcional, schemaIdCategoriaOpcional), async (req, res) => {
 
     // Lista categorias por usuário, por categoria ou sem filtros.
     const { id_usuario, id_categoria } = req.query
@@ -1059,7 +1107,7 @@ app.get('/admin/listar-categoria', auditar('ADMIN_LISTAR_CATEGORIA', req => req.
             return res.status(500).json({ mensagem: "Ocorreu um erro ao consultar as categorias do usuario" })
         }
         console.log("/admin/listar-usuario: Dados do usuario retornados")
-        return res.status(200).json( consultaPorID )
+        return res.status(200).json(consultaPorID)
     }
 
     if (id_categoria && id_usuario) {
@@ -1078,7 +1126,7 @@ app.get('/admin/listar-categoria', auditar('ADMIN_LISTAR_CATEGORIA', req => req.
             return res.status(404).json({ mensagem: "Categoria não encontrada para o usuário informado" });
         }
 
-        return res.status(200).json(consultaTudo );
+        return res.status(200).json(consultaTudo);
     }
     // retorna TODAS as categorias
     const { data: consultaPorID, error } = await supabase
@@ -1091,10 +1139,10 @@ app.get('/admin/listar-categoria', auditar('ADMIN_LISTAR_CATEGORIA', req => req.
         return res.status(500).json({ mensagem: "Ocorreu um erro ao consultar as categorias" })
     }
     console.log("Sucesso em consultar as categorias")
-    return res.status(200).json( consultaPorID )
+    return res.status(200).json(consultaPorID)
 })
 
-app.patch('/admin/editar-categoria', auditar('ADMIN_EDITAR_CATEGORIA', req => req.usuario?.id_usuario, false), autenticar, somenteAdmin, validar(schemaIdCategoriaObrigatorio, schemaNome, schemaDescricaoCategoria), async (req, res) => {
+app.patch('/admin/editar-categoria', auditar('ADMIN_EDITAR_CATEGORIA', req => req.usuario?.id_usuario, false), limitadorGenericoSimples, autenticar, somenteAdmin, validar(schemaIdCategoriaObrigatorio, schemaNome, schemaDescricaoCategoria), async (req, res) => {
     const { id_categoria, nome, descricao } = req.body;
 
     // VERIFICA SE A CATEGORIA EXISTE
@@ -1112,7 +1160,14 @@ app.patch('/admin/editar-categoria', auditar('ADMIN_EDITAR_CATEGORIA', req => re
         console.log("/admin/editar-categoria: >>>>> Essa categoria não existe")
         return res.status(404).json({ mensagem: "Essa categoria não existe" })
     }
-
+    if (nome.trim().toLowerCase() === "sem categoria") {
+        console.log("/usuario/editar-categoria: >>>>> A categoria 'sem categoria' não pode ser editada")
+        return res.status(403).json({ mensagem: "Essa categoria não pode ser editada!" });
+    }
+    if (nome.trim().toLowerCase() === "sem categoria") {
+        console.log("/usuario/editar-categoria: >>>>> O nome 'Sem categoria' é reservado pelo sistema.")
+        return res.status(409).json({ mensagem: "O nome 'Sem categoria' é reservado pelo sistema." });
+    }
     const { data: editaCategoria, error: erroEdita } = await supabase
         .from('categorias')
         .update({
@@ -1132,8 +1187,8 @@ app.patch('/admin/editar-categoria', auditar('ADMIN_EDITAR_CATEGORIA', req => re
 
 })
 
-app.delete('/admin/deletar-categoria', auditar('ADMIN_DELETAR_CATEGORIA', req => req.usuario?.id_usuario, false), autenticar, somenteAdmin, validar(schemaIdCategoriaObrigatorio, schemaIdUsuarioObrigatorio), async (req, res) => {
-    const { id_categoria, id_usuario } = req.body
+app.delete('/admin/deletar-categoria/:id_categoria/:id_usuario', auditar('ADMIN_DELETAR_CATEGORIA', req => req.usuario?.id_usuario, true), limitadorGenericoCritico, autenticar, somenteAdmin, validar(schemaIdCategoriaObrigatorio, schemaIdUsuarioObrigatorio), async (req, res) => {
+    const { id_categoria, id_usuario} = req.params
 
     // Verifica se a categoria existe
     const { data: consultaCategoria, error: erroConsulta } = await supabase
@@ -1145,7 +1200,7 @@ app.delete('/admin/deletar-categoria', auditar('ADMIN_DELETAR_CATEGORIA', req =>
 
     if (erroConsulta) {
         res.locals.auditoria.resultado = 'ERRO';
-        console.log("/usuario/deletar-categoria: Erro ao verificar a tabela: " + erroConsulta)
+        console.log("/usuario/deletar-categoria: Erro ao verificar a tabela: " + erroConsulta.message)
         return res.status(500).json({ mensagem: "Erro ao verificar a tabela, tente novamente mais tarde" })
     }
     if (!consultaCategoria) {
