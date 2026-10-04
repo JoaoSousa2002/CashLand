@@ -16,11 +16,14 @@
     "ws": "^8.21.3"
   },
   "scripts": {
+    "start": "node src/server.js",
     "test": "node --test tests/*.test.js",
+    "test:idor": "CASHLAND_E2E=1 node --test tests/idor.test.js",
     "test:supabase": "node tests/integracao/codigos-supabase.js --executar"
   },
   "devDependencies": {
     "esbuild": "^0.28.2",
-    "supabase": "^2.119.0"
+    "supabase": "^2.119.0",
+    "supertest": "^7.3.1"
   }
 }

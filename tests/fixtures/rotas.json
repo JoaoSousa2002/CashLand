@@ -1,0 +1,197 @@
+[
+  {
+    "method": "get",
+    "path": "/",
+    "middlewares": ""
+  },
+  {
+    "method": "get",
+    "path": "/login",
+    "middlewares": ""
+  },
+  {
+    "method": "get",
+    "path": "/cadastro-usuario",
+    "middlewares": ""
+  },
+  {
+    "method": "get",
+    "path": "/resetar-senha",
+    "middlewares": ""
+  },
+  {
+    "method": "get",
+    "path": "/tela-principal",
+    "middlewares": ""
+  },
+  {
+    "method": "get",
+    "path": "/tela-principal/editar-usuario",
+    "middlewares": ""
+  },
+  {
+    "method": "get",
+    "path": "/tela-principal/listar-categoria",
+    "middlewares": ""
+  },
+  {
+    "method": "get",
+    "path": "/tela-admin",
+    "middlewares": ""
+  },
+  {
+    "method": "get",
+    "path": "/tela-admin/listar-usuarios",
+    "middlewares": ""
+  },
+  {
+    "method": "get",
+    "path": "/tela-admin/editar-usuarios",
+    "middlewares": ""
+  },
+  {
+    "method": "get",
+    "path": "/tela-admin/editar-categoria",
+    "middlewares": ""
+  },
+  {
+    "method": "get",
+    "path": "/tela-admin/listar-categoria",
+    "middlewares": ""
+  },
+  {
+    "method": "get",
+    "path": "/tela-principal/criar-categoria",
+    "middlewares": ""
+  },
+  {
+    "method": "get",
+    "path": "/tela-principal/editar-categoria",
+    "middlewares": ""
+  },
+  {
+    "method": "get",
+    "path": "/me",
+    "middlewares": "auditar('CONSULTAR_SESSAO', req => req.query.id_usuario ?? req.usuario?.id_usuario, false), limitadorGenericoSimples, autenticar, validar(schemaIdUsuarioOpcional)"
+  },
+  {
+    "method": "post",
+    "path": "/login",
+    "middlewares": "auditar('LOGIN', undefined, true), limitadorLogin, validar(schemaEmail, schemaSenha)"
+  },
+  {
+    "method": "post",
+    "path": "/confirmar-senha",
+    "middlewares": "auditar('CONFIRMAR_SENHA', req => req.usuario?.id_usuario, false), limitadorSenha, autenticar, validar(schemaSenha)"
+  },
+  {
+    "method": "post",
+    "path": "/logout",
+    "middlewares": "auditar('LOGOUT', undefined, false), limitadorGenericoCritico"
+  },
+  {
+    "method": "post",
+    "path": "/solicitar-codigo",
+    "middlewares": "auditar('SOLICITAR_CODIGO_CADASTRO', undefined, false), limitadorSolicitarCodigo, validar(schemaNome, schemaEmail, schemaSenha)"
+  },
+  {
+    "method": "post",
+    "path": "/confirmar-cadastro",
+    "middlewares": "auditar('CADASTRAR_USUARIO', undefined, true), limitadorVerificarCodigo, validar(schemaNome, schemaEmail, schemaCodigo, schemaSenha)"
+  },
+  {
+    "method": "post",
+    "path": "/solicitar-reset-senha",
+    "middlewares": "auditar('SOLICITAR_RECUPERACAO_SENHA', undefined, false), limitadorSolicitarCodigo, validar(schemaEmail)"
+  },
+  {
+    "method": "post",
+    "path": "/confirmar-reset-senha",
+    "middlewares": "auditar('REDEFINIR_SENHA', undefined, true), limitadorGenericoCritico, validar(schemaEmail, schemaCodigo, schemaNovaSenha)"
+  },
+  {
+    "method": "get",
+    "path": "/usuario",
+    "middlewares": "auditar('CONSULTAR_USUARIO', req => req.usuario?.id_usuario, false), limitadorGenericoSimples, autenticar"
+  },
+  {
+    "method": "patch",
+    "path": "/usuario/desativar-usuario",
+    "middlewares": "auditar('DESATIVAR_USUARIO', req => req.usuario?.id_usuario, true), limitadorGenericoCritico, autenticar"
+  },
+  {
+    "method": "patch",
+    "path": "/usuario/atualizar-dados",
+    "middlewares": "auditar('ATUALIZAR_USUARIO', req => req.usuario?.id_usuario, true), limitadorGenericoCritico, autenticar, validar(schemaNome)"
+  },
+  {
+    "method": "post",
+    "path": "/usuario/criar-categoria",
+    "middlewares": "auditar('CRIAR_CATEGORIA', req => req.usuario?.id_usuario, false), limitadorGenericoSimples, autenticar, validar(schemaNome, schemaDescricaoCategoria)"
+  },
+  {
+    "method": "get",
+    "path": "/usuario/listar-categoria",
+    "middlewares": "auditar('USER_LISTAR_CATEGORIA', req => req.usuario?.id_usuario, false), limitadorGenericoSimples, autenticar"
+  },
+  {
+    "method": "patch",
+    "path": "/usuario/editar-categoria",
+    "middlewares": "auditar('USER_EDITAR_CATEGORIA', req => req.usuario?.id_usuario, true), limitadorGenericoSimples, autenticar, validar(schemaIdCategoriaObrigatorio, schemaNome, schemaDescricaoCategoria)"
+  },
+  {
+    "method": "delete",
+    "path": "/usuario/deletar-categoria/:id_categoria",
+    "middlewares": "auditar('USER_DELETAR_CATEGORIA', req => req.usuario?.id_usuario, true), limitadorGenericoCritico, autenticar, validar(schemaIdCategoriaObrigatorio)"
+  },
+  {
+    "method": "get",
+    "path": "/admin/listar-usuarios",
+    "middlewares": "auditar('LISTAR_USUARIOS', undefined, false), limitadorGenericoSimples, autenticar, somenteAdmin"
+  },
+  {
+    "method": "get",
+    "path": "/admin/usuario",
+    "middlewares": "auditar('CONSULTAR_USUARIO', req => req.query.id_usuario ?? req.usuario?.id_usuario, false), limitadorGenericoSimples, autenticar, somenteAdmin, validar(schemaIdUsuarioOpcional)"
+  },
+  {
+    "method": "patch",
+    "path": "/admin/editar-usuario",
+    "middlewares": "auditar('ATUALIZAR_USUARIO', req => req.body?.id_usuario, false), limitadorGenericoSimples, autenticar, somenteAdmin, validar(schemaIdUsuarioObrigatorio, schemaNome, schemaEmail)"
+  },
+  {
+    "method": "patch",
+    "path": "/admin/resetar-senha",
+    "middlewares": "auditar('SOLICITAR_RESET_ADMIN', req => req.body?.id_usuario, true), limitadorGenericoCritico, autenticar, somenteAdmin, validar(schemaIdUsuarioObrigatorio)"
+  },
+  {
+    "method": "patch",
+    "path": "/admin/reativar-usuario",
+    "middlewares": "auditar('REATIVAR_USUARIO', req => req.body?.id_usuario, true), limitadorGenericoCritico, autenticar, somenteAdmin, validar(schemaIdUsuarioObrigatorio)"
+  },
+  {
+    "method": "patch",
+    "path": "/admin/desativar-usuario",
+    "middlewares": "auditar('DESATIVAR_USUARIO', req => req.body?.id_usuario, true), limitadorGenericoCritico, autenticar, somenteAdmin, validar(schemaIdUsuarioObrigatorio)"
+  },
+  {
+    "method": "delete",
+    "path": "/admin/deletar-usuario/:id_usuario",
+    "middlewares": "auditar('EXCLUIR_USUARIO', req => req.query.id_usuario, true), limitadorGenericoCritico, autenticar, somenteAdmin, validar(schemaIdUsuarioObrigatorio)"
+  },
+  {
+    "method": "get",
+    "path": "/admin/listar-categoria",
+    "middlewares": "auditar('ADMIN_LISTAR_CATEGORIA', req => req.usuario?.id_usuario, false), limitadorGenericoSimples, autenticar, somenteAdmin, validar(schemaIdUsuarioOpcional, schemaIdCategoriaOpcional)"
+  },
+  {
+    "method": "patch",
+    "path": "/admin/editar-categoria",
+    "middlewares": "auditar('ADMIN_EDITAR_CATEGORIA', req => req.usuario?.id_usuario, false), limitadorGenericoSimples, autenticar, somenteAdmin, validar(schemaIdCategoriaObrigatorio, schemaNome, schemaDescricaoCategoria)"
+  },
+  {
+    "method": "delete",
+    "path": "/admin/deletar-categoria/:id_categoria/:id_usuario",
+    "middlewares": "auditar('ADMIN_DELETAR_CATEGORIA', req => req.usuario?.id_usuario, true), limitadorGenericoCritico, autenticar, somenteAdmin, validar(schemaIdCategoriaObrigatorio, schemaIdUsuarioObrigatorio)"
+  }
+]
