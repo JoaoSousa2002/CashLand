@@ -172,11 +172,13 @@ export async function inativarConta(req, res) {
         .maybeSingle()
 
     if (erroConsulta) {
-        console.log(erroConsulta)
+        console.log("/usuario/inativar-conta: >>>>> Erro ao inativar a conta: "+erroConsulta)
         return res.status(500).json({ mensagem: "Erro ao verificar a conta, tente novamente mais tarde" });
     } else if (!Consulta) {
+        console.log("/usuario/inativar-conta: >>>>> Essa conta não existe")
         return res.status(404).json({ mensagem: "Essa conta não existe" });
     } else if (Consulta.nome_conta === 'padrão') {
+        console.log("/usuario/inativar-conta: >>>>> Essa conta não pode ser inativada 'padrão'")
         return res.status(400).json({ mensagem: "Essa conta não pode ser inativada" })
     }
 
@@ -191,9 +193,10 @@ export async function inativarConta(req, res) {
         .single()
 
     if (erroEdita) {
-        console.log("/usuairo/editar-conta: >>>>> Erro: " + erroEdita)
+        console.log("/usuario/editar-conta: >>>>> Erro: " + erroEdita)
         return res.status(500).json({ mensagem: "Erro ao inativar a conta, tente novamente mais tarde" })
     }
+    console.log("/usuario/inativar-conta: Conta inativada com sucesso")
     return res.status(200).json({ mensagem: "Conta inativada com sucesso" })
 
 }

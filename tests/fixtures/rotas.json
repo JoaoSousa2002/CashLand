@@ -193,5 +193,25 @@
     "method": "delete",
     "path": "/admin/deletar-categoria/:id_categoria/:id_usuario",
     "middlewares": "auditar('ADMIN_DELETAR_CATEGORIA', req => req.usuario?.id_usuario, true), limitadorGenericoCritico, autenticar, somenteAdmin, validar(schemaIdCategoriaObrigatorio, schemaIdUsuarioObrigatorio)"
+  },
+  {
+    "method": "post",
+    "path": "/usuario/criar-conta",
+    "middlewares": "auditar('CRIAR_CONTA_FINANCEIRA', req => req.usuario?.id_usuario, false), limitadorGenericoSimples, autenticar, validar(schemaCriarConta )"
+  },
+  {
+    "method": "get",
+    "path": "/usuario/listar-contas",
+    "middlewares": "auditar('USER_LISTAR_CONTAS', req => req.usuario?.id_usuario, false), limitadorGenericoSimples, autenticar"
+  },
+  {
+    "method": "patch",
+    "path": "/usuario/editar-conta",
+    "middlewares": "auditar('USER_EDITAR_CONTA', req => req.usuario?.id_usuario, true), limitadorGenericoSimples, autenticar, validar(schemaCriarConta, schemaIdContaObrigatorio)"
+  },
+  {
+    "method": "patch",
+    "path": "/usuario/inativar-conta",
+    "middlewares": "auditar('USER_INATIVAR_CATEGORIA', req => req.usuario?.id_usuario, true), limitadorGenericoCritico, autenticar, validar(schemaIdContaObrigatorio)"
   }
 ]

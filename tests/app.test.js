@@ -68,7 +68,8 @@ test('usuário comum é bloqueado antes do controller em todas as rotas admin', 
             .expect(403, { erro: 'Acesso restrito a administradores' });
     }
     assert.equal(acessoBanco.mock.callCount(), 0);
-    assert.equal(eventos.filter(e => e.tipo_evento === 'AUDITORIA' && e.resultado === 'NEGADO').length, 10);
+    assert.equal(eventos.filter(e => e.tipo_evento === 'AUDITORIA' && e.resultado === 'NEGADO').length,
+        rotas.filter(rota => rota.path.startsWith('/admin/')).length);
 });
 
 test('Joi continua validando IDs da URL, body e query', async () => {
