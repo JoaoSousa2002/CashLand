@@ -7,12 +7,18 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readFileSync } from 'node:fs';
 import { LoggerHTTP } from './middlewares/LoggerHTTP.js';
+
 import pageRoutes from './routes/pageRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import usuarioRoutes from './routes/usuarioRoutes.js';
 import categoriaRoutes from './routes/categoriaRoutes.js';
 import adminUsuarioRoutes from './routes/adminUsuarioRoutes.js';
 import adminCategoriaRoutes from './routes/adminCategoriaRoutes.js';
+import contasRoutes from './routes/contasFinanceirasRoutes.js'
+
+// import criarContaFinanceira  from './routes/contasFinanceirasRoutes.js';
+// import  listarContasFinanceiras from './routes/contasFinanceirasRoutes.js';
+// import { editarConta } from './routes/contasFinanceirasRoutes.js'
 
 // Array com as CORS local
 let origemAutorizada = [];
@@ -49,6 +55,10 @@ app.use(Express.static(path.join(__dirname, '../img')));
 app.use('/', authRoutes);
 app.use('/usuario', usuarioRoutes);
 app.use('/usuario', categoriaRoutes);
+app.use('/usuario', contasRoutes);
+// app.use('/usuario', criarContaFinanceira);
+// app.use('/usuario', listarContasFinanceiras);
+// app.use('/usuario', );
 app.use('/admin', adminUsuarioRoutes);
 app.use('/admin', adminCategoriaRoutes);
 
