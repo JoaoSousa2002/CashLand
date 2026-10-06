@@ -7,6 +7,7 @@ export async function listarCategorias(req, res) {
 
     // Verifica se recebeu apenas o id_categoria
     if (id_categoria && !id_usuario) {
+        
         // Verifica se a categoria existe
         const { data: consultaCategoria, error: erroConsulta } = await supabase
             .from('categorias')

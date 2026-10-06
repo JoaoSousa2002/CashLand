@@ -231,3 +231,16 @@ export const schemaIdContaObrigatorio = Joi.object({
             "number.min": "O ID da conta deve ser maior ou igual a zero."
         })
 });
+export const schemaPesquisa = Joi.object({
+
+    pesquisa: Joi.string()
+        .trim()
+        .min(1)
+        .max(100)
+        .optional()
+        .messages({
+            "string.min": "A pesquisa deve possuir pelo menos 3 caracteres.",
+            "string.max": "A pesquisa deve possuir no máximo 100 caracteres."
+        })
+
+});

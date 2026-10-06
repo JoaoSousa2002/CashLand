@@ -417,14 +417,14 @@ ROTAS = [
                                         ],
                                     },
     {"nome": "Listar contas financeiras",
-                                        "metodo": "GET",
-                                        "caminho": "/usuario/listar-contas",
-                                        "login": True,
-                                        "admin": False,
-                                        "body": [
-                                            {"nome": "pesquisa", "tipo": "str", "obrigatorio": False}
-                                        ],
-                                        },
+            "metodo": "GET",
+            "caminho": "/usuario/listar-contas",
+            "login": True,
+            "admin": False,
+            "query": [
+            {"nome": "pesquisa", "tipo": "str", "obrigatorio": False}
+            ],
+            },
     {"nome": "Editar conta financeiras",
         "metodo": "PATCH",
         "caminho": "/usuario/editar-conta",
@@ -447,7 +447,60 @@ ROTAS = [
             {"nome": "id_conta", "tipo": "int", "obrigatorio": True}
         ],
         },
-    
+    {"nome": "Listar contas financeiras como ADMIN",
+        "metodo": "GET",
+        "caminho": "/admin/listar-contas",
+        "login": True,
+        "admin": True,
+        "query": [
+            {"nome": "pesquisa", "tipo": "str", "obrigatorio": False},
+            {"nome": "id_usuario", "tipo": "str", "obrigatorio": False}
+        ],
+        },
+    {"nome": "Editar conta financeiras como ADMIN",
+        "metodo": "PATCH",
+        "caminho": "/admin/editar-conta",
+        "login": True,
+        "admin": True,
+        "body": [
+            {"nome": "id_conta", "tipo": "int", "obrigatorio": True},
+            {"nome": "id_usuario", "tipo": "int", "obrigatorio": True},
+            {"nome": "nome_conta", "tipo": "str", "obrigatorio": True},
+            {"nome": "nome_instituicao", "tipo": "stf", "obrigatorio": False},
+            {"nome": "tipo_conta", "tipo": "str", "obrigatorio": True},
+            {"nome": "codigo_conta", "tipo": "int", "obrigatorio": False}
+        ],
+        },
+    {"nome": "Inativar conta financeiras como ADMIN",
+            "metodo": "PATCH",
+            "caminho": "/admin/inativar-conta",
+            "login": True,
+            "admin": True,
+            "body": [
+                {"nome": "id_conta", "tipo": "int", "obrigatorio": True},
+                {"nome": "id_usuario", "tipo": "int", "obrigatorio": True}
+            ],
+            },
+    {"nome": "Reativar conta financeiras como ADMIN",
+                "metodo": "PATCH",
+                "caminho": "/admin/reativar-conta",
+                "login": True,
+                "admin": True,
+                "body": [
+                    {"nome": "id_conta", "tipo": "int", "obrigatorio": True},
+                    {"nome": "id_usuario", "tipo": "int", "obrigatorio": True}
+                ],
+                },
+    {"nome": "deletar conta financeiras como ADMIN",
+                    "metodo": "DELETE",
+                    "caminho": "/admin/deletar-conta/{id_conta}/{id_usuario}",
+                    "login": True,
+                    "admin": True,
+                    "path_params": [
+                        {"nome": "id_conta", "tipo": "int", "obrigatorio": True},
+                        {"nome": "id_usuario", "tipo": "int", "obrigatorio": True}
+                    ],
+                    },
 ]
 
 

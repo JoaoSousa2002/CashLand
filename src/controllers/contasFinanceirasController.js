@@ -58,7 +58,7 @@ export async function listarContasFinanceiras(req, res) {
             return res.status(500).json({ mensagem: "Erro ao consultar as conta, tente novamente mais tarde" })
         } else if (listaContas) {
             console.log("/usuario/listar-contas: Todos os dados retornados com sucesso")
-            return res.status(200).json({ listaContas })
+            return res.status(200).json( listaContas )
         }
     }
 
@@ -94,7 +94,7 @@ export async function listarContasFinanceiras(req, res) {
         return res.status(500).json({ mensagem: "Erro ao consultar as contas, tente novamente mais tarde" })
     } else if (pesquisaNome) {
         console.log("/usuario/listar-contas: Pesquisa retornada")
-        return res.status(200).json({ pesquisaNome })
+        return res.status(200).json(pesquisaNome)
     }
 }
 // Editar conta
