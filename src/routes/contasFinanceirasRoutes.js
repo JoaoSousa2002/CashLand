@@ -4,7 +4,7 @@ import { autenticar } from '../middlewares/Autenticacao.js';
 import { limitadorGenericoSimples, limitadorGenericoCritico } from '../middlewares/RateLimit.js';
 import { validar } from '../validacoes/validar.js';
 import { schemaCriarConta, schemaIdContaObrigatorio } from '../validacoes/usuario.js';
-import { criarContaFinanceira, listarContasFinanceiras, editarConta, inativarConta } from '../controllers/contasFinanceirasController.js';
+import { criarContaFinanceira, listarContasFinanceiras, editarConta, inativarConta, reativarConta } from '../controllers/contasFinanceirasController.js';
 
 const router = Router();
 
@@ -14,6 +14,8 @@ router.get('/listar-contas', auditar('USER_LISTAR_CONTAS', req => req.usuario?.i
 
 router.patch('/editar-conta', auditar('USER_EDITAR_CONTA', req => req.usuario?.id_usuario, true), limitadorGenericoSimples, autenticar, validar(schemaCriarConta, schemaIdContaObrigatorio), editarConta);
 
-router.patch('/inativar-conta', auditar('USER_INATIVAR_CATEGORIA', req => req.usuario?.id_usuario, true), limitadorGenericoCritico, autenticar, validar(schemaIdContaObrigatorio), inativarConta);
+router.patch('/inativar-conta', auditar('USER_INATIVAR_CONTA', req => req.usuario?.id_usuario, true), limitadorGenericoCritico, autenticar, validar(schemaIdContaObrigatorio), inativarConta);
+
+router.patch('/reativar-conta', auditar('USER_REATIVAR_CONTA', req => req.usuario?.id_usuario, true), limitadorGenericoCritico, autenticar, validar(schemaIdContaObrigatorio), reativarConta);
 
 export default router;

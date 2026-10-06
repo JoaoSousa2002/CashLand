@@ -405,17 +405,17 @@ ROTAS = [
                                     ],
                                 },
     {"nome": "Criar conta financeira",
-                                        "metodo": "POST",
-                                        "caminho": "/usuario/criar-conta",
-                                        "login": True,
-                                        "admin": False,
-                                        "body": [
-                                            {"nome": "nome_conta", "tipo": "str", "obrigatorio": True},
-                                            {"nome": "nome_instituicao", "tipo": "stf", "obrigatorio": False},
-                                            {"nome": "tipo_conta", "tipo": "str", "obrigatorio": True},
-                                            {"nome": "codigo_conta", "tipo": "int", "obrigatorio": False}
-                                        ],
-                                    },
+            "metodo": "POST",
+            "caminho": "/usuario/criar-conta",
+            "login": True,
+            "admin": False,
+            "body": [
+                {"nome": "nome_conta", "tipo": "str", "obrigatorio": True},
+                {"nome": "nome_instituicao", "tipo": "stf", "obrigatorio": False},
+                {"nome": "tipo_conta", "tipo": "str", "obrigatorio": True},
+                {"nome": "codigo_conta", "tipo": "int", "obrigatorio": False}
+            ],
+        },
     {"nome": "Listar contas financeiras",
             "metodo": "GET",
             "caminho": "/usuario/listar-contas",
@@ -441,6 +441,15 @@ ROTAS = [
     {"nome": "Desativar contas financeiras",
         "metodo": "PATCH",
         "caminho": "/usuario/inativar-conta",
+        "login": True,
+        "admin": False,
+        "body": [
+            {"nome": "id_conta", "tipo": "int", "obrigatorio": True}
+        ],
+        },
+    {"nome": "Reativar contas financeiras",
+        "metodo": "PATCH",
+        "caminho": "/usuario/reativar-conta",
         "login": True,
         "admin": False,
         "body": [

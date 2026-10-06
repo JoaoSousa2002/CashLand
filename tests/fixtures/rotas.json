@@ -212,6 +212,11 @@
   {
     "method": "patch",
     "path": "/usuario/inativar-conta",
-    "middlewares": "auditar('USER_INATIVAR_CATEGORIA', req => req.usuario?.id_usuario, true), limitadorGenericoCritico, autenticar, validar(schemaIdContaObrigatorio)"
+    "middlewares": "auditar('USER_INATIVAR_CONTA', req => req.usuario?.id_usuario, true), limitadorGenericoCritico, autenticar, validar(schemaIdContaObrigatorio)"
+  },
+  {
+    "method": "patch",
+    "path": "/usuario/reativar-conta",
+    "middlewares": "auditar('USER_REATIVAR_CONTA', req => req.usuario?.id_usuario, true), limitadorGenericoCritico, autenticar, validar(schemaIdContaObrigatorio)"
   }
 ]

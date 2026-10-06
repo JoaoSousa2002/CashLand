@@ -50,7 +50,7 @@ export async function listarContasFinanceiras(req, res) {
     if (!pesquisa || pesquisa === "") {
         const { data: listaContas, error: erroConsulta } = await supabase
             .from('contas_bancarias')
-            .select('id_conta, nome_conta, codigo_conta, tipo_conta, nome_instituicao, status_conta')
+            .select('id_conta, nome_conta, codigo_conta, tipo_conta, nome_instituicao, status_conta, data_inativacao')
             .eq('id_usuario', req.usuario.id_usuario)
 
         if (erroConsulta) {
@@ -84,10 +84,10 @@ export async function listarContasFinanceiras(req, res) {
 
     const { data: pesquisaNome, error: erroPesquisaNome } = await supabase
         .from('contas_bancarias')
-        .select('id_conta, nome_conta, codigo_conta, tipo_conta, nome_instituicao, status_conta')
+        .select('id_conta, nome_conta, codigo_conta, tipo_conta, nome_instituicao, status_conta, data_inativacao')
         .eq('id_usuario', req.usuario.id_usuario)
         .order('id_conta', { ascending: true })
-        .or(condicoes.join(''))
+        .or(condicoes.join(','))
 
     if (erroPesquisaNome) {
         console.log("/usuario/listar-contas: >>>>> Erro ao listar as contas do usuario: " + erroPesquisaNome)
@@ -139,7 +139,7 @@ export async function editarConta(req, res) {
         return res.status(409).json({ mensagem: "já existe uma conta com esse nome" })
     }
 
-    const {error: erroEdita } = await supabase
+    const { data: alterados, error: erroEdita } = await supabase
         .from('contas_bancarias')
         .update({
             nome_conta: nome_conta,
@@ -149,12 +149,16 @@ export async function editarConta(req, res) {
         })
         .eq('id_conta', id_conta)
         .eq('id_usuario', req.usuario.id_usuario)
-        .single()
+        .select('id_conta, id_usuario')
+        .maybeSingle()
 
     if (erroEdita) {
         console.log("/usuairo/editar-conta: >>>>> Erro: " + erroEdita)
         return res.status(500).json({ mensagem: "Erro ao editar a conta, tente novamente mais tarde" })
+    } else if (!alterados) {
+        return res.status(404).json({ mensagem: "Essa conta não existe" });
     }
+    confirmarAlteracao(res, alterados);
     return res.status(200).json({ mensagem: "Conta editada com sucesso" })
 
 }
@@ -165,10 +169,9 @@ export async function inativarConta(req, res) {
     //Verifica se a conta existe ou se é a conta padrão
     const { data: Consulta, error: erroConsulta } = await supabase
         .from('contas_bancarias')
-        .select('id_conta, nome_conta')
+        .select('id_conta, nome_conta, status_conta')
         .eq('id_conta', id_conta)
         .eq('id_usuario', req.usuario.id_usuario)
-        .select()
         .maybeSingle()
 
     if (erroConsulta) {
@@ -180,23 +183,73 @@ export async function inativarConta(req, res) {
     } else if (Consulta.nome_conta === 'padrão') {
         console.log("/usuario/inativar-conta: >>>>> Essa conta não pode ser inativada 'padrão'")
         return res.status(400).json({ mensagem: "Essa conta não pode ser inativada" })
+    } else if (Consulta.status_conta === "Inativo") {
+        return res.status(409).json({ mensagem: "Essa conta já está inativada" })
     }
 
     // Inativa a conta (soft-delete)
-    const {error: erroEdita } = await supabase
+    const { data: alterados, error: erroEdita } = await supabase
         .from('contas_bancarias')
         .update({
-            status_conta: "Inativo"
+            status_conta: "Inativo",
+            data_inativacao: new Date().toISOString()
         })
         .eq('id_conta', id_conta)
         .eq('id_usuario', req.usuario.id_usuario)
-        .single()
+        .select('id_conta, id_usuario')
+        .maybeSingle()
 
     if (erroEdita) {
-        console.log("/usuario/editar-conta: >>>>> Erro: " + erroEdita)
+        console.log("/usuario/inativar-conta: >>>>> Erro: " + erroEdita)
         return res.status(500).json({ mensagem: "Erro ao inativar a conta, tente novamente mais tarde" })
+    } else if (!alterados) {
+        return res.status(404).json({ mensagem: "Essa conta não existe" });
     }
+    confirmarAlteracao(res, alterados);
     console.log("/usuario/inativar-conta: Conta inativada com sucesso")
     return res.status(200).json({ mensagem: "Conta inativada com sucesso" })
 
+}
+
+// Reativar conta
+export async function reativarConta(req, res) {
+    const { id_conta } = req.body
+
+    //Verifica se a conta existe e se já está ativa
+    const { data: Consulta, error: erroConsulta } = await supabase
+        .from('contas_bancarias')
+        .select('id_conta, nome_conta, status_conta')
+        .eq('id_conta', id_conta)
+        .eq('id_usuario', req.usuario.id_usuario)
+        .maybeSingle()
+
+    if (erroConsulta) {
+        console.log("/usuario/reativar-conta: >>>>> Erro ao verificar a conta: " + erroConsulta)
+        return res.status(500).json({ mensagem: "Erro ao verificar a conta, tente novamente mais tarde" });
+    } else if (!Consulta) {
+        return res.status(404).json({ mensagem: "Essa conta não existe" });
+    } else if (Consulta.status_conta === "Ativo") {
+        return res.status(409).json({ mensagem: "Essa conta já está Ativa" })
+    }
+
+    const { data: alterados, error: erroEdita } = await supabase
+        .from('contas_bancarias')
+        .update({
+            status_conta: "Ativo",
+            data_inativacao: null
+        })
+        .eq('id_conta', id_conta)
+        .eq('id_usuario', req.usuario.id_usuario)
+        .select('id_conta, id_usuario')
+        .maybeSingle()
+
+    if (erroEdita) {
+        console.log("/usuario/reativar-conta: >>>>> Erro: " + erroEdita)
+        return res.status(500).json({ mensagem: "Erro ao reativar a conta, tente novamente mais tarde" })
+    } else if (!alterados) {
+        return res.status(404).json({ mensagem: "Essa conta não existe" });
+    }
+    confirmarAlteracao(res, alterados);
+    console.log("/usuario/reativar-conta: Conta reativada com sucesso")
+    return res.status(200).json({ mensagem: "Conta reativada com sucesso" })
 }

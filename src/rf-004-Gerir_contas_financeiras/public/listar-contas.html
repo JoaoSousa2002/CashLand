@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minhas contas — CashLand</title>
+    <link rel="stylesheet" href="/template.css">
+</head>
+
+<body>
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="loading-box">
+            <div style="margin: auto 0;">
+                <p>Carregando... </p>
+            </div>
+            <div class="spinning-wheel"></div>
+        </div>
+    </div>
+
+    <div class="loading-overlay" id="resultado-overlay">
+        <div class="loading-box" id="resultado-funcao">
+            <div id="div-resultado-overlay"
+                class="dialogo-conteudo">
+                <h5 id="resultado-mensagem" style="margin: 0;"></h5>
+                <input class="botao-dialogo" type="button" onclick="FechaResultado_overlay()" value="Continuar">
+            </div>
+        </div>
+    </div>
+    <div id="container">
+        <div id="div-superior">
+
+            <div id="div-nome-sistema">
+                <a href="/tela-principal">
+                    <h1>CashLand</h1>
+                </a>
+            </div>
+
+            <div id="div-nav">
+                <nav>
+                    <a href="/tela-principal/listar-categoria">Gerir categorias</a>
+                    <a href="/tela-principal/listar-contas">Gerir contas financeiras</a>
+                </nav>
+            </div>
+            <div id="div-nome-usuario">
+                <h3><span id="nome-usuario"></span></h3>
+            </div>
+            <div id="div-usuario">
+                <a onclick="redirecionaTela()">
+                    <img src="/User_icon_black.png" alt="icone usuario">
+                </a>
+            </div>
+            <div id="form-logout">
+                <form id="meuForm-Logout">
+                    <input type="submit" value="Sair">
+                </form>
+            </div>
+        </div>
+        <div id="container-conteudo" class="pagina-listagem">
+            <div id="div-form-tabela">
+                <h2>Minhas contas financeiras</h2>
+                <form id="form-listar-contas">
+                    <label for="pesquisa-conta">Nome ou id da conta:
+                        <input type="text" id="pesquisa-conta" placeholder="Ex.: Conta corrente ou 3">
+                    </label>
+                    <input type="submit" value="Pesquisar">
+                    <button type="button" id="botao-nova-conta" class="btn-primary"
+                        onclick="window.location.href='/tela-principal/criar-conta'">Criar conta</button>
+                </form>
+            </div>
+            <div id="div-tabela">
+                <table class="tabela-listagem">
+                    <thead>
+                        <tr>
+                            <th scope="col" style="width: 70px;">ID</th>
+                            <th scope="col">Nome</th>
+                            <th scope="col">Código</th>
+                            <th scope="col">Tipo</th>
+                            <th scope="col">Instituição</th>
+                            <th scope="col" style="width: 100px;">Status</th>
+                            <th scope="col" id="th-opcoes" style="width: 100px;">Opções</th>
+                        </tr>
+                    </thead>
+                    <tbody id="corpo-tabela"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="/protecao.js"></script>
+    <script>
+        let retornarLogin = false;
+        let sessaoPronta = false;
+        let carregando = false;
+        let idUsuario = null;
+        const loading = document.getElementById('loading-overlay');
+        const resultado_overlay = document.getElementById('resultado-overlay');
+        const filtro = document.getElementById('pesquisa-conta');
+
+        function MostrarResultado_Overlay(tipo, mensagem) {
+            const texto = document.getElementById('resultado-mensagem');
+            texto.textContent = mensagem;
+            if (tipo === 1) {
+                texto.style.color = 'var(--sucesso)';
+            } else {
+                texto.style.color = 'var(--erro)';
+            }
+            resultado_overlay.style.display = 'flex';
+        }
+
+        function FechaResultado_overlay() {
+            resultado_overlay.style.display = 'none';
+            if (retornarLogin) {
+                window.location.href = '/login';
+            }
+        }
+
+        function mensagemResposta(resposta, dados) {
+            if (dados && dados.mensagem) {
+                return dados.mensagem;
+            } else {
+                return `Não foi possível concluir a operação (HTTP ${resposta.status}).`;
+            }
+        }
+
+        async function redirecionaTela() {
+            const usuario = await protegerPagina();
+            if (!usuario) return;
+            if (usuario.tipo === 'Comum') {
+                window.location.href = '/tela-principal/editar-usuario';
+            } else if (usuario.tipo === 'Admin') {
+                window.location.href = `/tela-admin/editar-usuarios?id=${usuario.id_usuario}`;
+            }
+        }
+
+        function ver(id_conta) {
+            window.location.href = `/tela-principal/editar-conta?id=${id_conta}`;
+        }
+
+        function renderizarTabela(contas) {
+            const corpo = document.getElementById('corpo-tabela');
+            corpo.replaceChildren();
+            if (contas.length === 0) {
+                const linha = document.createElement('tr');
+                linha.id = 'linha-vazia';
+                const coluna = document.createElement('td');
+                coluna.colSpan = 7;
+                coluna.textContent = 'Nenhuma conta encontrada.';
+                linha.appendChild(coluna);
+                corpo.appendChild(linha);
+                return;
+            }
+            contas.forEach(conta => {
+                const linha = document.createElement('tr');
+                const valores = [conta.id_conta, conta.nome_conta, conta.codigo_conta ?? '---',
+                    conta.tipo_conta, conta.nome_instituicao ?? '---', conta.status_conta];
+                valores.forEach(valor => {
+                    const coluna = document.createElement('td');
+                    coluna.textContent = valor;
+                    coluna.title = coluna.textContent;
+                    linha.appendChild(coluna);
+                });
+                const opcoes = document.createElement('td');
+                opcoes.className = 'td-opcoes';
+                const acoes = document.createElement('div');
+                acoes.className = 'acoes-tabela';
+                const botaoVer = document.createElement('button');
+                botaoVer.type = 'button';
+                botaoVer.textContent = 'Ver';
+                botaoVer.addEventListener('click', () => ver(conta.id_conta));
+                acoes.appendChild(botaoVer);
+                opcoes.appendChild(acoes);
+                linha.appendChild(opcoes);
+                corpo.appendChild(linha);
+            });
+        }
+
+        async function listarContas() {
+            if (!sessaoPronta || carregando) return;
+            carregando = true;
+            loading.style.display = 'flex';
+            document.getElementById('corpo-tabela').replaceChildren();
+            try {
+                let rota = '/usuario/listar-contas';
+                const pesquisa = filtro.value.trim();
+                if (pesquisa !== '') {
+                    rota += `?pesquisa=${encodeURIComponent(pesquisa)}`;
+                }
+                const resposta = await fetch(rota, { method: 'GET', credentials: 'include' });
+                const dados = await resposta.json();
+                switch (resposta.status) {
+                    case 200:
+                        if (!Array.isArray(dados)) {
+                            throw new Error('Formato de resposta inesperado.');
+                        }
+                        renderizarTabela(dados);
+                        break;
+                    case 401:
+                        retornarLogin = true;
+                        sessaoPronta = false;
+                        MostrarResultado_Overlay(0, mensagemResposta(resposta, dados));
+                        break;
+                    case 404:
+                        renderizarTabela([]);
+                        MostrarResultado_Overlay(0, mensagemResposta(resposta, dados));
+                        break;
+                    case 429:
+                    case 500:
+                    default:
+                        MostrarResultado_Overlay(0, mensagemResposta(resposta, dados));
+                        break;
+                }
+            } catch {
+                MostrarResultado_Overlay(0, 'Não foi possível carregar as contas. Tente novamente.');
+            } finally {
+                carregando = false;
+                loading.style.display = 'none';
+            }
+        }
+
+        document.getElementById('form-listar-contas').addEventListener('submit', async (evento) => {
+            evento.preventDefault();
+            await listarContas();
+        });
+        document.getElementById('meuForm-Logout').addEventListener('submit', async (evento) => {
+            evento.preventDefault();
+            loading.style.display = 'flex';
+            try {
+                const resposta = await fetch('/logout', { method: 'POST', credentials: 'include' });
+                const dados = await resposta.json();
+                switch (resposta.status) {
+                    case 200:
+                        localStorage.removeItem('tipo');
+                        window.location.href = '/login';
+                        break;
+                    case 401:
+                        retornarLogin = true;
+                        sessaoPronta = false;
+                        MostrarResultado_Overlay(0, mensagemResposta(resposta, dados));
+                        break;
+                    default:
+                        MostrarResultado_Overlay(0, mensagemResposta(resposta, dados));
+                        break;
+                }
+            } catch {
+                MostrarResultado_Overlay(0, 'Não foi possível sair. Tente novamente.');
+            } finally {
+                loading.style.display = 'none';
+            }
+        });
+
+        async function iniciar() {
+            loading.style.display = 'flex';
+            try {
+                const usuario = await protegerPagina();
+                if (!usuario) return;
+                document.getElementById('nome-usuario').textContent = usuario.nome.slice(0, 8);
+                idUsuario = usuario.id_usuario;
+                sessaoPronta = true;
+                await listarContas();
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+        iniciar();
+    </script>
+</body>
+</html>

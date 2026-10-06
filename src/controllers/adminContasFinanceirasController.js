@@ -282,6 +282,7 @@ export async function inativarConta(req, res) {
         .from('contas_bancarias')
         .update({
             status_conta: "Inativo",
+            data_inativacao: new Date().toISOString(),
         })
         .eq('id_conta', id_conta)
         .eq('id_usuario', id_usuario)
@@ -334,6 +335,7 @@ export async function reativarConta(req, res) {
         .from('contas_bancarias')
         .update({
             status_conta: "Ativo",
+            data_inativacao: null,
         })
         .eq('id_conta', id_conta)
         .eq('id_usuario', id_usuario)

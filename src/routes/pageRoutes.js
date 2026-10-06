@@ -63,4 +63,26 @@ router.get('/tela-principal/editar-categoria', (req, res) => {
     res.sendFile(path.join(__dirname, '../rf-003-Gerir_categoria/public/editar_categoria.html'));
 });
 
+// RF004 - Gerir Contas Financeiras ============================================================================
+
+router.get('/tela-principal/listar-contas', (req, res) => {
+    res.sendFile(path.join(__dirname, '../rf-004-Gerir_contas_financeiras/public/listar-contas.html'));
+});
+
+router.get('/tela-principal/criar-conta', (req, res) => {
+    res.sendFile(path.join(__dirname, '../rf-004-Gerir_contas_financeiras/public/criar-conta.html'));
+});
+
+router.get('/tela-principal/editar-conta', (req, res) => {
+    res.sendFile(path.join(__dirname, '../rf-004-Gerir_contas_financeiras/public/editar-conta.html'));
+});
+
+router.get('/tela-admin/listar-contas', (req, res) => {
+    res.sendFile(path.join(__dirname, '../rf-004-Gerir_contas_financeiras/public/ADMIN_listar-contas.html'));
+});
+
+router.get('/tela-admin/editar-conta', (req, res) => {
+    res.sendFile(path.join(__dirname, '../rf-004-Gerir_contas_financeiras/public/ADMIN_editar-conta.html'));
+});
+
 export default router;

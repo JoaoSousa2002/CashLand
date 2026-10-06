@@ -34,6 +34,7 @@
             <div id="div-nav">
                 <nav>
                     <a href="/tela-principal/listar-categoria">Gerir categorias</a>
+                    <a href="/tela-principal/listar-contas">Gerir contas financeiras</a>
                 </nav>
             </div>
             <div id="div-nome-usuario">
@@ -101,6 +102,13 @@
                     method: 'GET',
                     credentials: 'include',
                 });
+                if (resposta.status === 429) {
+                    const dados = await resposta.json().catch(() => ({}));
+                    loading.style.display = 'none';
+                    resultado_overlay.style.display = 'flex';
+                    MostrarResultado_Overlay(0, dados.mensagem || 'Limite de requisições atingido. Tente novamente mais tarde.');
+                    return;
+                }
                 const usuario = await resposta.json();
                 switch (resposta.status) {
                     case 200:
@@ -131,6 +139,7 @@
 
         async function redirecionaTela(){
             const data = await protegerPagina()
+            if (!data) return;
             if (data.tipo === 'Comum') {
                 window.location.href = '/tela-principal/editar-usuario'
             } else if (data.tipo === 'Admin') {
@@ -138,15 +147,23 @@
             }
         }
         protegerPagina().then(usuario => {
+            if (!usuario) return;
             document.getElementById('nome-usuario').textContent = usuario.nome.slice(0, 8);
         });
 
         document.getElementById("meuForm-Logout").addEventListener("submit", async (e) => {
             e.preventDefault();
-            resposta = await fetch('/logout', {
+            const resposta = await fetch('/logout', {
                 method: 'POST',
                 credentials: 'include'
             });
+            if (resposta.status === 429) {
+                const dados = await resposta.json().catch(() => ({}));
+                loading.style.display = 'none';
+                resultado_overlay.style.display = 'flex';
+                MostrarResultado_Overlay(0, dados.mensagem || 'Limite de requisições atingido. Tente novamente mais tarde.');
+                return;
+            }
             console.log(resposta.mensagem)
 
             localStorage.removeItem('tipo');

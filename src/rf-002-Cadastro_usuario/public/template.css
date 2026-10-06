@@ -449,6 +449,10 @@ input[type="submit"]:hover:not(:disabled),
     text-align: center;
 }
 
+.cartao-acoes > h2 {
+    text-align: left;
+}
+
 .acoes-formulario {
     display: flex;
     flex-wrap: wrap;

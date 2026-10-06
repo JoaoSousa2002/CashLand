@@ -50,6 +50,7 @@
     <script>
         let liberarAcesso = false;
         let resetSolicitado = false;
+        let enviando = false;
         const loading = document.getElementById("loading-overlay");
         const resultado_overlay = document.getElementById("resultado-overlay");
         function MostrarErro(id, mensagem) {
@@ -111,56 +112,86 @@
         });
         document.getElementById("meuForm").addEventListener("submit", async (e) => {
             e.preventDefault();
+            if (enviando) return;
+            enviando = true;
+            liberarAcesso = false;
+            resetSolicitado = false;
             const email = document.getElementById("Email").value.trim();
             const senha = document.getElementById("Senha").value;
 
             loading.style.display = "flex"
-            const response = await fetch(`/login`, {
-                method: 'POST',
-                credentials: 'include',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, senha })
-            });
-            const resultado = await response.json();
-            loading.style.display = "none";
+            try {
+                const response = await fetch(`/login`, {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, senha })
+                });
+                const resultado = await response.json();
 
-            switch (response.status) {
-                // SUCESSO
-                case 200:
-                    resultado_overlay.style.display = "flex";
-                    MostrarResultado_Overlay(1, resultado.mensagem)
-                    console.log(resultado.mensagem)
-
-                    localStorage.setItem('tipo', resultado.usuario.tipo);
-                    liberarAcesso = true;
-                    break;
-                case 203:
-                    resultado_overlay.style.display = "flex";
-                    MostrarResultado_Overlay(0, resultado.mensagem)
-                    console.log(resultado.mensagem)
-                    resetSolicitado = true;
-                    break;
-                // ERROS:
-                case 400:
-                    if (resultado.erros?.length) {
-                        MostrarErro("erro-email", "");
-                        MostrarErro("erro-senha", "");
-                        resultado.erros.forEach(erro => {
-                            MostrarErro(`erro-${erro.campo}`, erro.mensagem);
+                switch (response.status) {
+                    // SUCESSO
+                    case 200:
+                        const respostaSessao = await fetch('/me', {
+                            method: 'GET',
+                            credentials: 'include'
                         });
-                    }
-                    break;
-                case 401:
-                case 403:
-                case 429:
-                    resultado_overlay.style.display = "flex";
-                    MostrarResultado_Overlay(0, resultado.mensagem)
-                    console.log(resultado.mensagem)
-                    break;
-                default:
-                    break;
+                        const sessao = await respostaSessao.json();
+                        if (respostaSessao.status !== 200) {
+                            resultado_overlay.style.display = "flex";
+                            MostrarResultado_Overlay(0, sessao.mensagem || `Não foi possível verificar a sessão (HTTP ${respostaSessao.status}).`);
+                            break;
+                        }
+                        resultado_overlay.style.display = "flex";
+                        MostrarResultado_Overlay(1, resultado.mensagem)
+                        console.log(resultado.mensagem)
+
+                        localStorage.setItem('tipo', sessao.tipo);
+                        liberarAcesso = true;
+                        break;
+                    case 203:
+                        resultado_overlay.style.display = "flex";
+                        MostrarResultado_Overlay(0, resultado.mensagem)
+                        console.log(resultado.mensagem)
+                        resetSolicitado = true;
+                        break;
+                    // ERROS:
+                    case 400:
+                        if (resultado.erros?.length) {
+                            MostrarErro("erro-email", "");
+                            MostrarErro("erro-senha", "");
+                            resultado.erros.forEach(erro => {
+                                MostrarErro(`erro-${erro.campo}`, erro.mensagem);
+                            });
+                        }
+                        break;
+                    case 401:
+                    case 403:
+                    case 429:
+                        resultado_overlay.style.display = "flex";
+                        MostrarResultado_Overlay(0, resultado.mensagem)
+                        console.log(resultado.mensagem)
+                        break;
+                    default:
+                        resultado_overlay.style.display = "flex";
+                        MostrarResultado_Overlay(0, resultado.mensagem || `Não foi possível entrar (HTTP ${response.status}).`);
+                        break;
+                }
+            } catch {
+                resultado_overlay.style.display = "flex";
+                MostrarResultado_Overlay(0, 'Não foi possível entrar. Verifique a conexão e tente novamente.');
+            } finally {
+                loading.style.display = "none";
+                enviando = false;
             }
         })
+
+        const erroLogin = sessionStorage.getItem('erro-login');
+        if (erroLogin) {
+            sessionStorage.removeItem('erro-login');
+            resultado_overlay.style.display = "flex";
+            MostrarResultado_Overlay(0, erroLogin);
+        }
     </script>
 </body>
 

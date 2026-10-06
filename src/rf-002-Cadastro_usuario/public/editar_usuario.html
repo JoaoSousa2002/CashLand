@@ -36,6 +36,7 @@
             <div id="div-nav">
                 <nav>
                     <a href="/tela-principal/listar-categoria">Gerir categorias</a>
+                    <a href="/tela-principal/listar-contas">Gerir contas financeiras</a>
                 </nav>
             </div>
             <div id="div-nome-usuario">
@@ -100,8 +101,13 @@
                     </form>
                 </div>
                 <div class="cartao cartao-acoes">
-                    <input type="button" value="Categorias financeiras"
-                        onclick="location.href='/tela-principal/listar-categoria'">
+                    <h2>Opções</h2>
+                    <div class="acoes-formulario">
+                        <input type="button" value="Categorias financeiras"
+                            onclick="location.href='/tela-principal/listar-categoria'">
+                        <input type="button" value="Contas financeiras"
+                            onclick="location.href='/tela-principal/listar-contas'">
+                    </div>
                 </div>
             </div>
         </div>
@@ -255,6 +261,13 @@
                     method: 'GET',
                     credentials: 'include',
                 });
+                if (resposta.status === 429) {
+                    const dados = await resposta.json().catch(() => ({}));
+                    loading.style.display = 'none';
+                    resultado_overlay.style.display = 'flex';
+                    MostrarResultado_Overlay(0, dados.mensagem || 'Limite de requisições atingido. Tente novamente mais tarde.');
+                    return;
+                }
                 const usuario = await resposta.json();
                 switch (resposta.status) {
                     case 200:
@@ -410,6 +423,7 @@
             })
         }
         protegerPagina().then(usuario => {
+            if (!usuario) return;
             document.getElementById('nome-usuario').textContent = usuario.nome.slice(0, 12);
 
         });
@@ -427,6 +441,13 @@
                 method: 'POST',
                 credentials: 'include'
             });
+            if (resposta.status === 429) {
+                const dados = await resposta.json().catch(() => ({}));
+                loading.style.display = 'none';
+                resultado_overlay.style.display = 'flex';
+                MostrarResultado_Overlay(0, dados.mensagem || 'Limite de requisições atingido. Tente novamente mais tarde.');
+                return;
+            }
             console.log(resposta.mensagem)
 
             localStorage.removeItem('tipo');

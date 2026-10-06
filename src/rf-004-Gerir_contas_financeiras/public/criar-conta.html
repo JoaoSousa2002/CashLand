@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Criar categoria — CashLand</title>
+    <title>Criar conta — CashLand</title>
     <link rel="stylesheet" href="/template.css">
 </head>
 
@@ -59,25 +59,44 @@
         <div id="container-conteudo">
             <div id="div-Cadastro" class="cartao">
                 <div id="id-Titulo">
-                    <h2>Criar categoria</h2>
+                    <h2>Criar conta</h2>
                     <input type="button" value="Voltar" id="botao-Voltar"
-                        onclick="location.href='/tela-principal/listar-categoria'">
+                        onclick="location.href='/tela-principal/listar-contas'">
                 </div>
                 <form id="meuForm" novalidate>
                     <div class="input-dados">
-                        <label for="nome">Nome:</label>
-                        <input type="text" name="nome" id="nome" placeholder="Ex: Alimentação" required minlength="3"
-                            maxlength="100" aria-describedby="erro-nome">
+                        <label for="nome_conta">Nome da conta:</label>
+                        <input type="text" name="nome_conta" id="nome_conta" placeholder="Ex: Conta principal" required minlength="2"
+                            maxlength="100" aria-describedby="erro-nome_conta">
                     </div>
-                    <div id="erro-nome" aria-live="polite"></div>
+                    <div id="erro-nome_conta" aria-live="polite"></div>
                     <div class="input-dados">
-                        <label for="descricao">Descrição (opcional):</label>
-                        <input type="text" name="descricao" id="descricao" placeholder="Ex: Compras do mês"
-                            minlength="3" maxlength="100" aria-describedby="erro-descricao">
+                        <label for="tipo_conta">Tipo da conta:</label>
+                        <select name="tipo_conta" id="tipo_conta" required aria-describedby="erro-tipo_conta">
+                            <option value="">Selecione o tipo da conta</option>
+                            <option value="Corrente">Corrente</option>
+                            <option value="Poupança">Poupança</option>
+                            <option value="Salario">Salario</option>
+                            <option value="Conjunta">Conjunta</option>
+                            <option value="Internacional">Internacional</option>
+                            <option value="Credito">Credito</option>
+                        </select>
                     </div>
-                    <div id="erro-descricao" aria-live="polite"></div>
+                    <div id="erro-tipo_conta" aria-live="polite"></div>
+                    <div class="input-dados">
+                        <label for="nome_instituicao">Instituição (opcional):</label>
+                        <input type="text" name="nome_instituicao" id="nome_instituicao" placeholder="Ex: Nome do banco"
+                            minlength="2" maxlength="100" aria-describedby="erro-nome_instituicao">
+                    </div>
+                    <div id="erro-nome_instituicao" aria-live="polite"></div>
+                    <div class="input-dados">
+                        <label for="codigo_conta">Código da conta (opcional):</label>
+                        <input type="number" name="codigo_conta" id="codigo_conta" min="0" step="1"
+                            placeholder="Ex: 123" aria-describedby="erro-codigo_conta">
+                    </div>
+                    <div id="erro-codigo_conta" aria-live="polite"></div>
                     <div id="input-submit">
-                        <input type="submit" value="Criar categoria" id="botao-Enviar" disabled>
+                        <input type="submit" value="Criar conta" id="botao-Enviar" disabled>
                     </div>
                 </form>
             </div>
@@ -155,19 +174,23 @@
             enviando = true;
             botaoEnviar.disabled = true;
             loading.style.display = 'flex';
-            MostrarErro('erro-nome', '');
-            MostrarErro('erro-descricao', '');
-            const nome = document.getElementById('nome').value.trim();
-            const descricao = document.getElementById('descricao').value.trim();
+            MostrarErro('erro-nome_conta', '');
+            MostrarErro('erro-tipo_conta', '');
+            MostrarErro('erro-nome_instituicao', '');
+            MostrarErro('erro-codigo_conta', '');
+            const nome_conta = document.getElementById('nome_conta').value.trim();
+            const tipo_conta = document.getElementById('tipo_conta').value;
+            const nome_instituicao = document.getElementById('nome_instituicao').value.trim();
+            const codigo_conta = document.getElementById('codigo_conta').value.trim();
             try {
-                const resposta = await fetch('/usuario/criar-categoria', {
+                const resposta = await fetch('/usuario/criar-conta', {
                     method: 'POST',
                     credentials: 'include',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ nome, descricao })
+                    body: JSON.stringify({ nome_conta, tipo_conta, nome_instituicao, codigo_conta: codigo_conta === '' ? null : codigo_conta })
                 });
                 const dados = await resposta.json();
-                if (resposta.status === 200 || resposta.status === 201) {
+                if (resposta.status === 200) {
                     form.reset();
                     MostrarResultado_Overlay(1, dados.mensagem);
                 } else {
@@ -175,11 +198,12 @@
                         dados.erros.forEach(erro => {
                             MostrarErro(`erro-${erro.campo}`, erro.mensagem);
                         });
+                    } else {
+                        MostrarResultado_Overlay(0, mensagemResposta(resposta, dados));
                     }
-                    MostrarResultado_Overlay(0, mensagemResposta(resposta, dados));
                 }
             } catch {
-                MostrarResultado_Overlay(0, 'Não foi possível confirmar o cadastro. Consulte suas categorias antes de tentar novamente.');
+                MostrarResultado_Overlay(0, 'Não foi possível confirmar o cadastro. Consulte suas contas antes de tentar novamente.');
             } finally {
                 loading.style.display = 'none';
                 enviando = false;

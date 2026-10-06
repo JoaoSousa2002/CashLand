@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editar conta — Admin — CashLand</title>
+    <link rel="stylesheet" href="/template.css">
+</head>
+
+<body>
+    <div class="loading-overlay" id="loading-overlay" role="status">
+        <div class="loading-box">
+            <p>Carregando...</p>
+            <div class="spinning-wheel" aria-hidden="true"></div>
+        </div>
+    </div>
+
+    <div class="loading-overlay" id="resultado-overlay" role="dialog" aria-modal="true"
+        aria-labelledby="resultado-titulo" style="display: none;">
+        <div class="loading-box dialogo-conteudo">
+            <h2 id="resultado-titulo"></h2>
+            <p id="resultado-mensagem" style="white-space: pre-line;"></p>
+            <div class="acoes-formulario">
+                <button id="confirmar-inativacao" type="button" hidden>Inativar conta</button>
+                <button id="fechar-resultado" type="button">Continuar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="container" hidden>
+        <div id="div-superior">
+
+            <div id="div-nome-sistema">
+                <a href="/tela-admin">
+                    <h1>CashLand</h1>
+                </a>
+            </div>
+
+            <div id="div-nav">
+                <nav>
+                    <a href="/tela-admin/listar-usuarios">Gerir usuários</a>
+                    <a href="/tela-admin/listar-categoria">Gerir categorias</a>
+                    <a href="/tela-admin/listar-contas">Gerir contas financeiras</a>
+                </nav>
+            </div>
+            <div id="div-nome-usuario">
+                <h3><span id="nome-usuario"></span></h3>
+            </div>
+            <div id="div-usuario">
+                <a onclick="redirecionaTela()">
+                    <img src="/User_icon_black.png" alt="icone usuario">
+                </a>
+            </div>
+            <div id="form-logout">
+                <form id="meuForm-Logout">
+                    <input type="submit" value="Sair">
+                </form>
+            </div>
+
+        </div>
+
+        <main id="container-conteudo">
+            <div class="cartao">
+                <div id="id-Titulo">
+                    <h2>Editar conta</h2>
+                    <button id="botao-Voltar" type="button"
+                        onclick="window.location.href='/tela-admin/listar-contas'">Voltar</button>
+                </div>
+                <form id="form-conta" novalidate>
+                    <label for="id_conta">ID da Conta</label>
+                    <input id="id_conta" readonly disabled aria-describedby="erro-id_conta">
+                    <div id="erro-id_conta" aria-live="polite"></div>
+
+                    <label for="nome_conta">Nome da conta</label>
+                    <input id="nome_conta" required minlength="2" maxlength="100" aria-describedby="erro-nome_conta">
+                    <div id="erro-nome_conta" aria-live="polite"></div>
+
+                    <label for="status_conta">Status da conta</label>
+                    <input id="status_conta" readonly disabled>
+
+                    <label for="tipo_conta">Tipo da conta</label>
+                    <select id="tipo_conta" required aria-describedby="erro-tipo_conta">
+                        <option value="">Selecione o tipo da conta</option>
+                        <option value="Corrente">Corrente</option>
+                        <option value="Poupança">Poupança</option>
+                        <option value="Salario">Salario</option>
+                        <option value="Conjunta">Conjunta</option>
+                        <option value="Internacional">Internacional</option>
+                        <option value="Credito">Credito</option>
+                    </select>
+                    <div id="erro-tipo_conta" aria-live="polite"></div>
+
+                    <label for="nome_instituicao">Instituição (opcional)</label>
+                    <input id="nome_instituicao" minlength="2" maxlength="100" aria-describedby="erro-nome_instituicao">
+                    <div id="erro-nome_instituicao" aria-live="polite"></div>
+
+                    <label for="codigo_conta">Código da conta (opcional)</label>
+                    <input id="codigo_conta" type="number" min="0" step="1" aria-describedby="erro-codigo_conta">
+                    <div id="erro-codigo_conta" aria-live="polite"></div>
+
+                    <label for="id_usuario">ID do usuário</label>
+                    <input id="id_usuario" readonly disabled aria-describedby="erro-id_usuario">
+                    <div id="erro-id_usuario" aria-live="polite"></div>
+
+                    <label for="nome_usuario">Nome do usuário</label>
+                    <input id="nome_usuario" readonly disabled>
+
+                    <label for="data_criacao">Data de criação</label>
+                    <input id="data_criacao" readonly disabled>
+
+                    <label for="data_inativacao">Data de inativação</label>
+                    <input id="data_inativacao" readonly disabled>
+
+                    <div class="acoes-formulario">
+                        <button id="salvar" type="submit" disabled>Salvar Alterações</button>
+                        <button id="inativar" type="button" class="botao-excluir" disabled>Inativar conta</button>
+                    </div>
+                </form>
+            </div>
+        </main>
+    </div>
+
+    <script src="/protecao.js"></script>
+    <script>
+        // Captura os parâmetros corretos da URL
+        const urlParams = new URLSearchParams(location.search);
+        const idContaRecebido = urlParams.get('id_conta');
+        const idUsuarioRecebido = urlParams.get('id_usuario');
+
+        const loading = document.getElementById('loading-overlay');
+        const resultado = document.getElementById('resultado-overlay');
+        const conteudo = document.getElementById('container');
+        const form = document.getElementById('form-conta');
+        const salvar = document.getElementById('salvar');
+        const inativar = document.getElementById('inativar');
+        const confirmarInativacao = document.getElementById('confirmar-inativacao');
+        const fechar = document.getElementById('fechar-resultado');
+
+        let voltarAoLogin = false;
+        let contaInativa = false;
+        let sessaoPronta = false;
+        let enviando = false;
+
+        function MostrarErro(id, mensagem) {
+            const elemento = document.getElementById(id);
+            elemento.replaceChildren();
+            if (mensagem) {
+                const texto = document.createElement('h5');
+                texto.textContent = mensagem;
+                elemento.appendChild(texto);
+            }
+        }
+
+        function mostrarErrosCampos(status, dados) {
+            if (status === 400 && Array.isArray(dados.erros)) {
+                dados.erros.forEach(erro => {
+                    if (['id_conta', 'id_usuario', 'nome_conta', 'tipo_conta', 'nome_instituicao', 'codigo_conta'].includes(erro.campo)) {
+                        MostrarErro(`erro-${erro.campo}`, erro.mensagem);
+                    }
+                });
+                return true;
+            } else if (status === 409 && dados.mensagem) {
+                MostrarErro('erro-nome_conta', dados.mensagem);
+                return true;
+            }
+            return false;
+        }
+
+        function mostrarResultado(sucesso, mensagem) {
+            confirmarInativacao.hidden = true;
+            fechar.textContent = 'Continuar';
+            const titulo = document.getElementById('resultado-titulo');
+            if (sucesso) {
+                titulo.textContent = 'Sucesso';
+                titulo.style.color = 'var(--sucesso)';
+            } else {
+                titulo.textContent = 'Não foi possível concluir';
+                titulo.style.color = 'var(--erro)';
+            }
+            document.getElementById('resultado-mensagem').textContent = mensagem;
+            resultado.style.display = 'flex';
+            conteudo.inert = true;
+            fechar.focus();
+        }
+
+        fechar.addEventListener('click', () => {
+            confirmarInativacao.hidden = true;
+            resultado.style.display = 'none';
+            conteudo.inert = false;
+            if (voltarAoLogin) location.href = '/login';
+            else salvar.focus();
+        });
+
+        inativar.addEventListener('click', () => {
+            if (!sessaoPronta || enviando) return;
+            const acao = contaInativa ? 'reativar' : 'inativar';
+            mostrarResultado(contaInativa, `Tem certeza que deseja ${acao} esta conta?`);
+            document.getElementById('resultado-titulo').textContent = inativar.textContent;
+            confirmarInativacao.textContent = inativar.textContent;
+            confirmarInativacao.hidden = false;
+            fechar.textContent = 'Cancelar';
+        });
+
+        confirmarInativacao.addEventListener('click', async () => {
+            if (!sessaoPronta || enviando || confirmarInativacao.hidden) return;
+            const reativar = contaInativa;
+            enviando = true;
+            salvar.disabled = true;
+            inativar.disabled = true;
+            confirmarInativacao.hidden = true;
+            resultado.style.display = 'none';
+            conteudo.inert = false;
+            loading.style.display = 'flex';
+            MostrarErro('erro-id_conta', '');
+            MostrarErro('erro-id_usuario', '');
+
+            try {
+                const rota = reativar ? '/admin/reativar-conta' : '/admin/inativar-conta';
+                const resposta = await fetch(rota, {
+                    method: 'PATCH',
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        id_conta: Number(idContaRecebido),
+                        id_usuario: Number(idUsuarioRecebido)
+                    })
+                });
+                const dados = await resposta.json();
+                if (resposta.status === 200 || resposta.status === 409) {
+                    sessaoPronta = await carregarDadosConta(false);
+                    if (!sessaoPronta) return;
+                }
+                if (resposta.status === 200) {
+                    mostrarResultado(true, dados.mensagem);
+                } else {
+                    voltarAoLogin = resposta.status === 401;
+                    if (voltarAoLogin) sessaoPronta = false;
+                    if (resposta.status === 400 && Array.isArray(dados.erros)) {
+                        mostrarErrosCampos(resposta.status, dados);
+                    } else {
+                        mostrarResultado(false, dados.mensagem || dados.erro || `Falha (HTTP ${resposta.status}).`);
+                    }
+                }
+            } catch {
+                mostrarResultado(false, 'Não foi possível confirmar a alteração do status. Consulte suas contas antes de tentar novamente.');
+            } finally {
+                loading.style.display = 'none';
+                enviando = false;
+                salvar.disabled = !sessaoPronta;
+                inativar.disabled = !sessaoPronta;
+            }
+        });
+
+        async function redirecionaTela() {
+            const usuario = await protegerPagina('Admin');
+            if (!usuario) return;
+            window.location.href = `/tela-admin/editar-usuarios?id=${usuario.id_usuario}`;
+        }
+
+        document.getElementById('meuForm-Logout').addEventListener('submit', async (evento) => {
+            evento.preventDefault();
+            loading.style.display = 'flex';
+            try {
+                const resposta = await fetch('/logout', {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                if (!resposta.ok) throw new Error('Falha ao sair. Tente novamente.');
+
+                localStorage.removeItem('tipo');
+                window.location.href = '/login';
+            } catch (erro) {
+                mostrarResultado(false, erro.message);
+            } finally {
+                loading.style.display = 'none';
+            }
+        });
+
+        async function carregarDadosConta(atualizarCampos = true) {
+            try {
+                const resposta = await fetch(`/admin/listar-contas?id_usuario=${encodeURIComponent(idUsuarioRecebido)}`, {
+                    method: 'GET',
+                    credentials: 'include'
+                });
+                const contas = await resposta.json();
+                if (!resposta.ok) {
+                    voltarAoLogin = resposta.status === 401;
+                    if (resposta.status !== 400 || !mostrarErrosCampos(resposta.status, contas)) {
+                        mostrarResultado(false, contas.mensagem || contas.erro || `Falha ao carregar a conta (HTTP ${resposta.status}).`);
+                    }
+                    return false;
+                }
+
+                let dadosResposta = null;
+                if (Array.isArray(contas)) {
+                    dadosResposta = contas.find(conta => Number(conta.id_conta) === Number(idContaRecebido)
+                        && Number(conta.id_usuario) === Number(idUsuarioRecebido));
+                }
+                if (!dadosResposta) {
+                    mostrarResultado(false, contas.mensagem || 'Conta não encontrada. Verifique os IDs.');
+                    return false;
+                }
+
+                document.getElementById('id_conta').value = dadosResposta.id_conta;
+                document.getElementById('status_conta').value = dadosResposta.status_conta;
+                document.getElementById('id_usuario').value = dadosResposta.id_usuario;
+                document.getElementById('nome_usuario').value = dadosResposta.usuarios?.nome ?? '---';
+                document.getElementById('data_criacao').value = dadosResposta.data_criacao
+                    ? new Date(dadosResposta.data_criacao).toLocaleDateString('pt-BR') : '---';
+                document.getElementById('data_inativacao').value = dadosResposta.data_inativacao
+                    ? new Date(dadosResposta.data_inativacao).toLocaleDateString('pt-BR') : '---';
+                if (atualizarCampos) {
+                    document.getElementById('nome_conta').value = dadosResposta.nome_conta;
+                    document.getElementById('tipo_conta').value = dadosResposta.tipo_conta;
+                    document.getElementById('nome_instituicao').value = dadosResposta.nome_instituicao ?? '';
+                    document.getElementById('codigo_conta').value = dadosResposta.codigo_conta ?? '';
+                }
+                contaInativa = dadosResposta.status_conta === 'Inativo';
+                inativar.textContent = contaInativa ? 'Reativar conta' : 'Inativar conta';
+                inativar.className = contaInativa ? 'btn-primary' : 'botao-excluir';
+                return true;
+            } catch {
+                mostrarResultado(false, 'Erro ao comunicar com a API para buscar dados.');
+                return false;
+            }
+        }
+
+        async function iniciar() {
+            loading.style.display = 'flex';
+            try {
+                const usuario = await protegerPagina('Admin');
+                if (!usuario) return;
+
+                document.getElementById('nome-usuario').textContent = usuario.nome.slice(0, 8);
+                conteudo.hidden = false;
+                if (!idContaRecebido || idContaRecebido.trim() === '' || !Number.isInteger(Number(idContaRecebido)) || Number(idContaRecebido) < 0) {
+                    mostrarResultado(false, 'ID da conta não fornecido ou inválido na URL.');
+                    return;
+                }
+                if (!idUsuarioRecebido || idUsuarioRecebido.trim() === '' || !Number.isInteger(Number(idUsuarioRecebido)) || Number(idUsuarioRecebido) < 0) {
+                    mostrarResultado(false, 'ID do usuário não fornecido ou inválido na URL.');
+                    return;
+                }
+
+                const contaCarregada = await carregarDadosConta();
+                sessaoPronta = contaCarregada;
+                salvar.disabled = !sessaoPronta;
+                inativar.disabled = !sessaoPronta;
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        form.addEventListener('submit', async (evento) => {
+            evento.preventDefault();
+            if (!sessaoPronta || enviando) return;
+
+            MostrarErro('erro-id_conta', '');
+            MostrarErro('erro-id_usuario', '');
+            MostrarErro('erro-nome_conta', '');
+            MostrarErro('erro-tipo_conta', '');
+            MostrarErro('erro-nome_instituicao', '');
+            MostrarErro('erro-codigo_conta', '');
+            enviando = true;
+            salvar.disabled = true;
+            inativar.disabled = true;
+            loading.style.display = 'flex';
+
+            try {
+                const codigo_conta = document.getElementById('codigo_conta').value.trim();
+                const resposta = await fetch('/admin/editar-conta', {
+                    method: 'PATCH',
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        id_conta: Number(idContaRecebido),
+                        id_usuario: Number(idUsuarioRecebido),
+                        nome_conta: document.getElementById('nome_conta').value.trim(),
+                        tipo_conta: document.getElementById('tipo_conta').value,
+                        nome_instituicao: document.getElementById('nome_instituicao').value.trim(),
+                        codigo_conta: codigo_conta === '' ? null : codigo_conta
+                    })
+                });
+
+                const tipo = resposta.headers.get('content-type') || '';
+                if (!tipo.includes('application/json')) {
+                    mostrarResultado(false, `Resposta inesperada da API (HTTP ${resposta.status}).`);
+                    return;
+                }
+
+                const dados = await resposta.json();
+                let mensagem = dados.mensagem || dados.erro;
+                if (!mensagem) {
+                    if (resposta.ok) {
+                        mensagem = 'Operação concluída.';
+                    } else {
+                        mensagem = `Falha (HTTP ${resposta.status}).`;
+                    }
+                }
+
+                if (!resposta.ok) {
+                    voltarAoLogin = resposta.status === 401;
+                    if (voltarAoLogin) sessaoPronta = false;
+                    const exibiuErro = mostrarErrosCampos(resposta.status, dados);
+                    if (!exibiuErro) {
+                        if (Array.isArray(dados.erros)) {
+                            mensagem += '\n' + dados.erros.map(erro => erro.mensagem).join('\n');
+                        }
+                        mostrarResultado(false, mensagem);
+                    }
+                    return;
+                }
+
+                mostrarResultado(true, mensagem);
+            } catch {
+                mostrarResultado(false, 'Não foi possível confirmar o resultado. Verifique a conexão.');
+            } finally {
+                loading.style.display = 'none';
+                enviando = false;
+                salvar.disabled = !sessaoPronta;
+                inativar.disabled = !sessaoPronta;
+            }
+        });
+
+        iniciar();
+    </script>
+</body>
+
+</html>

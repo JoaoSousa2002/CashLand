@@ -59,11 +59,11 @@ export const limitadorVerificarCodigo = rateLimit({
     )
 });
 export const limitadorGenericoSimples = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 15, // só 15 tentativas de login por IP a cada 15 min
+    windowMs: 5 * 60 * 1000,
+    max: 60, // só 30 tentativas de login por IP a cada 10 min
     handler:  handlerRateLimit(
         'GENERICO_SIMPLES',
-        'Muitas solicitações para essa ação realizadas. Tente novamente em 15 minutos.'
+        'Muitas solicitações para essa ação realizadas. Tente novamente em 10 minutos.'
     )
 });
 export const limitadorGenericoCritico = rateLimit({

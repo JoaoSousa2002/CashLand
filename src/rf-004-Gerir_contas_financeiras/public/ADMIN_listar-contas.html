@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Categorias financeiras — Admin — CashLand</title>
+    <title>Contas financeiras — Admin — CashLand</title>
     <link rel="stylesheet" href="/template.css">
 </head>
 
@@ -27,7 +27,7 @@
                     <p id="aviso-exclusao" hidden>Essa ação não poderá ser desfeita</p>
                 </div>
                 <div class="acoes-formulario">
-                    <input class="botao-dialogo" type="button" id="confirmar-exclusao" value="Continuar" onclick="excluirCategoria()" hidden>
+                    <input class="botao-dialogo" type="button" id="confirmar-exclusao" value="Continuar" onclick="excluirConta()" hidden>
                     <input class="botao-dialogo" type="button" id="fechar-resultado" value="Continuar" onclick="FechaResultado_overlay()">
                 </div>
             </div>
@@ -65,25 +65,33 @@
         </div>
         <div id="container-conteudo" class="pagina-listagem">
             <div id="div-form-tabela">
-                <h2>Categorias financeiras</h2>
-                <form id="form-listar-categoria" novalidate>
-                    <label for="pesquisa-categoria">ID do usuário:
-                        <input type="text" inputmode="numeric" id="pesquisa-categoria" placeholder="Todos os usuários">
+                <h2>Contas financeiras</h2>
+                <form id="form-listar-contas" novalidate>
+                    <label for="pesquisa-conta">ID da conta ou nome (opcional):
+                        <input type="text" name="pesquisa" id="pesquisa-conta" maxlength="100"
+                            placeholder="Todas as contas" aria-describedby="erro-pesquisa">
+                        <span id="erro-pesquisa" class="error-message" aria-live="polite"></span>
+                    </label>
+                    <label for="pesquisa-usuario">ID do usuário (opcional):
+                        <input type="text" name="id_usuario" inputmode="numeric" id="pesquisa-usuario"
+                            placeholder="Todos os usuários" aria-describedby="erro-id_usuario">
+                        <span id="erro-id_usuario" class="error-message" aria-live="polite"></span>
                     </label>
                     <input type="submit" value="Pesquisar">
-                    <input type="button" id="btn-limpar" value="Limpar filtro">
                 </form>
             </div>
             <div id="div-tabela">
                 <table class="tabela-listagem tabela-admin">
                     <thead>
                         <tr>
-                            <th scope="col" style="width: 80px;">ID categoria</th>
+                            <th scope="col" style="width: 70px;">ID</th>
                             <th scope="col">Nome</th>
-                            <th scope="col">Descrição</th>
-                            <th scope="col" style="width: 80px;">ID usuário</th>
+                            <th scope="col">Código</th>
+                            <th scope="col">Tipo</th>
+                            <th scope="col">Instituição</th>
+                            <th scope="col" style="width: 100px;">Status</th>
+                            <th scope="col" style="width: 90px;">ID usuário</th>
                             <th scope="col">Usuário</th>
-                            <th scope="col" style="width: 130px;">Data criação</th>
                             <th scope="col" id="th-opcoes" style="width: 170px;">Opções</th>
                         </tr>
                     </thead>
@@ -99,16 +107,22 @@
         let sessaoPronta = false;
         let carregando = false;
         let excluindo = false;
-        let categoriaExcluir = null;
+        let contaExcluir = null;
         let recarregarPagina = false;
         const loading = document.getElementById('loading-overlay');
         const resultado_overlay = document.getElementById('resultado-overlay');
-        const filtro = document.getElementById('pesquisa-categoria');
+        const filtro = document.getElementById('pesquisa-conta');
+        const filtroUsuario = document.getElementById('pesquisa-usuario');
         const params = new URLSearchParams(window.location.search);
-        if (params.has('id')) {
-            filtro.value = params.get('id');
-        } else if (params.has('id_usuario')) {
-            filtro.value = params.get('id_usuario');
+        if (params.has('id_usuario')) {
+            filtroUsuario.value = params.get('id_usuario');
+        }
+
+        function MostrarErro(id, mensagem) {
+            const elemento = document.getElementById(id);
+            if (!elemento) return;
+            elemento.textContent = mensagem;
+            elemento.style.display = mensagem ? 'block' : 'none';
         }
 
         function MostrarResultado_Overlay(tipo, mensagem) {
@@ -127,29 +141,24 @@
 
         async function FechaResultado_overlay() {
             if (excluindo) return;
-            categoriaExcluir = null;
+            contaExcluir = null;
             resultado_overlay.style.display = 'none';
             if (retornarLogin) {
                 window.location.href = '/login';
             } else if (recarregarPagina) {
                 recarregarPagina = false;
-                await listarCategorias();
+                await listarContas();
             }
         }
 
         function mensagemResposta(resposta, dados) {
-            let mensagem = `Não foi possível concluir a operação (HTTP ${resposta.status}).`;
             if (dados && dados.mensagem) {
-                mensagem = dados.mensagem;
+                return dados.mensagem;
             } else if (dados && dados.erro) {
-                mensagem = dados.erro;
+                return dados.erro;
+            } else {
+                return `Não foi possível concluir a operação (HTTP ${resposta.status}).`;
             }
-            if (dados && Array.isArray(dados.erros)) {
-                dados.erros.forEach(erro => {
-                    mensagem += '\n' + erro.mensagem;
-                });
-            }
-            return mensagem;
         }
 
         async function redirecionaTela() {
@@ -158,35 +167,28 @@
             window.location.href = `/tela-admin/editar-usuarios?id=${usuario.id_usuario}`;
         }
 
-        function renderizarTabela(categorias) {
+        function renderizarTabela(contas) {
             const corpo = document.getElementById('corpo-tabela');
             corpo.replaceChildren();
-            if (categorias.length === 0) {
+            if (contas.length === 0) {
                 const linha = document.createElement('tr');
                 linha.id = 'linha-vazia';
                 const coluna = document.createElement('td');
-                coluna.colSpan = 7;
-                coluna.textContent = 'Nenhuma categoria encontrada.';
+                coluna.colSpan = 9;
+                coluna.textContent = 'Nenhuma conta encontrada.';
                 linha.appendChild(coluna);
                 corpo.appendChild(linha);
                 return;
             }
-            categorias.forEach(categoria => {
+            contas.forEach(conta => {
                 const linha = document.createElement('tr');
-                let descricao = '---';
                 let nomeUsuario = '---';
-                let dataCriacao = '---';
-                if (categoria.descricao) {
-                    descricao = categoria.descricao;
+                if (conta.usuarios && conta.usuarios.nome) {
+                    nomeUsuario = conta.usuarios.nome;
                 }
-                if (categoria.usuarios && categoria.usuarios.nome) {
-                    nomeUsuario = categoria.usuarios.nome;
-                }
-                if (categoria.data_criacao) {
-                    dataCriacao = new Date(categoria.data_criacao).toLocaleDateString('pt-BR');
-                }
-                const valores = [categoria.id_categoria, categoria.nome, descricao,
-                    categoria.id_usuario, nomeUsuario, dataCriacao];
+                const valores = [conta.id_conta, conta.nome_conta, conta.codigo_conta ?? '---',
+                    conta.tipo_conta, conta.nome_instituicao ?? '---', conta.status_conta,
+                    conta.id_usuario, nomeUsuario];
                 valores.forEach(valor => {
                     const coluna = document.createElement('td');
                     coluna.textContent = valor;
@@ -201,14 +203,14 @@
                 editar.type = 'button';
                 editar.textContent = 'Editar';
                 editar.addEventListener('click', () => {
-                    window.location.href = `/tela-admin/editar-categoria?id=${encodeURIComponent(categoria.id_categoria)}`;
+                    window.location.href = `/tela-admin/editar-conta?id_conta=${encodeURIComponent(conta.id_conta)}&id_usuario=${encodeURIComponent(conta.id_usuario)}`;
                 });
                 acoes.appendChild(editar);
                 const excluir = document.createElement('button');
                 excluir.type = 'button';
                 excluir.textContent = 'Excluir';
                 excluir.className = 'botao-excluir';
-                excluir.addEventListener('click', () => confirmarDelete(categoria));
+                excluir.addEventListener('click', () => confirmarDelete(conta));
                 acoes.appendChild(excluir);
                 opcoes.appendChild(acoes);
                 linha.appendChild(opcoes);
@@ -216,25 +218,25 @@
             });
         }
 
-        function confirmarDelete(categoria) {
-            if (!sessaoPronta || excluindo) return;
-            categoriaExcluir = categoria;
-            MostrarResultado_Overlay(0, `Tem certeza que deseja excluir a categoria "${categoria.nome}" (ID ${categoria.id_categoria})?`);
+        function confirmarDelete(conta) {
+            if (!sessaoPronta || carregando || excluindo) return;
+            contaExcluir = conta;
+            MostrarResultado_Overlay(0, `Tem certeza que deseja excluir a conta "${conta.nome_conta}" (ID ${conta.id_conta}) do usuário ${conta.id_usuario}?`);
             document.getElementById('confirmar-exclusao').hidden = false;
             document.getElementById('aviso-exclusao').hidden = false;
             document.getElementById('fechar-resultado').value = 'Cancelar';
             document.getElementById('fechar-resultado').focus();
         }
 
-        async function excluirCategoria() {
-            if (!sessaoPronta || excluindo || !categoriaExcluir) return;
+        async function excluirConta() {
+            if (!sessaoPronta || excluindo || !contaExcluir) return;
             excluindo = true;
-            const categoria = categoriaExcluir;
-            categoriaExcluir = null;
+            const conta = contaExcluir;
+            contaExcluir = null;
             resultado_overlay.style.display = 'none';
             loading.style.display = 'flex';
             try {
-                const resposta = await fetch(`/admin/deletar-categoria/${categoria.id_categoria}/${categoria.id_usuario}`, {
+                const resposta = await fetch(`/admin/deletar-conta/${encodeURIComponent(conta.id_conta)}/${encodeURIComponent(conta.id_usuario)}`, {
                     method: 'DELETE',
                     credentials: 'include'
                 });
@@ -244,15 +246,20 @@
                         recarregarPagina = true;
                         MostrarResultado_Overlay(1, dados.mensagem);
                         break;
+                    case 400:
+                        if (Array.isArray(dados.erros)) {
+                            dados.erros.forEach(erro => {
+                                MostrarErro(`erro-${erro.campo}`, erro.mensagem);
+                            });
+                        } else {
+                            MostrarResultado_Overlay(0, mensagemResposta(resposta, dados));
+                        }
+                        break;
                     case 401:
                         retornarLogin = true;
                         sessaoPronta = false;
                         MostrarResultado_Overlay(0, mensagemResposta(resposta, dados));
                         break;
-                    case 400:
-                    case 403:
-                    case 404:
-                    case 500:
                     default:
                         MostrarResultado_Overlay(0, mensagemResposta(resposta, dados));
                         break;
@@ -265,25 +272,48 @@
             }
         }
 
-        async function listarCategorias() {
-            if (!sessaoPronta || carregando) return;
+        async function listarContas() {
+            if (!sessaoPronta || carregando || excluindo) return;
             carregando = true;
             loading.style.display = 'flex';
             document.getElementById('corpo-tabela').replaceChildren();
+            MostrarErro('erro-pesquisa', '');
+            MostrarErro('erro-id_usuario', '');
             try {
-                let rota = '/admin/listar-categoria';
-                const idUsuario = filtro.value.trim();
+                let rota = '/admin/listar-contas';
+                const pesquisa = filtro.value.trim();
+                const idUsuario = filtroUsuario.value.trim();
+                const parametros = new URLSearchParams();
+                if (pesquisa !== '') {
+                    parametros.set('pesquisa', pesquisa);
+                }
                 if (idUsuario !== '') {
-                    rota += `?id_usuario=${encodeURIComponent(idUsuario)}`;
+                    parametros.set('id_usuario', idUsuario);
+                }
+                if (parametros.toString() !== '') {
+                    rota += `?${parametros.toString()}`;
                 }
                 const resposta = await fetch(rota, { method: 'GET', credentials: 'include' });
                 const dados = await resposta.json();
                 switch (resposta.status) {
                     case 200:
-                        if (!Array.isArray(dados)) {
+                        if (Array.isArray(dados)) {
+                            renderizarTabela(dados);
+                        } else if (dados && dados.mensagem) {
+                            renderizarTabela([]);
+                            MostrarResultado_Overlay(0, dados.mensagem);
+                        } else {
                             throw new Error('Formato de resposta inesperado.');
                         }
-                        renderizarTabela(dados);
+                        break;
+                    case 400:
+                        if (Array.isArray(dados.erros)) {
+                            dados.erros.forEach(erro => {
+                                MostrarErro(`erro-${erro.campo}`, erro.mensagem);
+                            });
+                        } else {
+                            MostrarResultado_Overlay(0, mensagemResposta(resposta, dados));
+                        }
                         break;
                     case 401:
                         retornarLogin = true;
@@ -291,32 +321,28 @@
                         MostrarResultado_Overlay(0, mensagemResposta(resposta, dados));
                         break;
                     case 404:
+                    case 409:
                         renderizarTabela([]);
                         MostrarResultado_Overlay(0, mensagemResposta(resposta, dados));
                         break;
-                    case 400:
                     case 403:
+                    case 429:
                     case 500:
                     default:
                         MostrarResultado_Overlay(0, mensagemResposta(resposta, dados));
                         break;
                 }
             } catch {
-                MostrarResultado_Overlay(0, 'Não foi possível carregar as categorias. Tente novamente.');
+                MostrarResultado_Overlay(0, 'Não foi possível carregar as contas. Tente novamente.');
             } finally {
                 carregando = false;
                 loading.style.display = 'none';
             }
         }
 
-        document.getElementById('form-listar-categoria').addEventListener('submit', async (evento) => {
+        document.getElementById('form-listar-contas').addEventListener('submit', async (evento) => {
             evento.preventDefault();
-            await listarCategorias();
-        });
-        document.getElementById('btn-limpar').addEventListener('click', async () => {
-            filtro.value = '';
-            window.history.replaceState(null, '', window.location.pathname);
-            await listarCategorias();
+            await listarContas();
         });
         document.getElementById('meuForm-Logout').addEventListener('submit', async (evento) => {
             evento.preventDefault();
@@ -352,7 +378,7 @@
                 if (!usuario) return;
                 document.getElementById('nome-usuario').textContent = usuario.nome.slice(0, 8);
                 sessaoPronta = true;
-                await listarCategorias();
+                await listarContas();
             } finally {
                 loading.style.display = 'none';
             }
