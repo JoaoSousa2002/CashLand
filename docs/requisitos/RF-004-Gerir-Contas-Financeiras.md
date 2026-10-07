@@ -445,42 +445,42 @@ O administrador possui operações próprias, protegidas por autenticação e pe
 
 ### Regras de Negócio (RN)
 
-| ID | Regra | Descrição |
-| --- | --- | --- |
-| **RN-01** | Propriedade por sessão | Operações comuns usam `req.usuario.id_usuario` como proprietário; o frontend não escolhe o proprietário da conta. |
-| **RN-02** | Nome da conta obrigatório | `nome_conta` deve ter de 2 a 100 caracteres após `trim()`. |
-| **RN-03** | Tipo obrigatório | `tipo_conta` deve ser `Corrente`, `Poupança`, `Salario`, `Conjunta`, `Internacional` ou `Credito`. |
-| **RN-04** | Código opcional | `codigo_conta` pode ser omitido ou `null`; quando informado, deve ser inteiro maior ou igual a zero. |
-| **RN-05** | Instituição opcional | `nome_instituicao` pode ser omitido, vazio ou `null`; quando preenchido, deve possuir de 2 a 100 caracteres. |
-| **RN-06** | Nome reservado | O valor `padrão` é reservado pelo sistema e não pode ser utilizado na criação ou renomeação normal. |
-| **RN-07** | Proteção da conta padrão | Conta existente com `nome_conta = 'padrão'` não pode ser editada ou inativada pelas operações correspondentes e não pode ser excluída pelo administrador. |
-| **RN-08** | Unicidade do nome | O banco possui índice único em `(id_usuario, lower(nome_conta))`, impedindo dois nomes equivalentes para o mesmo usuário. |
-| **RN-09** | Uma conta padrão por usuário | O índice parcial `uq_conta_padrao_usuario` permite no máximo uma linha com nome `padrão` por usuário. |
-| **RN-10** | Situação da conta | `status_conta` aceita somente `Ativo` ou `Inativo`. |
-| **RN-11** | Inativação preserva dados | Inativar é uma atualização de status; o registro não é removido. |
-| **RN-12** | Data de inativação | Inativar preenche `data_inativacao`; reativar define `data_inativacao` como `null`. |
-| **RN-13** | Exclusão permanente administrativa | Usuário comum não possui rota de DELETE de conta. Exclusão permanente está disponível somente em `/admin/deletar-conta/:id_conta/:id_usuario`. |
-| **RN-14** | Administração protegida | Toda rota administrativa da RF004 exige `autenticar` e `somenteAdmin`. |
-| **RN-15** | Validação fechada | `validar(...)` usa `allowUnknown: false`, rejeitando campos não previstos nos schemas aplicados. |
-| **RN-16** | FK de usuário | `id_usuario` referencia `usuarios(id_usuario)` com `ON DELETE CASCADE`. |
-| **RN-17** | Auditoria | Todas as rotas da RF004 são envolvidas por `auditar(...)`; as alterações de usuário confirmadas utilizam `confirmarAlteracao`. |
-| **RN-18** | Limitação de frequência | Operações simples usam 60 requisições/5 minutos; operações críticas usam 5/15 minutos por IP. |
+| ID        | Regra                              | Descrição                                                                                                                                                 |
+| --------- | ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **RN-01** | Propriedade por sessão             | Operações comuns usam `req.usuario.id_usuario` como proprietário; o frontend não escolhe o proprietário da conta.                                         |
+| **RN-02** | Nome da conta obrigatório          | `nome_conta` deve ter de 2 a 100 caracteres após `trim()`.                                                                                                |
+| **RN-03** | Tipo obrigatório                   | `tipo_conta` deve ser `Corrente`, `Poupança`, `Salario`, `Conjunta`, `Internacional` ou `Credito`.                                                        |
+| **RN-04** | Código opcional                    | `codigo_conta` pode ser omitido ou `null`; quando informado, deve ser inteiro maior ou igual a zero.                                                      |
+| **RN-05** | Instituição opcional               | `nome_instituicao` pode ser omitido, vazio ou `null`; quando preenchido, deve possuir de 2 a 100 caracteres.                                              |
+| **RN-06** | Nome reservado                     | O valor `padrão` é reservado pelo sistema e não pode ser utilizado na criação ou renomeação normal.                                                       |
+| **RN-07** | Proteção da conta padrão           | Conta existente com `nome_conta = 'padrão'` não pode ser editada ou inativada pelas operações correspondentes e não pode ser excluída pelo administrador. |
+| **RN-08** | Unicidade do nome                  | O banco possui índice único em `(id_usuario, lower(nome_conta))`, impedindo dois nomes equivalentes para o mesmo usuário.                                 |
+| **RN-09** | Uma conta padrão por usuário       | O índice parcial `uq_conta_padrao_usuario` permite no máximo uma linha com nome `padrão` por usuário.                                                     |
+| **RN-10** | Situação da conta                  | `status_conta` aceita somente `Ativo` ou `Inativo`.                                                                                                       |
+| **RN-11** | Inativação preserva dados          | Inativar é uma atualização de status; o registro não é removido.                                                                                          |
+| **RN-12** | Data de inativação                 | Inativar preenche `data_inativacao`; reativar define `data_inativacao` como `null`.                                                                       |
+| **RN-13** | Exclusão permanente administrativa | Usuário comum não possui rota de DELETE de conta. Exclusão permanente está disponível somente em `/admin/deletar-conta/:id_conta/:id_usuario`.            |
+| **RN-14** | Administração protegida            | Toda rota administrativa da RF004 exige `autenticar` e `somenteAdmin`.                                                                                    |
+| **RN-15** | Validação fechada                  | `validar(...)` usa `allowUnknown: false`, rejeitando campos não previstos nos schemas aplicados.                                                          |
+| **RN-16** | FK de usuário                      | `id_usuario` referencia `usuarios(id_usuario)` com `ON DELETE CASCADE`.                                                                                   |
+| **RN-17** | Auditoria                          | Todas as rotas da RF004 são envolvidas por `auditar(...)`; as alterações de usuário confirmadas utilizam `confirmarAlteracao`.                            |
+| **RN-18** | Limitação de frequência            | Operações simples usam 60 requisições/5 minutos; operações críticas usam 5/15 minutos por IP.                                                             |
 
 ---
 
 ### Requisitos Não-Funcionais (RNF)
 
-| ID | Atributo | Requisito | Métrica/Verificação | Justificativa |
-| --- | --- | --- | --- | --- |
-| **RNF-01** | Segurança de acesso | Operações comuns devem exigir sessão válida e restringir dados ao proprietário autenticado | Filtros por `req.usuario.id_usuario` + testes de propriedade | Evitar acesso a contas de outro usuário |
-| **RNF-02** | Autorização | Operações administrativas devem exigir perfil `Admin` | Middleware `somenteAdmin`; HTTP 403 para usuário comum | Restringir operações globais e exclusão permanente |
-| **RNF-03** | Validação | Dados estruturados devem ser validados no backend antes do controller | Joi + `allowUnknown: false`; HTTP 400 | Impedir dados fora das regras esperadas |
-| **RNF-04** | Integridade | Tipos, status, FK e nomes duplicados devem possuir proteção no banco | Constraints e índices de `contas_bancarias` | Manter consistência mesmo diante de falhas na camada de aplicação |
-| **RNF-05** | Controle de abuso | Rotas devem limitar frequência de chamadas por IP | 60/5 min nas simples e 5/15 min nas críticas; HTTP 429 | Reduzir automação abusiva e repetição de ações sensíveis |
-| **RNF-06** | Auditabilidade | Ações da RF devem gerar trilha de auditoria | Middleware `auditar` e eventos de segurança | Permitir rastreamento de tentativas e resultados |
-| **RNF-07** | Usabilidade | Interfaces devem apresentar loading, erros, confirmação e resultado | Overlays, mensagens por campo e diálogos de confirmação | Informar o estado da operação ao usuário |
-| **RNF-08** | Responsividade | Telas devem se adaptar a larguras menores | Regras `@media (max-width: 600px)` e tabelas com rolagem horizontal | Permitir uso em telas menores sem remover dados |
-| **RNF-09** | Tratamento de falhas | Erros de banco não devem ser apresentados como sucesso | HTTP 500 e testes de falha em cada etapa | Evitar confirmação incorreta de persistência |
+| ID         | Atributo             | Requisito                                                                                  | Métrica/Verificação                                                 | Justificativa                                                     |
+| ---------- | -------------------- | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| **RNF-01** | Segurança de acesso  | Operações comuns devem exigir sessão válida e restringir dados ao proprietário autenticado | Filtros por `req.usuario.id_usuario` + testes de propriedade        | Evitar acesso a contas de outro usuário                           |
+| **RNF-02** | Autorização          | Operações administrativas devem exigir perfil `Admin`                                      | Middleware `somenteAdmin`; HTTP 403 para usuário comum              | Restringir operações globais e exclusão permanente                |
+| **RNF-03** | Validação            | Dados estruturados devem ser validados no backend antes do controller                      | Joi + `allowUnknown: false`; HTTP 400                               | Impedir dados fora das regras esperadas                           |
+| **RNF-04** | Integridade          | Tipos, status, FK e nomes duplicados devem possuir proteção no banco                       | Constraints e índices de `contas_bancarias`                         | Manter consistência mesmo diante de falhas na camada de aplicação |
+| **RNF-05** | Controle de abuso    | Rotas devem limitar frequência de chamadas por IP                                          | 60/5 min nas simples e 5/15 min nas críticas; HTTP 429              | Reduzir automação abusiva e repetição de ações sensíveis          |
+| **RNF-06** | Auditabilidade       | Ações da RF devem gerar trilha de auditoria                                                | Middleware `auditar` e eventos de segurança                         | Permitir rastreamento de tentativas e resultados                  |
+| **RNF-07** | Usabilidade          | Interfaces devem apresentar loading, erros, confirmação e resultado                        | Overlays, mensagens por campo e diálogos de confirmação             | Informar o estado da operação ao usuário                          |
+| **RNF-08** | Responsividade       | Telas devem se adaptar a larguras menores                                                  | Regras `@media (max-width: 600px)` e tabelas com rolagem horizontal | Permitir uso em telas menores sem remover dados                   |
+| **RNF-09** | Tratamento de falhas | Erros de banco não devem ser apresentados como sucesso                                     | HTTP 500 e testes de falha em cada etapa                            | Evitar confirmação incorreta de persistência                      |
 
 ---
 
@@ -751,18 +751,18 @@ Os overlays são reutilizados para loading, sucesso, erro e confirmações.
 
 ### Estados e navegação
 
-| Situação | Apresentação | Ação seguinte |
-| --- | --- | --- |
-| Entrada na listagem | Overlay de carregamento e tabela | Carregar `/usuario/listar-contas` ou `/admin/listar-contas` |
-| Lista vazia | Linha `Nenhuma conta encontrada.` | Alterar pesquisa ou criar conta no fluxo comum |
-| Criação em andamento | Overlay `Carregando...` | Aguardar resposta da API |
-| Erro de validação | Mensagem abaixo do campo | Corrigir e enviar novamente |
-| Criação concluída | Overlay verde | Continuar e permanecer na tela |
-| Edição carregada | Formulário preenchido | Alterar campos ou situação |
-| Inativação/reativação | Overlay de confirmação | Confirmar ou cancelar |
-| Exclusão administrativa | Confirmação vermelha + aviso irreversível | Confirmar ou cancelar |
-| HTTP 401 | Overlay de erro | Retornar ao login |
-| HTTP 429/500 | Overlay de erro | Encerrar mensagem e tentar novamente quando aplicável |
+| Situação                | Apresentação                              | Ação seguinte                                               |
+| ----------------------- | ----------------------------------------- | ----------------------------------------------------------- |
+| Entrada na listagem     | Overlay de carregamento e tabela          | Carregar `/usuario/listar-contas` ou `/admin/listar-contas` |
+| Lista vazia             | Linha `Nenhuma conta encontrada.`         | Alterar pesquisa ou criar conta no fluxo comum              |
+| Criação em andamento    | Overlay `Carregando...`                   | Aguardar resposta da API                                    |
+| Erro de validação       | Mensagem abaixo do campo                  | Corrigir e enviar novamente                                 |
+| Criação concluída       | Overlay verde                             | Continuar e permanecer na tela                              |
+| Edição carregada        | Formulário preenchido                     | Alterar campos ou situação                                  |
+| Inativação/reativação   | Overlay de confirmação                    | Confirmar ou cancelar                                       |
+| Exclusão administrativa | Confirmação vermelha + aviso irreversível | Confirmar ou cancelar                                       |
+| HTTP 401                | Overlay de erro                           | Retornar ao login                                           |
+| HTTP 429/500            | Overlay de erro                           | Encerrar mensagem e tentar novamente quando aplicável       |
 
 ---
 
@@ -1021,20 +1021,20 @@ O CSS compartilhado possui `@media (max-width: 600px)` para reduzir paddings e r
 
 ### Tecnologias Escolhidas
 
-| Camada/Finalidade | Tecnologia / Serviço | Uso na RF004 |
-| --- | --- | --- |
-| Frontend | HTML5 | Cinco páginas da RF004 |
-| Estilo | CSS3 / `template.css` | Layout, tabelas, cartões, overlays e responsividade |
-| Frontend | JavaScript | `fetch`, renderização de tabelas, formulários, overlays e navegação |
-| Backend | Node.js + Express 5 | Rotas, middlewares, controllers e entrega das páginas |
-| Banco de dados | Supabase / PostgreSQL | Persistência de `contas_bancarias` |
-| Cliente de banco | `@supabase/supabase-js` | SELECT, INSERT, UPDATE e DELETE |
-| Validação | Joi | Validação de dados e IDs |
-| Sessão | JWT em cookie | Identidade utilizada por `autenticar` |
-| Controle de frequência | `express-rate-limit` | Limitadores simples e críticos |
-| Auditoria / logs | Winston + middlewares de auditoria | Registro de ações, falhas e rate limits |
-| Documentação de API | Swagger UI | Paths e schemas da RF004 em `/api-docs` |
-| Testes HTTP | `node:test` + Supertest | Testes automatizados da API e middlewares |
+| Camada/Finalidade      | Tecnologia / Serviço               | Uso na RF004                                                        |
+| ---------------------- | ---------------------------------- | ------------------------------------------------------------------- |
+| Frontend               | HTML5                              | Cinco páginas da RF004                                              |
+| Estilo                 | CSS3 / `template.css`              | Layout, tabelas, cartões, overlays e responsividade                 |
+| Frontend               | JavaScript                         | `fetch`, renderização de tabelas, formulários, overlays e navegação |
+| Backend                | Node.js + Express 5                | Rotas, middlewares, controllers e entrega das páginas               |
+| Banco de dados         | Supabase / PostgreSQL              | Persistência de `contas_bancarias`                                  |
+| Cliente de banco       | `@supabase/supabase-js`            | SELECT, INSERT, UPDATE e DELETE                                     |
+| Validação              | Joi                                | Validação de dados e IDs                                            |
+| Sessão                 | JWT em cookie                      | Identidade utilizada por `autenticar`                               |
+| Controle de frequência | `express-rate-limit`               | Limitadores simples e críticos                                      |
+| Auditoria / logs       | Winston + middlewares de auditoria | Registro de ações, falhas e rate limits                             |
+| Documentação de API    | Swagger UI                         | Paths e schemas da RF004 em `/api-docs`                             |
+| Testes HTTP            | `node:test` + Supertest            | Testes automatizados da API e middlewares                           |
 
 ---
 
@@ -1216,7 +1216,7 @@ O teste confirma HTTP `400`, existência do array `erros` e **zero chamadas ao S
 
 **Implementações de desenho defensivo:**
 
-1. Nome `padrão` é reservado no controller.
+1. Nome `padrão` é reservado no controller e em policy do supabase.
 2. Conta `padrão` não pode ser editada nem inativada nas operações correspondentes.
 3. Exclusão administrativa da conta `padrão` é recusada.
 4. Inativação é soft-delete.
@@ -1394,14 +1394,14 @@ Também existem testes em que o registro desaparece antes da escrita. Nesses cas
 
 ### Resumo da validação OWASP da RF004
 
-| Categoria OWASP 2025 | Controle encontrado na RF004 | Evidência de teste |
-| --- | --- | --- |
-| **A01 — Broken Access Control** | Propriedade por sessão + `somenteAdmin` | Sim — propriedade, IDOR de conta e bloqueio administrativo |
-| **A05 — Injection** | Joi + `allowUnknown: false` + tipos/constraints | Sim — entradas inválidas bloqueadas antes do banco; escopo parcial para pesquisa livre |
-| **A06 — Insecure Design** | Regras de conta padrão, transição de estado, constraints, índices e rate limit | Sim — duplicidade, conta reservada, estados repetidos e limites |
-| **A07 — Authentication Failures** | `autenticar` em todas as APIs RF004 e `somenteAdmin` no admin | Sim — 401 sem sessão e 403 para usuário comum |
-| **A09 — Security Logging & Alerting Failures** | Auditoria + logs de segurança de rate limit | Parcial — logging testado; alerta externo não identificado |
-| **A10 — Mishandling of Exceptional Conditions** | Verificação de erros e confirmação da linha alterada | Sim — falhas simuladas retornam 500 e não geram falso sucesso |
+| Categoria OWASP 2025                            | Controle encontrado na RF004                                                   | Evidência de teste                                                                     |
+| ----------------------------------------------- | ------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------- |
+| **A01 — Broken Access Control**                 | Propriedade por sessão + `somenteAdmin`                                        | Sim — propriedade, IDOR de conta e bloqueio administrativo                             |
+| **A05 — Injection**                             | Joi + `allowUnknown: false` + tipos/constraints                                | Sim — entradas inválidas bloqueadas antes do banco; escopo parcial para pesquisa livre |
+| **A06 — Insecure Design**                       | Regras de conta padrão, transição de estado, constraints, índices e rate limit | Sim — duplicidade, conta reservada, estados repetidos e limites                        |
+| **A07 — Authentication Failures**               | `autenticar` em todas as APIs RF004 e `somenteAdmin` no admin                  | Sim — 401 sem sessão e 403 para usuário comum                                          |
+| **A09 — Security Logging & Alerting Failures**  | Auditoria + logs de segurança de rate limit                                    | Parcial — logging testado; alerta externo não identificado                             |
+| **A10 — Mishandling of Exceptional Conditions** | Verificação de erros e confirmação da linha alterada                           | Sim — falhas simuladas retornam 500 e não geram falso sucesso                          |
 
 ---
 
@@ -1438,4 +1438,3 @@ Limite configurado: 5 / 15 minutos
 6ª requisição: HTTP 429
 Retry-After observado: 900 segundos
 ```
-
