@@ -41,7 +41,11 @@ const swaggerSpec = JSON.parse(
 );
 
 //Rota da API SWAGGER UI
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+    swaggerOptions: {
+        defaultModelsExpandDepth: -1
+    }
+}));
 
 app.use('/', pageRoutes);
 
