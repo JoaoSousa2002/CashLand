@@ -674,6 +674,8 @@ for caminho_rf06 in (
     caminho_admin = rota_usuario["caminho"].replace("/usuario/", "/admin/", 1)
     campos_admin = [campo.copy() for campo in rota_usuario[origem]]
     campo_usuario = {"nome": "id_usuario", "tipo": "int", "obrigatorio": True}
+    if origem == "query":
+        campo_usuario["obrigatorio"] = False
     if origem == "path_params":
         caminho_admin += "/{id_usuario}"
         campos_admin.append(campo_usuario)
@@ -997,6 +999,158 @@ class TestesRF06(unittest.TestCase):
             "criar-recorrencia", "criar-transacao", "listar-recorrencias", "listar-transacoes",
             "editar-recorrencia", "editar-transacao", "excluir-recorrencia", "excluir-transacao"))]
 
+    def dados_transacao(self, **alteracoes):
+        return {
+            "id_conta_origem": 10, "id_categoria": 30, "tipo_transacao": "Saida",
+            "nome": "Compra", "forma_pagamento": "PIX", "valor_transacao": 100.01,
+            "status_transacao": "Pendente", "data_transacao": "2026-10-13", **alteracoes,
+        }
+
+    def dados_recorrencia(self, **alteracoes):
+        return {
+            "id_conta": 10, "id_categoria": 30, "tipo_transacao": "Saida",
+            "modalidade": "Periodico", "nome": "Assinatura", "forma_pagamento": "PIX",
+            "valor": 100.01, "frequencia": "Mensal", "data_inicio": "2026-10-13",
+            "ativo": True, **alteracoes,
+        }
+
+    def test_criar_avulsas_entrada_saida_pagas_pendentes_e_formas_pagamento(self):
+        casos = []
+        for tipo in ("Entrada", "Saida"):
+            for status in ("Pendente", "Pago"):
+                for forma in ("PIX", "débito", "crédito", "boleto", "dinheiro"):
+                    casos.append(self.dados_transacao(
+                        tipo_transacao=tipo, status_transacao=status, forma_pagamento=forma,
+                        descricao="Detalhes", destino="Estabelecimento", data_vencimento="2026-10-20",
+                        data_pagamento="2026-10-13" if status == "Pago" else None,
+                    ))
+        resultado = self.executar([self.chamada("POST", "/usuario/criar-transacao", body) for body in casos])
+        self.assertEqual(resultado["respostas"], [
+            {"status": 201, "body": {"mensagem": "Transação criada com sucesso"}}
+        ] * len(casos))
+        inseridas = resultado["banco"]["transacoes"][len(self.banco()["transacoes"]):]
+        self.assertEqual(inseridas, [{**body, "id_recorrencia": None, "numero_parcela": None} for body in casos])
+        self.assertEqual(resultado["banco"]["recorrencias"], self.banco()["recorrencias"])
+        self.assertEqual([e["resultado"] for e in resultado["eventos"]], ["SUCESSO"] * len(casos))
+
+    def test_criar_parceladas_e_periodicas_preserva_valor_e_configuracao(self):
+        casos = []
+        for tipo in ("Entrada", "Saida"):
+            # O contrato atual aceita 1 parcela, embora a proposta da RF descreva mínimo 2.
+            for parcelas in (1, 3):
+                casos.append(self.dados_recorrencia(tipo_transacao=tipo, modalidade="Parcelado", qtd_parcelas=parcelas))
+            for frequencia in ("Semanal", "Mensal", "Anual"):
+                for quantidade in ({}, {"qtd_parcelas": None}, {"qtd_parcelas": 4}):
+                    casos.append(self.dados_recorrencia(tipo_transacao=tipo, frequencia=frequencia, **quantidade))
+        casos.append(self.dados_recorrencia(ativo=False, descricao="Detalhes", destino="Estabelecimento"))
+        resultado = self.executar([self.chamada("POST", "/usuario/criar-recorrencia", body) for body in casos])
+        self.assertEqual(resultado["respostas"], [
+            {"status": 201, "body": {"mensagem": "Transações inseridas com sucesso"}}
+        ] * len(casos))
+        inseridas = resultado["banco"]["recorrencias"][len(self.banco()["recorrencias"]):]
+        self.assertEqual(inseridas, [{**body, "id_usuario": 1} for body in casos])
+        # A ponte não simula triggers: o Express insere a regra, sem calcular parcelas ou saldo.
+        self.assertEqual(resultado["banco"]["transacoes"], self.banco()["transacoes"])
+        self.assertEqual([c["tabela"] for c in resultado["consultas"] if c["operacao"] == "insert"], ["recorrencias"] * len(casos))
+        self.assertEqual([e["resultado"] for e in resultado["eventos"]], ["SUCESSO"] * len(casos))
+
+    def test_criacao_joi_retorna_todos_os_campos_obrigatorios(self):
+        obrigatorios = {
+            "criar-transacao": {"id_conta_origem", "id_categoria", "tipo_transacao", "nome", "forma_pagamento",
+                                "valor_transacao", "status_transacao", "data_transacao"},
+            "criar-recorrencia": {"id_conta", "id_categoria", "tipo_transacao", "modalidade", "nome", "forma_pagamento",
+                                 "valor", "frequencia", "data_inicio", "ativo"},
+        }
+        resultado = self.executar([self.chamada("POST", "/usuario/" + rota, {}) for rota in obrigatorios])
+        for rota, resposta in zip(obrigatorios, resultado["respostas"]):
+            with self.subTest(rota=rota):
+                self.assertEqual(resposta["status"], 400)
+                self.assertEqual(resposta["body"]["mensagem"], "Dados inválidos.")
+                self.assertEqual({erro["campo"] for erro in resposta["body"]["erros"]}, obrigatorios[rota])
+                self.assertTrue(all(isinstance(erro["mensagem"], str) and erro["mensagem"] for erro in resposta["body"]["erros"]))
+        self.assertEqual(resultado["consultas"], [])
+
+    def test_criacao_rejeita_campos_invalidos_e_dados_de_outra_modalidade(self):
+        casos = []
+        for campo, valor in (
+            ("valor_transacao", 0), ("valor_transacao", -1), ("nome", "   "),
+            ("id_categoria", None), ("id_conta_origem", -1), ("id_conta_origem", 1.5),
+            ("tipo_transacao", "Saída"), ("forma_pagamento", "Cheque"), ("status_transacao", "Atrasada"),
+            ("data_transacao", "13/10/2026"), ("data_pagamento", "2026-10-13"),
+            ("valor", 10), ("modalidade", "Parcelado"), ("qtd_parcelas", 3), ("frequencia", "Mensal"),
+            ("id_conta", 10), ("id_usuario", 2), ("id_subcategoria", 1), ("id_recorrencia", 50), ("numero_parcela", 1),
+        ):
+            casos.append(("criar-transacao", self.dados_transacao(**{campo: valor}), campo))
+        casos.append(("criar-transacao", self.dados_transacao(tipo_transacao="Transferencia"), "id_conta_destino"))
+        for campo, valor in (
+            ("valor", 0), ("tipo_transacao", "Transferencia"), ("modalidade", "Periódico"),
+            ("frequencia", "Diario"), ("qtd_parcelas", 0), ("qtd_parcelas", 1.5),
+            ("data_inicio", "13/10/2026"), ("ativo", "invalido"), ("descricao", ""), ("destino", ""),
+            ("valor_transacao", 10), ("id_conta_origem", 10), ("id_conta_destino", 11),
+            ("status_transacao", "Pago"), ("data_pagamento", "2026-10-13"), ("id_usuario", 2),
+        ):
+            casos.append(("criar-recorrencia", self.dados_recorrencia(**{campo: valor}), campo))
+        for quantidade in ({}, {"qtd_parcelas": None}):
+            casos.append(("criar-recorrencia", self.dados_recorrencia(modalidade="Parcelado", **quantidade), "qtd_parcelas"))
+        casos.append(("criar-recorrencia", self.dados_recorrencia(modalidade="Parcelado", qtd_parcelas=3, frequencia="Anual"), "frequencia"))
+        resultado = self.executar([self.chamada("POST", "/usuario/" + rota, body) for rota, body, _ in casos])
+        for (rota, body, campo), resposta in zip(casos, resultado["respostas"]):
+            with self.subTest(rota=rota, campo=campo, valor=body.get(campo)):
+                self.assertEqual(resposta["status"], 400)
+                self.assertEqual(resposta["body"]["mensagem"], "Dados inválidos.")
+                self.assertIn(campo, [erro["campo"] for erro in resposta["body"]["erros"]])
+        self.assertEqual(resultado["consultas"], [])
+        self.assertEqual(resultado["banco"], self.banco())
+
+    def test_criacao_bloqueia_contas_categorias_alheias_ou_inexistentes(self):
+        chamadas = []
+        for rota, dados, conta in (
+            ("criar-transacao", self.dados_transacao, "id_conta_origem"),
+            ("criar-recorrencia", self.dados_recorrencia, "id_conta"),
+        ):
+            for campo, identificador in ((conta, 20), (conta, 999), ("id_categoria", 40), ("id_categoria", 999)):
+                chamadas.append(self.chamada("POST", "/usuario/" + rota, dados(**{campo: identificador})))
+        resultado = self.executar(chamadas)
+        self.assertEqual([r["status"] for r in resultado["respostas"]], [404] * len(chamadas))
+        self.assertTrue(all(r["body"]["mensagem"] for r in resultado["respostas"]))
+        self.assertTrue(all(c["operacao"] == "select" for c in resultado["consultas"]))
+        self.assertEqual(resultado["banco"], self.banco())
+
+    def test_criacao_bloqueia_usuario_inativo_ou_inexistente(self):
+        for inexistente in (False, True):
+            with self.subTest(inexistente=inexistente):
+                banco = self.banco()
+                if inexistente:
+                    banco["usuarios"] = [usuario for usuario in banco["usuarios"] if usuario["id_usuario"] != 1]
+                else:
+                    banco["usuarios"][0]["status_usuario"] = "Inativo"
+                resultado = self.executar([
+                    self.chamada("POST", "/usuario/criar-transacao", self.dados_transacao()),
+                    self.chamada("POST", "/usuario/criar-recorrencia", self.dados_recorrencia()),
+                ], banco=banco)
+                self.assertEqual(resultado["respostas"], [
+                    {"status": 404, "body": {"mensagem": "Esse usuario não existe ou não está ativo"}}
+                ] * 2)
+                self.assertTrue(all(c["operacao"] == "select" for c in resultado["consultas"]))
+                self.assertEqual(resultado["banco"], banco)
+
+    def test_criacao_falhas_de_consulta_e_insercao_nao_geram_sucesso(self):
+        for rota, body, tabela in (
+            ("criar-transacao", self.dados_transacao(), "transacoes"),
+            ("criar-recorrencia", self.dados_recorrencia(), "recorrencias"),
+        ):
+            for alvo, operacao in (("categorias", "select"), ("contas_bancarias", "select"), ("usuarios", "select"), (tabela, "insert")):
+                with self.subTest(rota=rota, tabela=alvo, operacao=operacao):
+                    resultado = self.executar([self.chamada("POST", "/usuario/" + rota, body)],
+                                              falha={"tabela": alvo, "operacao": operacao})
+                    self.assertEqual(resultado["respostas"][0]["status"], 500)
+                    self.assertTrue(resultado["respostas"][0]["body"]["mensagem"])
+                    self.assertEqual(resultado["banco"], self.banco())
+                    self.assertEqual(len(resultado["eventos"]), 1)
+                    self.assertNotEqual(resultado["eventos"][0]["resultado"], "SUCESSO")
+                    if operacao == "select":
+                        self.assertTrue(all(c["operacao"] == "select" for c in resultado["consultas"]))
+
     def test_14_rotas_autenticacao_e_admin(self):
         rotas = self.rotas_rf06()
         self.assertEqual(len(rotas), 14)
@@ -1008,7 +1162,15 @@ class TestesRF06(unittest.TestCase):
         self.assertEqual(resultado["consultas"], [])
 
     def test_joi_rejeita_dados_invalidos_e_admin_sem_proprietario(self):
-        chamadas = [self.chamada(r["metodo"], r["caminho"].format(**{p["nome"]: "invalido" for p in r.get("path_params", [])}), admin=True) for r in self.rotas_rf06() if r["admin"]]
+        chamadas = []
+        for rota in self.rotas_rf06():
+            if not rota["admin"]:
+                continue
+            caminho = rota["caminho"].format(**{p["nome"]: "invalido" for p in rota.get("path_params", [])})
+            if rota["metodo"] == "GET":
+                chamadas.append(self.chamada("GET", caminho, query={"id_usuario": "invalido"}, admin=True))
+            else:
+                chamadas.append(self.chamada(rota["metodo"], caminho, admin=True))
         chamadas += [self.chamada("PATCH", "/usuario/editar-transacao", {"id_transacao": 70, "id_usuario": 2}),
                      self.chamada("GET", "/usuario/listar-transacoes", query={"id_usuario": 2}),
                      self.chamada("POST", "/usuario/criar-transacao", {}),
@@ -1063,6 +1225,66 @@ class TestesRF06(unittest.TestCase):
                 self.assertEqual([t["id_transacao"] for t in respostas[1]["body"]], [70, 71, 72])
                 self.assertEqual([r["id_recorrencia"] for r in respostas[2]["body"]], [50])
                 self.assertEqual(respostas[3]["body"], [])
+
+    def test_admin_listar_todos_sem_usuario_e_identificar_proprietarios(self):
+        resultado = self.executar([
+            self.chamada("GET", "/admin/listar-transacoes", admin=True),
+            self.chamada("GET", "/admin/listar-recorrencias", admin=True),
+            self.chamada("GET", "/admin/listar-transacoes", query={"id_contas": [10, 20]}, admin=True),
+            self.chamada("GET", "/admin/listar-transacoes", query={"id_categoria": 40, "status": "Pendente"}, admin=True),
+            self.chamada("GET", "/admin/listar-recorrencias", query={"id_contas": [20]}, admin=True),
+            self.chamada("GET", "/admin/listar-recorrencias", query={"id_recorrencia": 60}, admin=True),
+            self.chamada("GET", "/admin/listar-transacoes", query={"id_usuario": 999}, admin=True),
+            self.chamada("GET", "/admin/listar-recorrencias", query={"id_usuario": 999}, admin=True),
+        ])
+        respostas = resultado["respostas"]
+        self.assertEqual([r["status"] for r in respostas], [200] * 8)
+        self.assertEqual([t["id_transacao"] for t in respostas[0]["body"]], [70, 71, 72, 80])
+        self.assertEqual([int(t["id_usuario"]) for t in respostas[0]["body"]], [1, 1, 1, 2])
+        self.assertEqual([r["id_recorrencia"] for r in respostas[1]["body"]], [50, 60])
+        self.assertEqual([t["id_transacao"] for t in respostas[2]["body"]], [70, 71, 72, 80])
+        self.assertEqual([t["id_transacao"] for t in respostas[3]["body"]], [80])
+        self.assertEqual([r["id_recorrencia"] for r in respostas[4]["body"]], [60])
+        self.assertEqual([r["id_recorrencia"] for r in respostas[5]["body"]], [60])
+        self.assertEqual(respostas[6]["body"], [])
+        self.assertEqual(respostas[7]["body"], [])
+        self.assertFalse(any(f[1] == "id_usuario" for f in resultado["consultas"][0]["filtros"]))
+        self.assertEqual(resultado["consultas"][1]["filtros"], [])
+
+    def test_admin_usuario_opcional_nao_ignora_id_invalido_ou_zero(self):
+        banco = self.banco()
+        banco["contas_bancarias"].append({"id_conta": 0, "id_usuario": 0})
+        banco["transacoes"].append({"id_transacao": 0, "id_conta_origem": 0})
+        banco["recorrencias"].append({"id_recorrencia": 0, "id_usuario": 0, "id_conta": 0})
+        chamadas = []
+        for rota in ("/admin/listar-transacoes", "/admin/listar-recorrencias"):
+            chamadas.append(self.chamada("GET", rota, query={"id_usuario": 0}, admin=True))
+            for valor in ("invalido", "", -1, 1.5):
+                chamadas.append(self.chamada("GET", rota, query={"id_usuario": valor}, admin=True))
+        respostas = self.executar(chamadas, banco=banco)["respostas"]
+        self.assertEqual([r["status"] for r in respostas], [200, 400, 400, 400, 400] * 2)
+        self.assertEqual(respostas[0]["body"], [{"id_transacao": 0, "id_conta_origem": 0, "id_usuario": 0}])
+        self.assertEqual(respostas[5]["body"], [{"id_recorrencia": 0, "id_usuario": 0, "id_conta": 0}])
+
+    def test_admin_listagem_global_nao_depende_de_associacao_e_mantem_autorizacao(self):
+        banco = self.banco()
+        banco["contas_bancarias"] = []
+        resultado = self.executar([
+            self.chamada("GET", "/admin/listar-transacoes", admin=True),
+            self.chamada("GET", "/admin/listar-transacoes", query={"id_contas": [10]}, admin=True),
+            self.chamada("GET", "/admin/listar-transacoes"),
+            self.chamada("GET", "/admin/listar-recorrencias"),
+            self.chamada("GET", "/admin/listar-transacoes", autenticado=False),
+            self.chamada("GET", "/admin/listar-recorrencias", autenticado=False),
+            self.chamada("PATCH", "/admin/editar-transacao", {"id_transacao": 70, "nome": "Alterar"}, admin=True),
+            self.chamada("PATCH", "/admin/editar-recorrencia", {"id_recorrencia": 50, "nome": "Alterar"}, admin=True),
+        ], banco=banco)
+        respostas = resultado["respostas"]
+        self.assertEqual([r["status"] for r in respostas], [200, 200, 403, 403, 401, 401, 400, 400])
+        self.assertEqual([t["id_transacao"] for t in respostas[0]["body"]], [70, 71, 72, 80])
+        self.assertTrue(all(t["id_usuario"] is None for t in respostas[0]["body"]))
+        self.assertEqual(respostas[1]["body"], [])
+        self.assertTrue(all(c["operacao"] == "select" for c in resultado["consultas"]))
 
     def test_editar_excluir_registros_alheios_nao_escreve(self):
         chamadas = []

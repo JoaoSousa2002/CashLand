@@ -1066,12 +1066,11 @@ export const schemaADMIN_listarRecorrencias = Joi.object({
     id_usuario: Joi.number()
         .integer()
         .min(0)
-        .required()
+        .optional()
         .messages({
             'number.base': 'O id_usuario deve ser um número.',
             'number.integer': 'O id_usuario deve ser um número inteiro.',
-            'number.min': 'O id_usuario não pode ser menor que 0.',
-            'any.required': 'O id_usuario é obrigatório.'
+            'number.min': 'O id_usuario não pode ser menor que 0.'
         }),
 
     id_contas: Joi.array()
@@ -1246,12 +1245,11 @@ export const schemaADMIN_listarTransacoes = Joi.object({
     id_usuario: Joi.number()
         .integer()
         .min(0)
-        .required()
+        .optional()
         .messages({
             'number.base': 'O id_usuario deve ser um número.',
             'number.integer': 'O id_usuario deve ser um número inteiro.',
-            'number.min': 'O id_usuario não pode ser menor que 0.',
-            'any.required': 'O id_usuario é obrigatório.'
+            'number.min': 'O id_usuario não pode ser menor que 0.'
         }),
 
     id_contas: Joi.array()

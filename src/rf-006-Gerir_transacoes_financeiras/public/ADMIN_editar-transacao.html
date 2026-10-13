@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administrar transação — CashLand</title>
+    <link rel="stylesheet" href="/template.css">
+    <style>
+        #form-editar-transacao select:disabled,
+        #form-editar-transacao textarea:disabled { background-color: #eee; color: #555; }
+    </style>
+</head>
+
+<body>
+    <div class="loading-overlay" id="loading-overlay" role="status">
+        <div class="loading-box">
+            <p>Carregando...</p>
+            <div class="spinning-wheel" aria-hidden="true"></div>
+        </div>
+    </div>
+    <div class="loading-overlay" id="resultado-overlay" role="dialog" aria-modal="true" aria-labelledby="resultado-titulo">
+        <div class="loading-box dialogo-conteudo">
+            <h2 id="resultado-titulo"></h2>
+            <p id="resultado-mensagem" style="white-space: pre-line;"></p>
+            <button class="botao-dialogo" id="fechar-resultado" type="button">Continuar</button>
+        </div>
+    </div>
+    <div id="container" hidden>
+        <div id="div-superior">
+
+            <div id="div-nome-sistema">
+                <a href="/tela-admin">
+                    <h1>CashLand</h1>
+                </a>
+            </div>
+
+            <div id="div-nav">
+                <nav>
+                    <a href="/tela-admin/listar-usuarios">Gerir usuários</a>
+                    <a href="/tela-admin/listar-categoria">Gerir categorias</a>
+                    <a href="/tela-admin/listar-contas">Gerir contas financeiras</a>
+                    <a href="/tela-admin/listar-transacoes">Gerir transações</a>
+                </nav>
+            </div>
+            <div id="div-nome-usuario">
+                <h3><span id="nome-usuario"></span></h3>
+            </div>
+            <div id="div-usuario">
+                <a onclick="redirecionaTela()">
+                    <img src="/User_icon_black.png" alt="icone usuario">
+                </a>
+            </div>
+            <div id="form-logout">
+                <form id="meuForm-Logout">
+                    <input type="submit" value="Sair">
+                </form>
+            </div>
+
+        </div>
+
+        <main id="container-conteudo">
+            <div class="cartao">
+                <div id="id-Titulo">
+                    <h2 id="titulo-pagina">Editar transação</h2>
+                    <button id="botao-Voltar" type="button" onclick="voltarListagem()">Voltar</button>
+                </div>
+                <p class="texto-auxiliar" id="aviso-registro"></p>
+                <form id="form-editar-transacao" novalidate>
+                    <div class="input-dados" id="campo-id_transacao" data-modo="transacao" hidden>
+                        <label for="id_transacao" id="label-id_transacao">ID da transação:</label>
+                        <input id="id_transacao" name="id_transacao" disabled aria-describedby="erro-id_transacao" readonly data-bloqueado="true" type="text" >
+                        <div id="erro-id_transacao" aria-live="polite"></div>
+                    </div>
+                    <div class="input-dados" id="campo-id_recorrencia">
+                        <label for="id_recorrencia" id="label-id_recorrencia">ID da recorrência:</label>
+                        <input id="id_recorrencia" name="id_recorrencia" disabled aria-describedby="erro-id_recorrencia" readonly data-bloqueado="true" type="text" >
+                        <div id="erro-id_recorrencia" aria-live="polite"></div>
+                    </div>
+                    <div class="input-dados" id="campo-id_usuario">
+                        <label for="id_usuario" id="label-id_usuario">ID do usuário:</label>
+                        <input id="id_usuario" name="id_usuario" disabled aria-describedby="erro-id_usuario" readonly data-bloqueado="true" type="text" >
+                        <div id="erro-id_usuario" aria-live="polite"></div>
+                    </div>
+                    <div class="input-dados" id="campo-numero_parcela" data-modo="transacao" hidden>
+                        <label for="numero_parcela" id="label-numero_parcela">Número da parcela/ocorrência:</label>
+                        <input id="numero_parcela" name="numero_parcela" disabled aria-describedby="erro-numero_parcela" readonly data-bloqueado="true" type="text" >
+                        <div id="erro-numero_parcela" aria-live="polite"></div>
+                    </div>
+                    <div class="input-dados" id="campo-data_criacao">
+                        <label for="data_criacao" id="label-data_criacao">Data de criação:</label>
+                        <input id="data_criacao" name="data_criacao" disabled aria-describedby="erro-data_criacao" readonly data-bloqueado="true" type="text" >
+                        <div id="erro-data_criacao" aria-live="polite"></div>
+                    </div>
+                    <div class="input-dados" id="campo-id_meta" data-modo="transacao" hidden>
+                        <label for="id_meta" id="label-id_meta">Meta associada:</label>
+                        <input id="id_meta" name="id_meta" disabled aria-describedby="erro-id_meta" readonly data-bloqueado="true" type="text" >
+                        <div id="erro-id_meta" aria-live="polite"></div>
+                    </div>
+                    <div class="input-dados" id="campo-nome">
+                        <label for="nome" id="label-nome">Nome:</label>
+                        <input id="nome" name="nome" disabled aria-describedby="erro-nome" type="text" >
+                        <div id="erro-nome" aria-live="polite"></div>
+                    </div>
+                    <div class="input-dados" id="campo-descricao">
+                        <label for="descricao" id="label-descricao">Descrição:</label>
+                        <textarea id="descricao" name="descricao" disabled aria-describedby="erro-descricao" rows="3"></textarea>
+                        <div id="erro-descricao" aria-live="polite"></div>
+                    </div>
+                    <div class="input-dados" id="campo-tipo_transacao">
+                        <label for="tipo_transacao" id="label-tipo_transacao">Tipo da transação:</label>
+                        <select id="tipo_transacao" name="tipo_transacao" disabled aria-describedby="erro-tipo_transacao"><option value="Entrada">Entrada</option><option value="Saida">Saída</option><option value="Transferencia">Transferência</option></select>
+                        <div id="erro-tipo_transacao" aria-live="polite"></div>
+                    </div>
+                    <div class="input-dados" id="campo-id_conta_origem" data-modo="transacao" hidden>
+                        <label for="id_conta_origem" id="label-id_conta_origem">Conta de origem:</label>
+                        <select id="id_conta_origem" name="id_conta_origem" disabled aria-describedby="erro-id_conta_origem"><option value="">Carregando...</option></select>
+                        <div id="erro-id_conta_origem" aria-live="polite"></div>
+                    </div>
+                    <div class="input-dados" id="campo-id_conta_destino" data-modo="transacao" hidden>
+                        <label for="id_conta_destino" id="label-id_conta_destino">Conta de destino:</label>
+                        <select id="id_conta_destino" name="id_conta_destino" disabled aria-describedby="erro-id_conta_destino"><option value="">Carregando...</option></select>
+                        <div id="erro-id_conta_destino" aria-live="polite"></div>
+                    </div>
+                    <div class="input-dados" id="campo-id_conta" data-modo="recorrencia" hidden>
+                        <label for="id_conta" id="label-id_conta">Conta financeira:</label>
+                        <select id="id_conta" name="id_conta" disabled aria-describedby="erro-id_conta"><option value="">Carregando...</option></select>
+                        <div id="erro-id_conta" aria-live="polite"></div>
+                    </div>
+                    <div class="input-dados" id="campo-id_categoria">
+                        <label for="id_categoria" id="label-id_categoria">Categoria:</label>
+                        <select id="id_categoria" name="id_categoria" disabled aria-describedby="erro-id_categoria"><option value="">Carregando...</option></select>
+                        <div id="erro-id_categoria" aria-live="polite"></div>
+                    </div>
+                    <div class="input-dados" id="campo-forma_pagamento">
+                        <label for="forma_pagamento" id="label-forma_pagamento">Forma de pagamento:</label>
+                        <select id="forma_pagamento" name="forma_pagamento" disabled aria-describedby="erro-forma_pagamento"><option value="">Selecione a forma de pagamento</option><option value="PIX">PIX</option><option value="débito">débito</option><option value="crédito">crédito</option><option value="boleto">boleto</option><option value="dinheiro">dinheiro</option></select>
+                        <div id="erro-forma_pagamento" aria-live="polite"></div>
+                    </div>
+                    <div class="input-dados" id="campo-destino">
+                        <label for="destino" id="label-destino">Destino/estabelecimento:</label>
+                        <input id="destino" name="destino" disabled aria-describedby="erro-destino" type="text" >
+                        <div id="erro-destino" aria-live="polite"></div>
+                    </div>
+                    <div class="input-dados" id="campo-valor_transacao" data-modo="transacao" hidden>
+                        <label for="valor_transacao" id="label-valor_transacao">Valor da transação (R$):</label>
+                        <input id="valor_transacao" name="valor_transacao" disabled aria-describedby="erro-valor_transacao" type="number" min="0.01" step="0.01">
+                        <div id="erro-valor_transacao" aria-live="polite"></div>
+                    </div>
+                    <div class="input-dados" id="campo-status_transacao" data-modo="transacao" hidden>
+                        <label for="status_transacao" id="label-status_transacao">Status da transação:</label>
+                        <select id="status_transacao" name="status_transacao" disabled aria-describedby="erro-status_transacao"><option value="Pendente">Pendente</option><option value="Pago">Pago</option></select>
+                        <div id="erro-status_transacao" aria-live="polite"></div>
+                    </div>
+                    <div class="input-dados" id="campo-data_transacao" data-modo="transacao" hidden>
+                        <label for="data_transacao" id="label-data_transacao">Data da transação:</label>
+                        <input id="data_transacao" name="data_transacao" disabled aria-describedby="erro-data_transacao" type="date" >
+                        <div id="erro-data_transacao" aria-live="polite"></div>
+                    </div>
+                    <div class="input-dados" id="campo-data_vencimento" data-modo="transacao" hidden>
+                        <label for="data_vencimento" id="label-data_vencimento">Data de vencimento (opcional):</label>
+                        <input id="data_vencimento" name="data_vencimento" disabled aria-describedby="erro-data_vencimento" type="date" >
+                        <div id="erro-data_vencimento" aria-live="polite"></div>
+                    </div>
+                    <div class="input-dados" id="campo-data_pagamento" data-modo="transacao" hidden>
+                        <label for="data_pagamento" id="label-data_pagamento">Data de pagamento (opcional):</label>
+                        <input id="data_pagamento" name="data_pagamento" disabled aria-describedby="erro-data_pagamento" type="date" >
+                        <div id="erro-data_pagamento" aria-live="polite"></div>
+                    </div>
+                    <div class="input-dados" id="campo-modalidade" data-modo="recorrencia" hidden>
+                        <label for="modalidade" id="label-modalidade">Modalidade:</label>
+                        <select id="modalidade" name="modalidade" disabled aria-describedby="erro-modalidade"><option value="Parcelado">Parcelado</option><option value="Periodico">Periódico</option></select>
+                        <div id="erro-modalidade" aria-live="polite"></div>
+                    </div>
+                    <div class="input-dados" id="campo-valor" data-modo="recorrencia" hidden>
+                        <label for="valor" id="label-valor">Valor (R$):</label>
+                        <input id="valor" name="valor" disabled aria-describedby="erro-valor" type="number" min="0.01" step="0.01">
+                        <div id="erro-valor" aria-live="polite"></div>
+                    </div>
+                    <div class="input-dados" id="campo-frequencia" data-modo="recorrencia" hidden>
+                        <label for="frequencia" id="label-frequencia">Frequência:</label>
+                        <select id="frequencia" name="frequencia" disabled aria-describedby="erro-frequencia"><option value="Semanal">Semanal</option><option value="Mensal">Mensal</option><option value="Anual">Anual</option></select>
+                        <div id="erro-frequencia" aria-live="polite"></div>
+                    </div>
+                    <div class="input-dados" id="campo-qtd_parcelas" data-modo="recorrencia" hidden>
+                        <label for="qtd_parcelas" id="label-qtd_parcelas">Quantidade de parcelas/ocorrências:</label>
+                        <input id="qtd_parcelas" name="qtd_parcelas" disabled aria-describedby="erro-qtd_parcelas" type="number" min="1" step="1">
+                        <div id="erro-qtd_parcelas" aria-live="polite"></div>
+                    </div>
+                    <div class="input-dados" id="campo-data_inicio" data-modo="recorrencia" hidden>
+                        <label for="data_inicio" id="label-data_inicio">Data de início:</label>
+                        <input id="data_inicio" name="data_inicio" disabled aria-describedby="erro-data_inicio" type="date" >
+                        <div id="erro-data_inicio" aria-live="polite"></div>
+                    </div>
+                    <div class="input-dados" id="campo-ativo" data-modo="recorrencia" hidden>
+                        <label for="ativo" id="label-ativo">Situação:</label>
+                        <select id="ativo" name="ativo" disabled aria-describedby="erro-ativo"><option value="true">Ativa</option><option value="false">Inativa</option></select>
+                        <div id="erro-ativo" aria-live="polite"></div>
+                    </div>
+                    <div id="erro-formulario" aria-live="polite"></div>
+                    <div class="acoes-formulario">
+                        <button id="salvar" type="submit" disabled>Salvar alterações</button>
+                        <button id="botao-recarregar" type="button" hidden>Recarregar dados</button>
+                    </div>
+                </form>
+            </div>
+        </main>
+    </div>
+    <script src="/protecao.js"></script>
+    <script>
+        const parametros = new URLSearchParams(location.search);
+        const loading = document.getElementById('loading-overlay');
+        const resultado = document.getElementById('resultado-overlay');
+        const conteudo = document.getElementById('container');
+        const form = document.getElementById('form-editar-transacao');
+        const salvar = document.getElementById('salvar');
+        const recarregar = document.getElementById('botao-recarregar');
+        const camposComuns = ['nome', 'descricao', 'tipo_transacao', 'id_categoria', 'forma_pagamento', 'destino'];
+        const camposTransacao = [...camposComuns, 'id_conta_origem', 'id_conta_destino', 'valor_transacao',
+            'status_transacao', 'data_transacao', 'data_vencimento', 'data_pagamento'];
+        const camposRecorrencia = [...camposComuns, 'id_conta', 'modalidade', 'valor', 'frequencia', 'qtd_parcelas', 'data_inicio', 'ativo'];
+        let modo = null;
+        let chaveId = null;
+        let idRegistro = null;
+        let idUsuario = null;
+        let voltarAoInicio = false;
+        let registro = null;
+        let valoresIniciais = {};
+        let sessaoPronta = false;
+        let registroPronto = false;
+        let listasProntas = false;
+        let carregando = false;
+        let enviando = false;
+        let voltarAoLogin = false;
+
+        function MostrarErro(id, mensagem) {
+            const elemento = document.getElementById(id);
+            if (!elemento) return;
+            elemento.replaceChildren();
+            if (mensagem) {
+                const texto = document.createElement('h5');
+                texto.style.color = 'var(--erro)';
+                texto.textContent = mensagem;
+                elemento.appendChild(texto);
+            }
+        }
+
+        function limparErros() {
+            form.querySelectorAll('[id^="erro-"]').forEach(elemento => MostrarErro(elemento.id, ''));
+            form.querySelectorAll('[aria-invalid]').forEach(elemento => elemento.removeAttribute('aria-invalid'));
+        }
+
+        function mostrarErrosValidacao(erros) {
+            const mensagens = {};
+            erros.forEach(erro => {
+                const id = document.getElementById(`erro-${erro.campo}`) ? erro.campo : 'formulario';
+                if (!mensagens[id]) mensagens[id] = [];
+                mensagens[id].push(erro.mensagem);
+                document.getElementById(erro.campo)?.setAttribute('aria-invalid', 'true');
+            });
+            Object.keys(mensagens).forEach(id => MostrarErro(`erro-${id}`, mensagens[id].join(' ')));
+        }
+
+        function MostrarResultado_Overlay(sucesso, mensagem) {
+            document.getElementById('resultado-titulo').textContent = sucesso ? 'Sucesso' : 'Não foi possível concluir';
+            document.getElementById('resultado-titulo').style.color = sucesso ? 'var(--sucesso)' : 'var(--erro)';
+            document.getElementById('resultado-mensagem').textContent = mensagem;
+            resultado.style.display = 'flex';
+            conteudo.inert = true;
+            document.getElementById('fechar-resultado').focus();
+        }
+
+        function mensagemResposta(resposta, dados) {
+            if (resposta.status === 403) {
+                voltarAoInicio = true;
+                sessaoPronta = false;
+            }
+            if (resposta.status === 401) {
+                voltarAoLogin = true;
+                sessaoPronta = false;
+            }
+            return dados?.mensagem || dados?.erro || `Não foi possível concluir a operação (HTTP ${resposta.status}).`;
+        }
+
+        document.getElementById('fechar-resultado').addEventListener('click', () => {
+            resultado.style.display = 'none';
+            conteudo.inert = false;
+            if (voltarAoLogin) location.href = '/login';
+            else if (voltarAoInicio) location.href = '/tela-principal';
+            else if (!salvar.disabled) salvar.focus();
+            else if (!recarregar.hidden) recarregar.focus();
+        });
+        resultado.addEventListener('keydown', evento => {
+            if (evento.key === 'Escape') document.getElementById('fechar-resultado').click();
+            if (evento.key === 'Tab') {
+                evento.preventDefault();
+                document.getElementById('fechar-resultado').focus();
+            }
+        });
+
+        function identificarRegistro() {
+            const usuarios = parametros.getAll('id_usuario');
+            if (usuarios.length !== 1 || !/^\d+$/.test(usuarios[0]) || !Number.isSafeInteger(Number(usuarios[0]))) {
+                MostrarResultado_Overlay(0, 'Informe um id_usuario válido para identificar o proprietário na URL.');
+                return false;
+            }
+            idUsuario = Number(usuarios[0]);
+            const transacoes = parametros.getAll('id_transacao');
+            const recorrencias = parametros.getAll('id_recorrencia');
+            if (transacoes.length + recorrencias.length !== 1) {
+                MostrarResultado_Overlay(0, 'Informe somente um id_transacao ou id_recorrencia na URL.');
+                return false;
+            }
+            const recebido = transacoes.length ? transacoes[0] : recorrencias[0];
+            if (!/^\d+$/.test(recebido) || !Number.isSafeInteger(Number(recebido))) {
+                MostrarResultado_Overlay(0, 'ID não fornecido ou inválido na URL.');
+                return false;
+            }
+            modo = transacoes.length ? 'transacao' : 'recorrencia';
+            chaveId = transacoes.length ? 'id_transacao' : 'id_recorrencia';
+            idRegistro = Number(recebido);
+            document.getElementById('titulo-pagina').textContent = modo === 'transacao' ? 'Editar transação' : 'Editar recorrência';
+            document.title = `${document.getElementById('titulo-pagina').textContent} — CashLand`;
+            document.querySelectorAll('[data-modo]').forEach(grupo => grupo.hidden = grupo.dataset.modo !== modo);
+            const transferencia = document.querySelector('#tipo_transacao option[value="Transferencia"]');
+            transferencia.hidden = modo !== 'transacao';
+            transferencia.disabled = modo !== 'transacao';
+            return true;
+        }
+
+        function atualizarCampos() {
+            const ocupado = carregando || enviando;
+            const pronto = sessaoPronta && registroPronto && listasProntas;
+            const editaveis = modo === 'transacao' ? camposTransacao : camposRecorrencia;
+            form.querySelectorAll('input, select, textarea').forEach(campo => {
+                campo.disabled = !pronto || ocupado || !editaveis.includes(campo.id);
+            });
+            if (modo === 'transacao') {
+                const tipo = document.getElementById('tipo_transacao').value;
+                document.getElementById('label-id_conta_origem').textContent = tipo === 'Entrada' ? 'Conta de recebimento:' : 'Conta de origem:';
+                document.getElementById('id_conta_destino').disabled = !pronto || ocupado || tipo !== 'Transferencia';
+                document.getElementById('data_pagamento').disabled = !pronto || ocupado || document.getElementById('status_transacao').value !== 'Pago';
+            } else if (modo === 'recorrencia') {
+                const parcelado = document.getElementById('modalidade').value === 'Parcelado';
+                document.getElementById('frequencia').disabled = !pronto || ocupado || parcelado;
+                document.getElementById('label-valor').textContent = parcelado ? 'Valor total (R$):' : 'Valor por ocorrência (R$):';
+                document.getElementById('label-qtd_parcelas').textContent = parcelado ? 'Quantidade de parcelas:' : 'Quantidade de ocorrências (vazio = sem fim definido):';
+            }
+            salvar.disabled = !pronto || ocupado;
+            recarregar.disabled = ocupado || !sessaoPronta;
+            loading.style.display = ocupado ? 'flex' : 'none';
+            form.inert = ocupado;
+        }
+
+        function preencherCampos() {
+            form.querySelectorAll('input, select, textarea').forEach(campo => {
+                const valor = campo.id === 'id_usuario' ? idUsuario : registro[campo.id];
+                campo.value = valor == null ? '' : String(valor);
+                if (campo.type === 'date' && valor) campo.value = String(valor).slice(0, 10);
+                if (campo.dataset.bloqueado && valor == null) campo.value = '---';
+            });
+            if (modo === 'transacao' && registro.id_recorrencia == null) document.getElementById('id_recorrencia').value = 'Avulsa';
+            document.getElementById('aviso-registro').textContent = modo === 'recorrencia'
+                ? 'As alterações serão aplicadas à regra de recorrência pelo sistema.'
+                : registro.id_recorrencia == null ? 'Edite os dados desta transação avulsa.'
+                    : 'As alterações afetam somente esta parcela ou ocorrência.';
+            valoresIniciais = {};
+            (modo === 'transacao' ? camposTransacao : camposRecorrencia).forEach(id => {
+                valoresIniciais[id] = document.getElementById(id).value;
+            });
+        }
+
+        async function consultarRegistro() {
+            registroPronto = false;
+            const rota = modo === 'transacao' ? '/admin/listar-transacoes' : '/admin/listar-recorrencias';
+            const resposta = await fetch(`${rota}?${chaveId}=${idRegistro}&id_usuario=${idUsuario}`, { method: 'GET', credentials: 'include', headers: { Accept: 'application/json' } });
+            const dados = await resposta.json();
+            if (resposta.status !== 200) {
+                if (resposta.status === 400 && Array.isArray(dados.erros)) mostrarErrosValidacao(dados.erros);
+                throw new Error(mensagemResposta(resposta, dados));
+            }
+            if (!Array.isArray(dados)) throw new Error('Resposta inesperada ao consultar o registro.');
+            const encontrado = dados.find(item => Number(item[chaveId]) === idRegistro);
+            if (!encontrado) throw new Error('Esse registro não existe ou não pertence ao usuário.');
+            registro = encontrado;
+            registroPronto = true;
+        }
+
+        async function carregarListas() {
+            listasProntas = false;
+            for (const [rota, ids, chave, nome] of [
+                ['/admin/listar-contas', modo === 'transacao' ? ['id_conta_origem', 'id_conta_destino'] : ['id_conta'], 'id_conta', 'nome_conta'],
+                ['/admin/listar-categoria', ['id_categoria'], 'id_categoria', 'nome']
+            ]) {
+                const resposta = await fetch(`${rota}?id_usuario=${idUsuario}`, { method: 'GET', credentials: 'include', headers: { Accept: 'application/json' } });
+                const respostaDados = await resposta.json();
+                if (resposta.status !== 200) throw new Error(mensagemResposta(resposta, respostaDados));
+                if (!Array.isArray(respostaDados)) throw new Error('Resposta inesperada ao consultar contas ou categorias.');
+                const dados = respostaDados.filter(item => Number(item.id_usuario) === idUsuario);
+                ids.forEach(id => {
+                    const select = document.getElementById(id);
+                    select.replaceChildren();
+                    const vazio = document.createElement('option');
+                    vazio.value = '';
+                    vazio.textContent = dados.length ? 'Nenhuma selecionada' : 'Nenhum registro disponível';
+                    select.appendChild(vazio);
+                    dados.forEach(item => {
+                        const opcao = document.createElement('option');
+                        opcao.value = item[chave];
+                        opcao.textContent = `${item[nome]} (#${item[chave]})`;
+                        select.appendChild(opcao);
+                    });
+                    // Preserva a associação retornada mesmo quando a listagem auxiliar não a inclui.
+                    if (registro[id] != null && !dados.some(item => String(item[chave]) === String(registro[id]))) {
+                        const atual = document.createElement('option');
+                        atual.value = registro[id];
+                        atual.textContent = `Registro associado (#${registro[id]})`;
+                        select.appendChild(atual);
+                    }
+                });
+            }
+            listasProntas = true;
+        }
+
+        async function carregarDados() {
+            if (!sessaoPronta || !modo || carregando || enviando) return;
+            carregando = true;
+            recarregar.hidden = true;
+            limparErros();
+            atualizarCampos();
+            try {
+                await consultarRegistro();
+                await carregarListas();
+                preencherCampos();
+            } catch (erro) {
+                registroPronto = false;
+                recarregar.hidden = !sessaoPronta;
+                MostrarResultado_Overlay(0, erro.message || 'Não foi possível carregar os dados. Tente novamente.');
+            } finally {
+                carregando = false;
+                atualizarCampos();
+            }
+        }
+
+        function coletarDados() {
+            const dados = { [chaveId]: idRegistro, id_usuario: idUsuario };
+            const editaveis = modo === 'transacao' ? camposTransacao : camposRecorrencia;
+            const numeros = ['id_conta_origem', 'id_conta_destino', 'id_conta', 'id_categoria', 'valor_transacao', 'valor', 'qtd_parcelas'];
+            editaveis.forEach(id => {
+                const campo = document.getElementById(id);
+                if (campo.disabled || campo.value === valoresIniciais[id]) return;
+                let valor = campo.value.trim();
+                if (id === 'ativo') valor = valor === 'true';
+                else if (valor === '' && (['qtd_parcelas', 'data_vencimento', 'data_pagamento', 'id_conta_destino'].includes(id)
+                    || (id === 'id_categoria' && modo === 'transacao' && document.getElementById('tipo_transacao').value === 'Transferencia'))) valor = null;
+                else if (numeros.includes(id) && valor !== '') valor = Number(valor);
+                dados[id] = valor;
+            });
+            if (modo === 'transacao') {
+                if (dados.tipo_transacao === 'Transferencia') {
+                    const destino = document.getElementById('id_conta_destino').value;
+                    dados.id_conta_destino = destino === '' ? null : Number(destino);
+                } else if (dados.tipo_transacao) {
+                    dados.id_conta_destino = null;
+                    const categoria = document.getElementById('id_categoria').value;
+                    dados.id_categoria = categoria === '' ? '' : Number(categoria);
+                }
+                if (dados.status_transacao === 'Pendente') dados.data_pagamento = null;
+            } else if (dados.modalidade === 'Parcelado') {
+                dados.frequencia = 'Mensal';
+            }
+            return dados;
+        }
+
+        async function salvarAlteracoes() {
+            if (!sessaoPronta || !registroPronto || enviando || carregando) return;
+            if (!listasProntas) return;
+            limparErros();
+            const dadosEnviar = coletarDados();
+            if (Object.keys(dadosEnviar).length === 2) {
+                MostrarResultado_Overlay(1, 'Nenhuma alteração para salvar.');
+                return;
+            }
+            enviando = true;
+            atualizarCampos();
+            try {
+                const rota = modo === 'transacao' ? '/admin/editar-transacao' : '/admin/editar-recorrencia';
+                const resposta = await fetch(rota, {
+                    method: 'PATCH', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(dadosEnviar)
+                });
+                const dados = await resposta.json();
+                if (resposta.status === 200) {
+                    try {
+                        await consultarRegistro();
+                        preencherCampos();
+                        recarregar.hidden = true;
+                        MostrarResultado_Overlay(1, dados.mensagem);
+                    } catch (erro) {
+                        registroPronto = false;
+                        recarregar.hidden = !sessaoPronta;
+                        MostrarResultado_Overlay(0, `${dados.mensagem}\nNão foi possível atualizar os dados exibidos. ${erro.message}`);
+                    }
+                } else if (resposta.status === 400 && Array.isArray(dados.erros)) {
+                    mostrarErrosValidacao(dados.erros);
+                } else {
+                    const mensagem = mensagemResposta(resposta, dados);
+                    if (resposta.status === 404) {
+                        registroPronto = false;
+                        recarregar.hidden = !sessaoPronta;
+                    }
+                    MostrarResultado_Overlay(0, mensagem);
+                }
+            } catch {
+                registroPronto = false;
+                recarregar.hidden = !sessaoPronta;
+                MostrarResultado_Overlay(0, 'Não foi possível confirmar a alteração. Recarregue os dados antes de tentar novamente.');
+            } finally {
+                enviando = false;
+                atualizarCampos();
+            }
+        }
+
+        form.addEventListener('submit', evento => {
+            evento.preventDefault();
+            salvarAlteracoes();
+        });
+        form.addEventListener('input', evento => {
+            MostrarErro(`erro-${evento.target.id}`, '');
+            MostrarErro('erro-formulario', '');
+            evento.target.removeAttribute('aria-invalid');
+        });
+        form.addEventListener('change', evento => {
+            if (evento.target.id === 'modalidade' && evento.target.value === 'Parcelado') document.getElementById('frequencia').value = 'Mensal';
+            if (evento.target.id === 'status_transacao' && evento.target.value === 'Pendente') document.getElementById('data_pagamento').value = '';
+            atualizarCampos();
+        });
+        recarregar.addEventListener('click', carregarDados);
+
+        function voltarListagem() {
+            let rota = '/tela-admin/listar-transacoes';
+            if (idUsuario != null) {
+                rota += `?id_usuario=${idUsuario}`;
+            }
+            location.href = rota;
+        }
+
+        async function redirecionaTela() {
+            const usuario = await protegerPagina('Admin');
+            if (!usuario) return;
+            window.location.href = usuario.tipo === 'Admin'
+                ? `/tela-admin/editar-usuarios?id=${usuario.id_usuario}` : '/tela-principal/editar-usuario';
+        }
+
+        document.getElementById('meuForm-Logout').addEventListener('submit', async evento => {
+            evento.preventDefault();
+            if (carregando || enviando) return;
+            enviando = true;
+            atualizarCampos();
+            try {
+                const resposta = await fetch('/logout', { method: 'POST', credentials: 'include' });
+                const dados = await resposta.json();
+                if (resposta.status === 200) {
+                    localStorage.removeItem('tipo');
+                    location.href = '/login';
+                } else MostrarResultado_Overlay(0, mensagemResposta(resposta, dados));
+            } catch {
+                MostrarResultado_Overlay(0, 'Não foi possível sair. Tente novamente.');
+            } finally {
+                enviando = false;
+                atualizarCampos();
+            }
+        });
+
+        async function iniciar() {
+            loading.style.display = 'flex';
+            try {
+                const usuario = await protegerPagina('Admin');
+                if (!usuario) return;
+                sessaoPronta = true;
+                document.getElementById('nome-usuario').textContent = usuario.nome.slice(0, 8);
+                conteudo.hidden = false;
+                if (identificarRegistro()) await carregarDados();
+            } finally {
+                atualizarCampos();
+            }
+        }
+        iniciar();
+    </script>
+</body>
+</html>

@@ -3,8 +3,8 @@ import { auditar } from '../middlewares/AuditoriaRota.js';
 import { autenticar } from '../middlewares/Autenticacao.js';
 import { limitadorGenericoSimples, limitadorGenericoCritico } from '../middlewares/RateLimit.js';
 import { validar } from '../validacoes/validar.js';
-import { schemaCriarRecorrencia, schemaCriarTransacao, schemaEditarRecorrencia, schemaEditarTransacao, schemaListarTransacoes, schemaListarRecorrencias, schemaExcluirTransacao, schemaExcluirRecorrencia } from '../validacoes/usuario.js';
-import { criarRecorrencia, criarTransacao, editarRecorrencia, editarTransacao, listarTransacoes, listarRecorrencias, excluirTransacao, excluirRecorrencia } from '../controllers/transacoesController.js'
+import { schemaCriarRecorrencia, schemaCriarTransacao, schemaEditarRecorrencia, schemaEditarTransacao, schemaListarTransacoes, schemaListarRecorrencias, schemaExcluirTransacao, schemaExcluirRecorrencia, schemaIdContaObrigatorio } from '../validacoes/usuario.js';
+import { criarRecorrencia, criarTransacao, editarRecorrencia, editarTransacao, listarTransacoes, listarRecorrencias, excluirTransacao, excluirRecorrencia, verificarSaldoAtual } from '../controllers/transacoesController.js'
 
 const router = Router();
 
@@ -19,6 +19,8 @@ router.patch('/editar-transacao', auditar('USER_EDITAR_TRANSACAO', req => req.us
 router.get('/listar-transacoes', auditar('USER_LISTAR_TRANSACOES', req => req.usuario?.id_usuario, false), limitadorGenericoSimples, autenticar, validar(schemaListarTransacoes), listarTransacoes);
 
 router.get('/listar-recorrencias', auditar('USER_LISTAR_RECORRENCIAS', req => req.usuario?.id_usuario, false), limitadorGenericoSimples, autenticar, validar(schemaListarRecorrencias), listarRecorrencias);
+
+router.get('/verificar-saldo', auditar('USER_VERIFICAR_SALDO', req => req.usuario?.id_usuario, false), limitadorGenericoSimples, autenticar, validar(schemaIdContaObrigatorio), verificarSaldoAtual);
 
 router.delete('/excluir-transacao/:id_transacao', auditar('USER_EXCLUIR_TRANSACAO', req => req.usuario?.id_usuario, true), limitadorGenericoCritico, autenticar, validar(schemaExcluirTransacao), excluirTransacao);
 

@@ -40,10 +40,25 @@
                 <nav>
                     <a href="/tela-principal/listar-categoria">Gerir categorias</a>
                     <a href="/tela-principal/listar-contas">Gerir contas financeiras</a>
+                    <a href="/tela-principal/criar-transacao">Adicionar transação</a>
+                    <a href="/tela-principal/listar-transacoes">Gerir transações</a>
                 </nav>
             </div>
-            <div id="div-nome-usuario">
-                <h3><span id="nome-usuario"></span></h3>
+            <div id="div-resumo-usuario">
+                <div id="div-saldo-usuario">
+                    <button id="botao-saldo-usuario" type="button" aria-expanded="false" aria-controls="lista-contas-saldo">
+                        <small>Saldo atual <span aria-hidden="true">▾</span></small>
+                        <strong id="saldo-usuario" aria-live="polite">Carregando...</strong>
+                        <small id="nome-conta-saldo">Selecionar conta</small>
+                    </button>
+                    <div id="lista-contas-saldo" hidden>
+                        <label for="conta-saldo-usuario">Conta financeira</label>
+                        <select id="conta-saldo-usuario" size="3" disabled></select>
+                    </div>
+                </div>
+                <div id="div-nome-usuario">
+                    <h3><span id="nome-usuario"></span></h3>
+                </div>
             </div>
             <div id="div-usuario">
                 <a onclick="redirecionaTela()">
@@ -212,6 +227,7 @@
                 const usuario = await protegerPagina();
                 if (!usuario) return;
                 document.getElementById('nome-usuario').textContent = usuario.nome.slice(0, 8);
+                atualizarSaldoUsuario(usuario.id_usuario);
                 sessaoPronta = true;
                 botaoEnviar.disabled = !sessaoPronta;
             } finally {

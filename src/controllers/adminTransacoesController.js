@@ -205,8 +205,10 @@ export async function listarRecorrencias(req, res) {
     let consulta = supabase
         .from('recorrencias')
         .select('*')
-        .eq('id_usuario', id_usuario)
 
+    if (id_usuario != null) {
+        consulta = consulta.eq('id_usuario', id_usuario)
+    }
     if (id_recorrencia != null) {
         consulta = consulta.eq('id_recorrencia', id_recorrencia)
     }
@@ -232,8 +234,10 @@ export async function listarTransacoes(req, res) {
 
     let contas = supabase
         .from('contas_bancarias')
-        .select('id_conta')
-        .eq('id_usuario', id_usuario)
+        .select('id_conta, id_usuario')
+    if (id_usuario != null) {
+        contas = contas.eq('id_usuario', id_usuario)
+    }
     if (id_contas) {
         contas = contas.in('id_conta', id_contas)
     }
@@ -242,14 +246,15 @@ export async function listarTransacoes(req, res) {
         console.log("/admin/listar-transacoes: >>>>> Erro ao consultar as contas: " + erroConta.message)
         return res.status(500).json({ mensagem: "Erro ao consultar as contas, tente novamente mais tarde" })
     }
-    if (!consultaConta.length) {
-        return res.status(200).json([])
-    }
-
     let consulta = supabase
         .from('transacoes')
         .select('*')
-        .in('id_conta_origem', consultaConta.map(conta => conta.id_conta))
+    if (id_usuario != null || id_contas) {
+        if (!consultaConta.length) {
+            return res.status(200).json([])
+        }
+        consulta = consulta.in('id_conta_origem', consultaConta.map(conta => conta.id_conta))
+    }
     if (id_categoria != null) {
         consulta = consulta.eq('id_categoria', id_categoria)
     }
@@ -282,6 +287,11 @@ export async function listarTransacoes(req, res) {
     if (erroConsulta) {
         console.log("/admin/listar-transacoes: >>>>> Erro ao consultar: " + erroConsulta.message)
         return res.status(500).json({ mensagem: "Erro ao consultar as transações, tente novamente mais tarde" })
+    }
+    // O proprietário da transação é identificado pela conta de origem.
+    const usuariosContas = new Map(consultaConta.map(conta => [Number(conta.id_conta), conta.id_usuario]))
+    for (const transacao of consultaTransacao) {
+        transacao.id_usuario = usuariosContas.get(Number(transacao.id_conta_origem)) ?? null
     }
     return res.status(200).json(consultaTransacao)
 }

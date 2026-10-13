@@ -28,7 +28,7 @@ test('páginas, redirecionamento, arquivos estáticos e Swagger preservados', as
         if (rota.path === '/') {
             await http('get', '/').expect(302).expect('Location', '/login');
         } else {
-            await http('get', rota.path).expect(200).expect('Content-Type', /html/);
+            await http('get', rota.path).set('Accept', 'text/html').expect(200).expect('Content-Type', /html/);
         }
     }
     await http('get', '/api-docs/').expect(200).expect('Content-Type', /html/);
@@ -62,14 +62,35 @@ test('usuário comum é bloqueado antes do controller em todas as rotas admin', 
     const acessoBanco = t.mock.method(supabase, 'from', () => {
         throw new Error('Autorização deve bloquear antes do banco');
     });
-    for (const rota of rotas.filter(rota => rota.path.startsWith('/admin/'))) {
+    for (const rota of rotas.filter(rota => rota.middlewares.includes('somenteAdmin'))) {
         const caminho = rota.path.replace(/:id_\w+/g, '456');
         await cliente()(rota.method, caminho).set('Cookie', `token=${token}`)
             .expect(403, { erro: 'Acesso restrito a administradores' });
     }
     assert.equal(acessoBanco.mock.callCount(), 0);
     assert.equal(eventos.filter(e => e.tipo_evento === 'AUDITORIA' && e.resultado === 'NEGADO').length,
-        rotas.filter(rota => rota.path.startsWith('/admin/')).length);
+        rotas.filter(rota => rota.middlewares.includes('somenteAdmin')).length);
+});
+
+test('telas e APIs administrativas mantêm endereços distintos e autorização', async () => {
+    const http = cliente();
+    await http('get', '/tela-admin/listar-transacoes').set('Accept', 'text/html')
+        .expect(200).expect('Content-Type', /html/);
+    for (const accept of ['application/json', '*/*', 'text/html']) {
+        await http('get', '/admin/listar-transacoes').set('Accept', accept)
+            .expect(401, { mensagem: 'Não autenticado' }).expect('Content-Type', /json/);
+    }
+    const comum = gerarToken({ id_usuario: 123, tipo: 'Comum' });
+    await http('get', '/admin/listar-transacoes?id_usuario=456').set('Accept', 'application/json')
+        .set('Cookie', `token=${comum}`).expect(403, { erro: 'Acesso restrito a administradores' });
+    const admin = gerarToken({ id_usuario: 123, tipo: 'Admin' });
+    const resposta = await http('get', '/admin/listar-transacoes?id_usuario=invalido').set('Accept', 'application/json')
+        .set('Cookie', `token=${admin}`).expect(400);
+    assert.ok(resposta.body.erros.some(erro => erro.campo === 'id_usuario'));
+    await http('get', '/tela-admin/editar-transacao?id_transacao=1&id_usuario=456')
+        .expect(200).expect('Content-Type', /html/);
+    await http('patch', '/admin/editar-transacao').send({ id_transacao: 1, id_usuario: 456 })
+        .expect(401, { mensagem: 'Não autenticado' });
 });
 
 test('Joi continua validando IDs da URL, body e query', async () => {
@@ -156,5 +177,65 @@ test('rotas legadas de subcategoria continuam indisponíveis', async () => {
         for (const [metodo, acao] of [['post', 'criar'], ['get', 'listar'], ['patch', 'editar'], ['delete', 'deletar']]) {
             await cliente()(metodo, `${prefixo}/${acao}-sub_categoria`).expect(404);
         }
+    }
+});
+
+test('saldo exige conta válida e autenticação antes de consultar o banco', async t => {
+    const banco = t.mock.method(supabase, 'from', () => {
+        throw new Error('Não deve consultar o banco');
+    });
+    const token = gerarToken({ id_usuario: 123, tipo: 'Comum' });
+    await cliente()('get', '/usuario/verificar-saldo?id_conta=10').expect(401);
+    for (const query of ['', '?id_conta=invalido', '?id_conta=-1']) {
+        const resposta = await cliente()('get', `/usuario/verificar-saldo${query}`)
+            .set('Cookie', `token=${token}`).expect(400);
+        assert.ok(resposta.body.erros.some(erro => erro.campo === 'id_conta'));
+    }
+    assert.equal(banco.mock.callCount(), 0);
+});
+
+test('saldo consulta somente o último registro da conta pertencente ao usuário', async t => {
+    const token = gerarToken({ id_usuario: 123, tipo: 'Comum' });
+    for (const cenario of [
+        { nome: 'saldo atual', conta: { id_usuario: 123 }, saldo: { saldo: 150.25 }, status: 200, body: { saldo: 150.25 } },
+        { nome: 'sem histórico', conta: { id_usuario: 123 }, saldo: null, status: 200, body: { saldo: 0 } },
+        { nome: 'saldo negativo', conta: { id_usuario: 123 }, saldo: { saldo: -50 }, status: 200, body: { saldo: -50 } },
+        { nome: 'outro proprietário', conta: { id_usuario: 456 }, status: 404 },
+        { nome: 'conta inexistente', conta: null, status: 404 },
+        { nome: 'erro ao consultar conta', erroConta: { message: 'Falha simulada' }, status: 500 },
+        { nome: 'erro ao consultar saldo', conta: { id_usuario: 123 }, erroSaldo: { message: 'Falha simulada' }, status: 500 }
+    ]) {
+        await t.test(cenario.nome, async contexto => {
+            let consultasSaldo = 0;
+            contexto.mock.method(supabase, 'from', tabela => {
+                assert.ok(['contas_bancarias', 'saldo_conta'].includes(tabela));
+                const operacoes = [];
+                const consulta = {
+                    select(campos) { operacoes.push(['select', campos]); return consulta; },
+                    eq(campo, valor) { operacoes.push(['eq', campo, valor]); return consulta; },
+                    order(campo, opcoes) { operacoes.push(['order', campo, opcoes]); return consulta; },
+                    limit(valor) { operacoes.push(['limit', valor]); return consulta; },
+                    async maybeSingle() {
+                        assert.ok(operacoes.some(op => op[0] === 'eq' && op[1] === 'id_conta' && Number(op[2]) === 10));
+                        if (tabela === 'contas_bancarias') {
+                            return { data: cenario.conta, error: cenario.erroConta };
+                        }
+                        consultasSaldo += 1;
+                        assert.deepEqual(operacoes, [
+                            ['select', 'saldo'], ['eq', 'id_conta', 10],
+                            ['order', 'data_atualizacao', { ascending: false }], ['limit', 1]
+                        ]);
+                        return { data: cenario.saldo, error: cenario.erroSaldo };
+                    }
+                };
+                return consulta;
+            });
+            const resposta = await cliente()('get', '/usuario/verificar-saldo?id_conta=10')
+                .set('Cookie', `token=${token}`).expect(cenario.status);
+            if (cenario.body) assert.deepEqual(resposta.body, cenario.body);
+            if (cenario.status === 404 || cenario.erroConta) assert.equal(consultasSaldo, 0);
+            else assert.equal(consultasSaldo, 1);
+            if (cenario.status === 500) assert.equal(typeof resposta.body.mensagem, 'string');
+        });
     }
 });

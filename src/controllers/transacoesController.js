@@ -17,9 +17,15 @@ export async function verificarSaldoAtual(req, res) {
         .from('saldo_conta')
         .select('saldo')
         .eq('id_conta', id_conta)
+        .order('data_atualizacao', { ascending: false })
+        .limit(1)
+        .maybeSingle()
 
     if (erroSaldo) {
         return res.status(500).json({ mensagem: "Erro ao verificar o saldo atual" })
+    }
+    if (!saldo) {
+        return res.status(200).json({ saldo: 0 })
     }
     return res.status(200).json(saldo)
 }

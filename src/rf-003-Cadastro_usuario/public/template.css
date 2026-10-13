@@ -264,6 +264,63 @@ button:hover {
     min-width: 0;
 }
 
+#div-resumo-usuario {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    min-width: 0;
+}
+
+#div-saldo-usuario {
+    position: relative;
+    min-width: 0;
+}
+
+#botao-saldo-usuario {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 4px;
+    border: none;
+    background-color: transparent;
+    color: inherit;
+    text-align: left;
+    line-height: 1.5;
+}
+
+#div-saldo-usuario small {
+    color: var(--texto-suave);
+}
+
+#saldo-usuario {
+    white-space: nowrap;
+}
+
+#nome-conta-saldo {
+    max-width: 160px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#lista-contas-saldo {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 10;
+    width: 260px;
+    max-width: calc(100vw - 32px);
+    padding: 12px;
+    border: 1px solid var(--borda);
+    border-radius: var(--raio);
+    background-color: var(--superficie);
+    box-shadow: var(--sombra);
+}
+
+#conta-saldo-usuario {
+    width: 100%;
+}
+
 #div-usuario {
     display: flex;
     align-items: center;

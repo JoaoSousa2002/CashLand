@@ -85,4 +85,26 @@ router.get('/tela-admin/editar-conta', (req, res) => {
     res.sendFile(path.join(__dirname, '../rf-005-Gerir_contas_financeiras/public/ADMIN_editar-conta.html'));
 });
 
+// RF006 - Gerir Transações Financeiras ========================================================================
+
+router.get('/tela-principal/criar-transacao', (req, res) => {
+    res.sendFile(path.join(__dirname, '../rf-006-Gerir_transacoes_financeiras/public/criar-transacao.html'));
+});
+
+router.get('/tela-principal/listar-transacoes', (req, res) => {
+    res.sendFile(path.join(__dirname, '../rf-006-Gerir_transacoes_financeiras/public/listar-transacoes.html'));
+});
+
+router.get('/tela-principal/editar-transacao', (req, res) => {
+    res.sendFile(path.join(__dirname, '../rf-006-Gerir_transacoes_financeiras/public/editar-transacao.html'));
+});
+
+router.get('/tela-admin/listar-transacoes', (req, res, next) => {
+    res.sendFile(path.join(__dirname, '../rf-006-Gerir_transacoes_financeiras/public/ADMIN_listar-transacoes.html'));
+});
+
+router.get('/tela-admin/editar-transacao', (req, res) => {
+    res.sendFile(path.join(__dirname, '../rf-006-Gerir_transacoes_financeiras/public/ADMIN_editar-transacao.html'));
+});
+
 export default router;

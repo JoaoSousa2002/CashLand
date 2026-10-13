@@ -201,6 +201,11 @@
   },
   {
     "method": "get",
+    "path": "/usuario/verificar-saldo",
+    "middlewares": "auditar('USER_VERIFICAR_SALDO', req => req.usuario?.id_usuario, false), limitadorGenericoSimples, autenticar, validar(schemaIdContaObrigatorio)"
+  },
+  {
+    "method": "get",
     "path": "/usuario/listar-contas",
     "middlewares": "auditar('USER_LISTAR_CONTAS', req => req.usuario?.id_usuario, false), limitadorGenericoSimples, autenticar"
   },
@@ -338,5 +343,30 @@
     "method": "delete",
     "path": "/admin/excluir-transacao/:id_transacao/:id_usuario",
     "middlewares": "auditar('ADMIN_EXCLUIR_TRANSACAO', req => req.usuario?.id_usuario, true), limitadorGenericoCritico, autenticar, somenteAdmin, validar(schemaADMIN_excluirTransacao)"
+  },
+  {
+    "method": "get",
+    "path": "/tela-principal/criar-transacao",
+    "middlewares": ""
+  },
+  {
+    "method": "get",
+    "path": "/tela-principal/listar-transacoes",
+    "middlewares": ""
+  },
+  {
+    "method": "get",
+    "path": "/tela-principal/editar-transacao",
+    "middlewares": ""
+  },
+  {
+    "method": "get",
+    "path": "/tela-admin/listar-transacoes",
+    "middlewares": ""
+  },
+  {
+    "method": "get",
+    "path": "/tela-admin/editar-transacao",
+    "middlewares": ""
   }
 ]

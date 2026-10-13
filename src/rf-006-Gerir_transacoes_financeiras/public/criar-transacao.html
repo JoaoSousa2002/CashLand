@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Criar transação — CashLand</title>
+    <link rel="stylesheet" href="/template.css">
+    <style>
+        #seletor-modalidade {
+            display: flex;
+            padding: 4px;
+            gap: 4px;
+            border: 1px solid var(--borda);
+            border-radius: var(--raio);
+            background-color: #f3f3f3;
+        }
+
+        #seletor-modalidade label {
+            position: relative;
+            flex: 1;
+            min-width: 0;
+            cursor: pointer;
+        }
+
+        #seletor-modalidade input {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            opacity: 0;
+            padding: 0;
+        }
+
+        #seletor-modalidade span {
+            display: block;
+            padding: 10px 4px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        #seletor-modalidade input:checked + span {
+            background-color: var(--fundo);
+        }
+
+        #seletor-modalidade input:focus-visible + span {
+            outline: 2px solid var(--foco);
+            outline-offset: 2px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="loading-box">
+            <div style="margin: auto 0;">
+                <p>Carregando... </p>
+            </div>
+            <div class="spinning-wheel"></div>
+        </div>
+    </div>
+
+    <div class="loading-overlay" id="resultado-overlay">
+        <div class="loading-box" id="resultado-funcao">
+            <div id="div-resultado-overlay"
+                class="dialogo-conteudo">
+                <h5 id="resultado-mensagem" style="margin: 0;"></h5>
+                <input class="botao-dialogo" type="button" onclick="FechaResultado_overlay()" value="Continuar">
+            </div>
+        </div>
+    </div>
+    <div id="container">
+        <div id="div-superior">
+
+            <div id="div-nome-sistema">
+                <a href="/tela-principal">
+                    <h1>CashLand</h1>
+                </a>
+            </div>
+
+            <div id="div-nav">
+                <nav>
+                    <a href="/tela-principal/listar-categoria">Gerir categorias</a>
+                    <a href="/tela-principal/listar-contas">Gerir contas financeiras</a>
+                    <a href="/tela-principal/criar-transacao">Adicionar transação</a>
+                    <a href="/tela-principal/listar-transacoes">Gerir transações</a>
+                </nav>
+            </div>
+            <div id="div-resumo-usuario">
+                <div id="div-saldo-usuario">
+                    <button id="botao-saldo-usuario" type="button" aria-expanded="false" aria-controls="lista-contas-saldo">
+                        <small>Saldo atual <span aria-hidden="true">▾</span></small>
+                        <strong id="saldo-usuario" aria-live="polite">Carregando...</strong>
+                        <small id="nome-conta-saldo">Selecionar conta</small>
+                    </button>
+                    <div id="lista-contas-saldo" hidden>
+                        <label for="conta-saldo-usuario">Conta financeira</label>
+                        <select id="conta-saldo-usuario" size="3" disabled></select>
+                    </div>
+                </div>
+                <div id="div-nome-usuario">
+                    <h3><span id="nome-usuario"></span></h3>
+                </div>
+            </div>
+            <div id="div-usuario">
+                <a onclick="redirecionaTela()">
+                    <img src="/User_icon_black.png" alt="icone usuario">
+                </a>
+            </div>
+            <div id="form-logout">
+                <form id="meuForm-Logout">
+                    <input type="submit" value="Sair">
+                </form>
+            </div>
+        </div>
+        <div id="container-conteudo">
+            <div id="div-Cadastro" class="cartao">
+                <div id="id-Titulo">
+                    <h2>Criar transação</h2>
+                    <input type="button" value="Voltar" id="botao-Voltar"
+                        onclick="location.href='/tela-principal'">
+                </div>
+                <form id="meuForm" novalidate>
+                    <div class="input-dados">
+                        <label id="titulo-modalidade">Modalidade:</label>
+                        <div id="seletor-modalidade" role="radiogroup" aria-labelledby="titulo-modalidade" aria-describedby="erro-modalidade">
+                            <label><input type="radio" name="modalidade" value="Avulso" checked><span>Avulso</span></label>
+                            <label><input type="radio" name="modalidade" value="Parcelado"><span>Parcelado</span></label>
+                            <label><input type="radio" name="modalidade" value="Periodico"><span>Periódico</span></label>
+                        </div>
+                        <div id="erro-modalidade" aria-live="polite"></div>
+                    </div>
+                    <div class="input-dados">
+                        <label for="tipo_transacao">Tipo da transação:</label>
+                        <select name="tipo_transacao" id="tipo_transacao" required aria-describedby="erro-tipo_transacao">
+                            <option value="">Selecione o tipo</option>
+                            <option value="Entrada">Entrada</option>
+                            <option value="Saida">Saída</option>
+                            <option value="Transferencia" id="opcao-transferencia">Transferência</option>
+                        </select>
+                        <div id="erro-tipo_transacao" aria-live="polite"></div>
+                    </div>
+                    <div class="input-dados">
+                        <label for="nome">Nome:</label>
+                        <input type="text" name="nome" id="nome" placeholder="Ex: Compra do mês" required aria-describedby="erro-nome">
+                        <div id="erro-nome" aria-live="polite"></div>
+                    </div>
+                    <div class="input-dados">
+                        <label for="descricao">Descrição (opcional):</label>
+                        <input type="text" name="descricao" id="descricao" aria-describedby="erro-descricao">
+                        <div id="erro-descricao" aria-live="polite"></div>
+                    </div>
+                    <div class="input-dados">
+                        <label for="id_conta" id="label-conta">Conta financeira:</label>
+                        <select name="id_conta_origem" id="id_conta" required aria-describedby="erro-id_conta">
+                            <option value="">Carregando contas...</option>
+                        </select>
+                        <div id="erro-id_conta" aria-live="polite"></div>
+                    </div>
+                    <div class="input-dados" hidden>
+                        <label for="id_conta_destino">Conta de destino:</label>
+                        <select name="id_conta_destino" id="id_conta_destino" disabled aria-describedby="erro-id_conta_destino">
+                            <option value="">Carregando contas...</option>
+                        </select>
+                        <div id="erro-id_conta_destino" aria-live="polite"></div>
+                    </div>
+                    <p id="aviso-contas" class="texto-auxiliar" hidden>Nenhuma conta encontrada. <a href="/tela-principal/criar-conta">Cadastre uma conta</a> para continuar.</p>
+                    <p id="aviso-transferencia" class="texto-auxiliar" hidden>Uma transferência precisa de duas contas diferentes.</p>
+                    <div class="input-dados">
+                        <label for="id_categoria" id="label-categoria">Categoria:</label>
+                        <select name="id_categoria" id="id_categoria" required aria-describedby="erro-id_categoria">
+                            <option value="">Carregando categorias...</option>
+                        </select>
+                        <div id="erro-id_categoria" aria-live="polite"></div>
+                    </div>
+                    <p id="aviso-categorias" class="texto-auxiliar" hidden>Nenhuma categoria encontrada. <a href="/tela-principal/criar-categoria">Cadastre uma categoria</a> para entradas e saídas.</p>
+                    <div class="input-dados">
+                        <label for="forma_pagamento">Forma de pagamento:</label>
+                        <select name="forma_pagamento" id="forma_pagamento" required aria-describedby="erro-forma_pagamento">
+                            <option value="">Selecione a forma de pagamento</option>
+                            <option value="PIX">PIX</option>
+                            <option value="débito">Débito</option>
+                            <option value="crédito">Crédito</option>
+                            <option value="boleto">Boleto</option>
+                            <option value="dinheiro">Dinheiro</option>
+                        </select>
+                        <div id="erro-forma_pagamento" aria-live="polite"></div>
+                    </div>
+                    <div class="input-dados">
+                        <label for="destino">Destino / favorecido (opcional):</label>
+                        <input type="text" name="destino" id="destino" aria-describedby="erro-destino">
+                        <div id="erro-destino" aria-live="polite"></div>
+                    </div>
+                    <div class="input-dados">
+                        <label for="valor">Valor (R$):</label>
+                        <input type="number" name="valor_transacao" id="valor" min="0.01" step="0.01" required aria-describedby="erro-valor">
+                        <div id="erro-valor" aria-live="polite"></div>
+                    </div>
+                    <div class="input-dados">
+                        <label for="status_transacao">Situação:</label>
+                        <select name="status_transacao" id="status_transacao" required aria-describedby="erro-status_transacao">
+                            <option value="Pendente">Pendente</option>
+                            <option value="Pago">Pago</option>
+                        </select>
+                        <div id="erro-status_transacao" aria-live="polite"></div>
+                    </div>
+                    <div class="input-dados">
+                        <label for="data_transacao">Data da transação:</label>
+                        <input type="date" name="data_transacao" id="data_transacao" required aria-describedby="erro-data_transacao">
+                        <div id="erro-data_transacao" aria-live="polite"></div>
+                    </div>
+                    <div class="input-dados">
+                        <label for="data_vencimento">Data de vencimento (opcional):</label>
+                        <input type="date" name="data_vencimento" id="data_vencimento" aria-describedby="erro-data_vencimento">
+                        <div id="erro-data_vencimento" aria-live="polite"></div>
+                    </div>
+                    <div class="input-dados" hidden>
+                        <label for="data_pagamento">Data de pagamento (opcional):</label>
+                        <input type="date" name="data_pagamento" id="data_pagamento" disabled aria-describedby="erro-data_pagamento">
+                        <div id="erro-data_pagamento" aria-live="polite"></div>
+                    </div>
+                    <div class="input-dados" hidden>
+                        <label for="frequencia">Frequência:</label>
+                        <select name="frequencia" id="frequencia" disabled aria-describedby="erro-frequencia">
+                            <option value="Mensal">Mensal</option>
+                            <option value="Semanal">Semanal</option>
+                            <option value="Anual">Anual</option>
+                        </select>
+                        <div id="erro-frequencia" aria-live="polite"></div>
+                    </div>
+                    <div class="input-dados" hidden>
+                        <label for="qtd_parcelas">Quantidade de parcelas:</label>
+                        <input type="number" name="qtd_parcelas" id="qtd_parcelas" min="1" step="1" disabled aria-describedby="erro-qtd_parcelas">
+                        <div id="erro-qtd_parcelas" aria-live="polite"></div>
+                    </div>
+                    <div class="input-dados" hidden>
+                        <label for="data_inicio">Data de início:</label>
+                        <input type="date" name="data_inicio" id="data_inicio" disabled aria-describedby="erro-data_inicio">
+                        <div id="erro-data_inicio" aria-live="polite"></div>
+                    </div>
+                    <div class="input-dados" hidden>
+                        <label for="ativo">Recorrência ativa:</label>
+                        <select name="ativo" id="ativo" disabled aria-describedby="erro-ativo">
+                            <option value="true">Sim</option>
+                            <option value="false">Não</option>
+                        </select>
+                        <div id="erro-ativo" aria-live="polite"></div>
+                    </div>
+                    <div id="erro-formulario" aria-live="polite"></div>
+                    <div id="input-submit">
+                        <input type="button" value="Recarregar listas" id="botao-Carregar" hidden>
+                        <input type="submit" value="Criar transação" id="botao-Enviar" disabled>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="/protecao.js"></script>
+    <script>
+        let retonarLogin = false;
+        let sessaoPronta = false;
+        let enviando = false;
+        let carregando = false;
+        let listasProntas = false;
+        let quantidadeContas = 0;
+        let quantidadeCategorias = 0;
+        const loading = document.getElementById('loading-overlay');
+        const resultado_overlay = document.getElementById('resultado-overlay');
+        const form = document.getElementById('meuForm');
+        const botaoEnviar = document.getElementById('botao-Enviar');
+        const botaoCarregar = document.getElementById('botao-Carregar');
+
+        function MostrarErro(id, mensagem) {
+            const elemento = document.getElementById(id);
+            if (!elemento) return;
+            elemento.replaceChildren();
+            if (mensagem) {
+                const texto = document.createElement('h5');
+                texto.style.color = 'var(--erro)';
+                texto.textContent = mensagem;
+                elemento.appendChild(texto);
+            }
+        }
+
+        function limparErros() {
+            form.querySelectorAll('[id^="erro-"]').forEach(elemento => MostrarErro(elemento.id, ''));
+            form.querySelectorAll('[aria-invalid]').forEach(elemento => elemento.removeAttribute('aria-invalid'));
+        }
+
+        function MostrarResultado_Overlay(tipo, mensagem) {
+            const texto = document.getElementById('resultado-mensagem');
+            texto.textContent = mensagem;
+            if (tipo === 1) {
+                texto.style.color = 'var(--sucesso)';
+            } else {
+                texto.style.color = 'var(--erro)';
+            }
+            resultado_overlay.style.display = 'flex';
+        }
+
+        function FechaResultado_overlay() {
+            resultado_overlay.style.display = 'none';
+            if (retonarLogin) {
+                window.location.href = '/login';
+            }
+        }
+
+        function mensagemResposta(resposta, dados) {
+            if (resposta.status === 401) {
+                retonarLogin = true;
+                sessaoPronta = false;
+                botaoEnviar.disabled = true;
+                botaoCarregar.hidden = true;
+            }
+            if (dados && dados.mensagem) {
+                return dados.mensagem;
+            } else if (dados && dados.erro) {
+                return dados.erro;
+            } else {
+                return `Não foi possível concluir a operação (HTTP ${resposta.status}).`;
+            }
+        }
+
+        function exibirCampo(id, exibir, obrigatorio = false) {
+            const campo = document.getElementById(id);
+            campo.closest('.input-dados').hidden = !exibir;
+            campo.disabled = !exibir;
+            campo.required = exibir && obrigatorio;
+        }
+
+        function atualizarCampos() {
+            const modalidade = form.querySelector('input[name="modalidade"]:checked').value;
+            const avulso = modalidade === 'Avulso';
+            const parcelado = modalidade === 'Parcelado';
+            const tipo = document.getElementById('tipo_transacao');
+            const opcaoTransferencia = document.getElementById('opcao-transferencia');
+            opcaoTransferencia.hidden = !avulso;
+            opcaoTransferencia.disabled = !avulso;
+            if (!avulso && tipo.value === 'Transferencia') tipo.value = '';
+            const transferencia = tipo.value === 'Transferencia';
+            document.getElementById('label-conta').textContent = tipo.value === 'Entrada'
+                ? 'Conta de recebimento:' : tipo.value === 'Saida' || transferencia ? 'Conta de origem:' : 'Conta financeira:';
+            document.getElementById('id_conta').name = avulso ? 'id_conta_origem' : 'id_conta';
+            document.getElementById('valor').name = avulso ? 'valor_transacao' : 'valor';
+            document.getElementById('label-categoria').textContent = transferencia ? 'Categoria (opcional):' : 'Categoria:';
+            document.getElementById('id_categoria').required = !transferencia;
+            exibirCampo('id_conta_destino', transferencia, transferencia);
+            exibirCampo('status_transacao', avulso, true);
+            exibirCampo('data_transacao', avulso, true);
+            exibirCampo('data_vencimento', avulso);
+            exibirCampo('data_pagamento', avulso && document.getElementById('status_transacao').value === 'Pago');
+            exibirCampo('frequencia', !avulso, true);
+            exibirCampo('qtd_parcelas', parcelado, true);
+            exibirCampo('data_inicio', !avulso, true);
+            exibirCampo('ativo', !avulso, true);
+            const frequencia = document.getElementById('frequencia');
+            if (parcelado) frequencia.value = 'Mensal';
+            Array.from(frequencia.options).forEach(opcao => {
+                opcao.hidden = parcelado && opcao.value !== 'Mensal';
+                opcao.disabled = opcao.hidden;
+            });
+            const contaOrigem = document.getElementById('id_conta').value;
+            const contaDestino = document.getElementById('id_conta_destino');
+            Array.from(contaDestino.options).forEach(opcao => {
+                opcao.disabled = opcao.value !== '' && opcao.value === contaOrigem;
+            });
+            if (contaDestino.value !== '' && contaDestino.value === contaOrigem) contaDestino.value = '';
+            document.getElementById('aviso-transferencia').hidden = !listasProntas || !transferencia || quantidadeContas >= 2;
+            botaoEnviar.disabled = !sessaoPronta || !listasProntas || enviando || carregando || quantidadeContas === 0
+                || (transferencia ? quantidadeContas < 2 : quantidadeCategorias === 0);
+        }
+
+        function mostrarErrosValidacao(erros) {
+            // Os controles comuns têm nomes diferentes nas duas rotas.
+            const campos = { id_conta_origem: 'id_conta', valor_transacao: 'valor' };
+            const mensagens = {};
+            erros.forEach(erro => {
+                const campo = campos[erro.campo] || erro.campo;
+                const id = document.getElementById(`erro-${campo}`) ? campo : 'formulario';
+                if (!mensagens[id]) mensagens[id] = [];
+                mensagens[id].push(erro.mensagem);
+                const elemento = document.getElementById(campo);
+                if (elemento) elemento.setAttribute('aria-invalid', 'true');
+            });
+            Object.keys(mensagens).forEach(campo => MostrarErro(`erro-${campo}`, mensagens[campo].join(' ')));
+        }
+
+        async function redirecionaTela() {
+            const usuario = await protegerPagina();
+            if (!usuario) return;
+            if (usuario.tipo === 'Comum') {
+                window.location.href = '/tela-principal/editar-usuario';
+            } else if (usuario.tipo === 'Admin') {
+                window.location.href = `/tela-admin/editar-usuarios?id=${usuario.id_usuario}`;
+            }
+        }
+
+        form.addEventListener('input', evento => {
+            MostrarErro(`erro-${evento.target.id}`, '');
+            MostrarErro('erro-formulario', '');
+            evento.target.removeAttribute('aria-invalid');
+        });
+
+        form.addEventListener('change', evento => {
+            if (evento.target.name === 'modalidade' || evento.target.id === 'tipo_transacao'
+                || evento.target.id === 'status_transacao' || evento.target.id === 'id_conta') {
+                limparErros();
+            } else {
+                MostrarErro(`erro-${evento.target.id}`, '');
+                evento.target.removeAttribute('aria-invalid');
+            }
+            atualizarCampos();
+        });
+
+        form.addEventListener('submit', async (evento) => {
+            evento.preventDefault();
+            if (botaoEnviar.disabled || !sessaoPronta || enviando || carregando) return;
+            enviando = true;
+            atualizarCampos();
+            limparErros();
+            const modalidade = form.querySelector('input[name="modalidade"]:checked').value;
+            const tipo_transacao = document.getElementById('tipo_transacao').value;
+            const dadosEnviar = {
+                tipo_transacao,
+                nome: document.getElementById('nome').value.trim(),
+                forma_pagamento: document.getElementById('forma_pagamento').value
+            };
+            const descricao = document.getElementById('descricao').value.trim();
+            const destino = document.getElementById('destino').value.trim();
+            const categoria = document.getElementById('id_categoria').value;
+            const conta = document.getElementById('id_conta').value;
+            const valor = document.getElementById('valor').value;
+            if (descricao !== '') dadosEnviar.descricao = descricao;
+            if (destino !== '') dadosEnviar.destino = destino;
+            if (categoria !== '') dadosEnviar.id_categoria = Number(categoria);
+            let rota;
+            if (modalidade === 'Avulso') {
+                rota = '/usuario/criar-transacao';
+                if (conta !== '') dadosEnviar.id_conta_origem = Number(conta);
+                if (valor !== '') dadosEnviar.valor_transacao = Number(valor);
+                if (tipo_transacao === 'Transferencia') {
+                    const contaDestino = document.getElementById('id_conta_destino').value;
+                    if (contaDestino !== '') dadosEnviar.id_conta_destino = Number(contaDestino);
+                }
+                dadosEnviar.status_transacao = document.getElementById('status_transacao').value;
+                dadosEnviar.data_transacao = document.getElementById('data_transacao').value;
+                const vencimento = document.getElementById('data_vencimento').value;
+                const pagamento = document.getElementById('data_pagamento').value;
+                if (vencimento !== '') dadosEnviar.data_vencimento = vencimento;
+                if (dadosEnviar.status_transacao === 'Pago' && pagamento !== '') dadosEnviar.data_pagamento = pagamento;
+            } else {
+                rota = '/usuario/criar-recorrencia';
+                dadosEnviar.modalidade = modalidade;
+                if (conta !== '') dadosEnviar.id_conta = Number(conta);
+                if (valor !== '') dadosEnviar.valor = Number(valor);
+                dadosEnviar.frequencia = document.getElementById('frequencia').value;
+                dadosEnviar.data_inicio = document.getElementById('data_inicio').value;
+                dadosEnviar.ativo = document.getElementById('ativo').value === 'true';
+                if (modalidade === 'Parcelado') {
+                    const parcelas = document.getElementById('qtd_parcelas').value;
+                    if (parcelas !== '') dadosEnviar.qtd_parcelas = Number(parcelas);
+                }
+            }
+            loading.style.display = 'flex';
+            try {
+                const resposta = await fetch(rota, {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(dadosEnviar)
+                });
+                const dados = await resposta.json();
+                loading.style.display = 'none';
+                if (resposta.status === 201) {
+                    atualizarSaldoUsuario();
+                    form.reset();
+                    limparErros();
+                    atualizarCampos();
+                    MostrarResultado_Overlay(1, dados.mensagem);
+                } else if (resposta.status === 400 && Array.isArray(dados.erros)) {
+                    mostrarErrosValidacao(dados.erros);
+                } else {
+                    MostrarResultado_Overlay(0, mensagemResposta(resposta, dados));
+                }
+            } catch {
+                loading.style.display = 'none';
+                MostrarResultado_Overlay(0, 'Não foi possível confirmar o cadastro. Verifique suas transações antes de tentar novamente.');
+            } finally {
+                loading.style.display = 'none';
+                enviando = false;
+                atualizarCampos();
+            }
+        });
+
+        async function carregarListas() {
+            if (!sessaoPronta || carregando || enviando) return;
+            carregando = true;
+            listasProntas = false;
+            botaoCarregar.disabled = true;
+            atualizarCampos();
+            loading.style.display = 'flex';
+            try {
+                const respostaContas = await fetch('/usuario/listar-contas', { method: 'GET', credentials: 'include' });
+                const contas = await respostaContas.json();
+                if (respostaContas.status !== 200) {
+                    loading.style.display = 'none';
+                    MostrarResultado_Overlay(0, mensagemResposta(respostaContas, contas));
+                    return;
+                }
+                const respostaCategorias = await fetch('/usuario/listar-categoria', { method: 'GET', credentials: 'include' });
+                const categorias = await respostaCategorias.json();
+                if (respostaCategorias.status !== 200) {
+                    loading.style.display = 'none';
+                    MostrarResultado_Overlay(0, mensagemResposta(respostaCategorias, categorias));
+                    return;
+                }
+                if (!Array.isArray(contas) || !Array.isArray(categorias)) throw new Error('Formato de resposta inesperado.');
+                ['id_conta', 'id_conta_destino'].forEach(id => {
+                    const select = document.getElementById(id);
+                    const selecionado = select.value;
+                    select.replaceChildren();
+                    const opcao = document.createElement('option');
+                    opcao.value = '';
+                    opcao.textContent = contas.length ? 'Selecione a conta' : 'Nenhuma conta encontrada';
+                    select.appendChild(opcao);
+                    contas.forEach(conta => {
+                        const opcao = document.createElement('option');
+                        opcao.value = conta.id_conta;
+                        opcao.textContent = `${conta.nome_conta} (${conta.status_conta})`;
+                        select.appendChild(opcao);
+                    });
+                    select.value = selecionado;
+                    if (select.selectedIndex === -1) select.value = '';
+                });
+                const select = document.getElementById('id_categoria');
+                const selecionado = select.value;
+                select.replaceChildren();
+                const opcao = document.createElement('option');
+                opcao.value = '';
+                opcao.textContent = categorias.length ? 'Selecione a categoria' : 'Nenhuma categoria encontrada';
+                select.appendChild(opcao);
+                categorias.forEach(categoria => {
+                    const opcao = document.createElement('option');
+                    opcao.value = categoria.id_categoria;
+                    opcao.textContent = categoria.nome;
+                    select.appendChild(opcao);
+                });
+                select.value = selecionado;
+                if (select.selectedIndex === -1) select.value = '';
+                quantidadeContas = contas.length;
+                quantidadeCategorias = categorias.length;
+                listasProntas = true;
+                document.getElementById('aviso-contas').hidden = contas.length !== 0;
+                document.getElementById('aviso-categorias').hidden = categorias.length !== 0;
+            } catch {
+                loading.style.display = 'none';
+                MostrarResultado_Overlay(0, 'Não foi possível carregar as contas e categorias. Tente novamente.');
+            } finally {
+                carregando = false;
+                loading.style.display = 'none';
+                botaoCarregar.disabled = false;
+                botaoCarregar.hidden = !sessaoPronta || (listasProntas && quantidadeContas > 1 && quantidadeCategorias > 0);
+                atualizarCampos();
+            }
+        }
+
+        botaoCarregar.addEventListener('click', carregarListas);
+
+        document.getElementById('meuForm-Logout').addEventListener('submit', async (evento) => {
+            evento.preventDefault();
+            if (enviando || carregando) return;
+            loading.style.display = 'flex';
+            try {
+                const resposta = await fetch('/logout', { method: 'POST', credentials: 'include' });
+                const dados = await resposta.json();
+                loading.style.display = 'none';
+                if (resposta.status === 200) {
+                    localStorage.removeItem('tipo');
+                    window.location.href = '/login';
+                } else {
+                    MostrarResultado_Overlay(0, mensagemResposta(resposta, dados));
+                }
+            } catch {
+                loading.style.display = 'none';
+                MostrarResultado_Overlay(0, 'Não foi possível sair. Tente novamente.');
+            } finally {
+                loading.style.display = 'none';
+            }
+        });
+
+        async function iniciar() {
+            loading.style.display = 'flex';
+            try {
+                const usuario = await protegerPagina();
+                if (!usuario) return;
+                document.getElementById('nome-usuario').textContent = usuario.nome.slice(0, 8);
+                atualizarSaldoUsuario(usuario.id_usuario);
+                sessaoPronta = true;
+                await carregarListas();
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        atualizarCampos();
+        iniciar();
+    </script>
+</body>
+
+</html>
