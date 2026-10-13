@@ -420,19 +420,19 @@ feature/RFXXX-descricao
 Exemplos:
 
 ```
-feature/RF003-categoriasfeature/RF004-lancamentosfeature/RF005-dashboard
+feature/RF004-categoriasfeature/RF005-lancamentosfeature/RF006-dashboard
 ```
 
 Para criar e entrar na branch:
 
 ```
-git checkout -b feature/RF004-lancamentos
+git checkout -b feature/RF005-lancamentos
 ```
 
 Ou, utilizando o comando moderno:
 
 ```
-git switch -c feature/RF004-lancamentos
+git switch -c feature/RF005-lancamentos
 ```
 
 Verifique a branch atual:
@@ -444,7 +444,7 @@ git branch
 A branch marcada com `*` é a atual:
 
 ```
-  main* feature/RF004-lancamentos
+  main* feature/RF005-lancamentos
 ```
 
 ---
@@ -542,7 +542,7 @@ git add caminho/do/arquivo
 Exemplo:
 
 ```
-git add src/rf-004-Lancamentos/Servidor.js
+git add src/rf-005-Lancamentos/Servidor.js
 ```
 
 Para adicionar todas as alterações:
@@ -570,7 +570,7 @@ Changes to be committed
 Crie um commit explicando o que foi alterado:
 
 ```
-git commit -m "RF004 Implementa criação de lançamentos"
+git commit -m "RF005 Implementa criação de lançamentos"
 ```
 
 Evite mensagens genéricas como:
@@ -584,15 +584,15 @@ Prefira mensagens que indiquem claramente a alteração realizada.
 Exemplos:
 
 ```
-git commit -m "RF003 Adiciona criação de categorias"
+git commit -m "RF004 Adiciona criação de categorias"
 ```
 
 ```
-git commit -m "RF003 Corrige validação de subcategorias"
+git commit -m "RF004 Corrige validação de subcategorias"
 ```
 
 ```
-git commit -m "RF004 Implementa cadastro de lançamentos financeiros"
+git commit -m "RF005 Implementa cadastro de lançamentos financeiros"
 ```
 
 ---
@@ -608,7 +608,7 @@ git log --oneline
 Exemplo:
 
 ```
-a95d412 RF004 Implementa criação de lançamento712bc31 RF004 Adiciona validação de categoria47da239 RF004 Cria estrutura inicial
+a95d412 RF005 Implementa criação de lançamento712bc31 RF005 Adiciona validação de categoria47da239 RF005 Cria estrutura inicial
 ```
 
 ---
@@ -618,7 +618,7 @@ a95d412 RF004 Implementa criação de lançamento712bc31 RF004 Adiciona validaç
 Na primeira vez que a branch for enviada:
 
 ```
-git push -u origin feature/RF004-lancamentos
+git push -u origin feature/RF005-lancamentos
 ```
 
 A opção:
@@ -654,7 +654,7 @@ git add .
 Crie outro commit:
 
 ```
-git commit -m "RF004 Adiciona validação de lançamentos"
+git commit -m "RF005 Adiciona validação de lançamentos"
 ```
 
 Envie:
@@ -680,7 +680,7 @@ git fetch origin
 Estando na branch da funcionalidade:
 
 ```
-git checkout feature/RF004-lancamentos
+git checkout feature/RF005-lancamentos
 ```
 
 Integre a versão atual da `main`:
@@ -762,13 +762,13 @@ Caso a opção não apareça:
 3. Configure:
 
 ```
-base: maincompare: feature/RF004-lancamentos
+base: maincompare: feature/RF005-lancamentos
 ```
 
 Isso significa:
 
 ```
-feature/RF004-lancamentos            ↓           main
+feature/RF005-lancamentos            ↓           main
 ```
 
 ---
@@ -780,7 +780,7 @@ Utilize um título objetivo.
 Exemplo:
 
 ```
-RF004 - Implementação de lançamentos financeiros
+RF005 - Implementação de lançamentos financeiros
 ```
 
 Na descrição, informe as principais alterações realizadas.
@@ -826,7 +826,7 @@ Continue trabalhando na mesma branch.
 Exemplo:
 
 ```
-git checkout feature/RF004-lancamentos
+git checkout feature/RF005-lancamentos
 ```
 
 Faça a correção.
@@ -838,7 +838,7 @@ git add .
 ```
 
 ```
-git commit -m "RF004 Corrige validação de subcategoria"
+git commit -m "RF005 Corrige validação de subcategoria"
 ```
 
 ```
@@ -894,19 +894,19 @@ Depois que a funcionalidade já estiver integrada à `main`, a branch pode ser r
 ## Excluir localmente
 
 ```
-git branch -d feature/RF004-lancamentos
+git branch -d feature/RF005-lancamentos
 ```
 
 Caso o Git impeça a exclusão e você tenha certeza de que a branch não é mais necessária:
 
 ```
-git branch -D feature/RF004-lancamentos
+git branch -D feature/RF005-lancamentos
 ```
 
 ## Excluir no remoto
 
 ```
-git push origin --delete feature/RF004-lancamentos
+git push origin --delete feature/RF005-lancamentos
 ```
 
 O GitHub também normalmente disponibiliza o botão:
@@ -938,7 +938,7 @@ git pull origin main
 Agora crie a nova branch:
 
 ```
-git checkout -b feature/RF005-nova-funcionalidade
+git checkout -b feature/RF006-nova-funcionalidade
 ```
 
 O fluxo volta a ser:

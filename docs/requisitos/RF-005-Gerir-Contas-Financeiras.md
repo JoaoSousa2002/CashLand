@@ -1,6 +1,6 @@
 ## 🎯 1. IDENTIFICAÇÃO DO REQUISITO
 
-**ID:** RF-004  
+**ID:** RF-005  
 **Título:** Gerenciamento de Contas Financeiras  
 **Tipo:** Requisito Funcional  
 **Prioridade:** ALTA (as contas financeiras representam as contas que o usuário poderá manter e administrar dentro do CashLand)  
@@ -36,7 +36,7 @@ A estimativa segue o mesmo modelo aditivo utilizado nas documentações atuais d
 
 **Por que este requisito existe?**
 
-O CashLand precisa permitir que cada usuário mantenha suas contas financeiras separadas e identificáveis. A RF-004 fornece a estrutura necessária para cadastrar e administrar essas contas sem permitir que um usuário comum manipule registros pertencentes a outro usuário.
+O CashLand precisa permitir que cada usuário mantenha suas contas financeiras separadas e identificáveis. A RF-005 fornece a estrutura necessária para cadastrar e administrar essas contas sem permitir que um usuário comum manipule registros pertencentes a outro usuário.
 
 A funcionalidade contempla:
 
@@ -419,7 +419,7 @@ O administrador possui operações próprias, protegidas por autenticação e pe
 ### Fluxo Alternativo A8: Rate limit excedido
 
 ```text
-8a.1. Rotas simples da RF004 usam limitadorGenericoSimples.
+8a.1. Rotas simples da RF005 usam limitadorGenericoSimples.
 8a.2. São permitidas 60 requisições por IP em uma janela de 5 minutos.
 8a.3. Operações críticas usam limitadorGenericoCritico.
 8a.4. São permitidas 5 requisições por IP em uma janela de 15 minutos.
@@ -460,10 +460,10 @@ O administrador possui operações próprias, protegidas por autenticação e pe
 | **RN-11** | Inativação preserva dados          | Inativar é uma atualização de status; o registro não é removido.                                                                                          |
 | **RN-12** | Data de inativação                 | Inativar preenche `data_inativacao`; reativar define `data_inativacao` como `null`.                                                                       |
 | **RN-13** | Exclusão permanente administrativa | Usuário comum não possui rota de DELETE de conta. Exclusão permanente está disponível somente em `/admin/deletar-conta/:id_conta/:id_usuario`.            |
-| **RN-14** | Administração protegida            | Toda rota administrativa da RF004 exige `autenticar` e `somenteAdmin`.                                                                                    |
+| **RN-14** | Administração protegida            | Toda rota administrativa da RF005 exige `autenticar` e `somenteAdmin`.                                                                                    |
 | **RN-15** | Validação fechada                  | `validar(...)` usa `allowUnknown: false`, rejeitando campos não previstos nos schemas aplicados.                                                          |
 | **RN-16** | FK de usuário                      | `id_usuario` referencia `usuarios(id_usuario)` com `ON DELETE CASCADE`.                                                                                   |
-| **RN-17** | Auditoria                          | Todas as rotas da RF004 são envolvidas por `auditar(...)`; as alterações de usuário confirmadas utilizam `confirmarAlteracao`.                            |
+| **RN-17** | Auditoria                          | Todas as rotas da RF005 são envolvidas por `auditar(...)`; as alterações de usuário confirmadas utilizam `confirmarAlteracao`.                            |
 | **RN-18** | Limitação de frequência            | Operações simples usam 60 requisições/5 minutos; operações críticas usam 5/15 minutos por IP.                                                             |
 
 ---
@@ -486,7 +486,7 @@ O administrador possui operações próprias, protegidas por autenticação e pe
 
 ## 🎨 4. PROTÓTIPO FUNCIONAL — MOCKUPS DAS TELAS
 
-Os mockups abaixo representam as telas implementadas em `src/rf-004-Gerir_contas_financeiras/public` e os estados visuais utilizados pela RF004.
+Os mockups abaixo representam as telas implementadas em `src/rf-005-Gerir_contas_financeiras/public` e os estados visuais utilizados pela RF005.
 
 ### Estilo visual implementado
 
@@ -804,7 +804,7 @@ O CSS compartilhado possui `@media (max-width: 600px)` para reduzir paddings e r
                                │ sendFile
                                ▼
 ┌──────────────────────────────────────────────────────────────────┐
-│                      Frontend RF-004                             │
+│                      Frontend RF-005                             │
 │                                                                  │
 │ listar-contas.html        criar-conta.html                       │
 │ editar-conta.html         ADMIN_listar-contas.html               │
@@ -989,7 +989,7 @@ O CSS compartilhado possui `@media (max-width: 600px)` para reduzir paddings e r
 
 **Contexto:** Operações sobre registros financeiros precisam permitir rastreabilidade das tentativas.
 
-**Decisão:** Envolver todas as rotas RF004 com `auditar(...)` e utilizar `confirmarAlteracao` nas alterações de usuário em que a confirmação do registro atualizado é necessária.
+**Decisão:** Envolver todas as rotas RF005 com `auditar(...)` e utilizar `confirmarAlteracao` nas alterações de usuário em que a confirmação do registro atualizado é necessária.
 
 **Consequências:** A auditoria registra ação, resultado, status HTTP, motivo e `request_id` conforme o fluxo do middleware.
 
@@ -1013,7 +1013,7 @@ O CSS compartilhado possui `@media (max-width: 600px)` para reduzir paddings e r
 
 **Contexto:** As novas telas precisam manter consistência visual e reutilizar o mecanismo de sessão já adotado pelo sistema.
 
-**Decisão:** Utilizar `/template.css` e `/protecao.js` nas cinco páginas RF004.
+**Decisão:** Utilizar `/template.css` e `/protecao.js` nas cinco páginas RF005.
 
 **Consequências:** As telas mantêm o mesmo cabeçalho, cartões, tabelas, overlays, responsividade e fluxo de proteção das RFs anteriores.
 
@@ -1021,9 +1021,9 @@ O CSS compartilhado possui `@media (max-width: 600px)` para reduzir paddings e r
 
 ### Tecnologias Escolhidas
 
-| Camada/Finalidade      | Tecnologia / Serviço               | Uso na RF004                                                        |
+| Camada/Finalidade      | Tecnologia / Serviço               | Uso na RF005                                                        |
 | ---------------------- | ---------------------------------- | ------------------------------------------------------------------- |
-| Frontend               | HTML5                              | Cinco páginas da RF004                                              |
+| Frontend               | HTML5                              | Cinco páginas da RF005                                              |
 | Estilo                 | CSS3 / `template.css`              | Layout, tabelas, cartões, overlays e responsividade                 |
 | Frontend               | JavaScript                         | `fetch`, renderização de tabelas, formulários, overlays e navegação |
 | Backend                | Node.js + Express 5                | Rotas, middlewares, controllers e entrega das páginas               |
@@ -1033,14 +1033,14 @@ O CSS compartilhado possui `@media (max-width: 600px)` para reduzir paddings e r
 | Sessão                 | JWT em cookie                      | Identidade utilizada por `autenticar`                               |
 | Controle de frequência | `express-rate-limit`               | Limitadores simples e críticos                                      |
 | Auditoria / logs       | Winston + middlewares de auditoria | Registro de ações, falhas e rate limits                             |
-| Documentação de API    | Swagger UI                         | Paths e schemas da RF004 em `/api-docs`                             |
+| Documentação de API    | Swagger UI                         | Paths e schemas da RF005 em `/api-docs`                             |
 | Testes HTTP            | `node:test` + Supertest            | Testes automatizados da API e middlewares                           |
 
 ---
 
 ### Fluxo de Dados — Usuário
 
-1. Usuário abre uma rota `/tela-principal/...` da RF004.
+1. Usuário abre uma rota `/tela-principal/...` da RF005.
 2. Express entrega o HTML por `pageRoutes.js`.
 3. `protecao.js` confirma a sessão antes de habilitar as ações.
 4. A página executa `fetch` para `/usuario/...` com `credentials: 'include'`.
@@ -1069,7 +1069,7 @@ O CSS compartilhado possui `@media (max-width: 600px)` para reduzir paddings e r
 
 ## 🔒 6. VALIDAÇÃO DE SEGURANÇA OWASP
 
-> Esta seção relaciona controles realmente implementados na RF004 com categorias do OWASP Top 10:2025. Ela não representa certificação formal de conformidade OWASP; documenta apenas controles e testes sustentados pelo código atual.
+> Esta seção relaciona controles realmente implementados na RF005 com categorias do OWASP Top 10:2025. Ela não representa certificação formal de conformidade OWASP; documenta apenas controles e testes sustentados pelo código atual.
 
 ### A01:2025 — Broken Access Control / Controle de Acesso Quebrado
 
@@ -1139,7 +1139,7 @@ node --test --test-name-pattern='todas as rotas protegidas|usuário comum é blo
 
 **Resultado verificado em 06/10/2026:**
 
-- RF004: **42/42 testes aprovados**.
+- RF005: **42/42 testes aprovados**.
 - autenticação/autorização direcionada: **2/2 testes aprovados**.
 - o teste administrativo confirma que um usuário `Comum` recebe HTTP `403` antes de qualquer acesso ao banco.
 
@@ -1165,7 +1165,7 @@ const { error, value } = schemaFinal.validate(
 );
 ```
 
-Exemplos de restrições da RF004:
+Exemplos de restrições da RF005:
 
 ```javascript
 nome_conta: Joi.string()
@@ -1194,7 +1194,7 @@ Os tipos de conta são limitados por `valid(...)` e novamente protegidos no banc
 
 **Teste automatizado existente:**
 
-A suíte RF004 envia, entre outros casos:
+A suíte RF005 envia, entre outros casos:
 
 - `id_conta: 'invalido'`;
 - ID decimal;
@@ -1258,7 +1258,7 @@ where ((nome_conta)::text = 'padrão'::text);
 - reativação limpa `data_inativacao`;
 - inativação preserva o registro e altera apenas `status_conta` e `data_inativacao`.
 
-**Teste de rate limit executado diretamente nas rotas RF004:**
+**Teste de rate limit executado diretamente nas rotas RF005:**
 
 - `/usuario/listar-contas`: a 61ª solicitação do mesmo IP retornou `429`, `X-RateLimit-Limit: 60`, `X-RateLimit-Remaining: 0` e `Retry-After: 300`.
 - `/usuario/inativar-conta`: a 6ª solicitação do mesmo IP retornou `429`, `X-RateLimit-Limit: 5`, `X-RateLimit-Remaining: 0` e `Retry-After: 900`.
@@ -1273,7 +1273,7 @@ where ((nome_conta)::text = 'padrão'::text);
 
 **Implementação:**
 
-Todas as rotas da RF004 utilizam `autenticar` antes do controller:
+Todas as rotas da RF005 utilizam `autenticar` antes do controller:
 
 ```javascript
 export function autenticar(req, res, next) {
@@ -1307,7 +1307,7 @@ export function somenteAdmin(req, res, next) {
 - usuário comum em todas as rotas `/admin/...` retorna HTTP `403`;
 - o teste confirma que o acesso ao Supabase não ocorre quando `somenteAdmin` bloqueia a chamada.
 
-**Resultado:** a RF004 reutiliza o mecanismo de sessão do RF001 e aplica autenticação/autorização no backend, independentemente da proteção visual da página.
+**Resultado:** a RF005 reutiliza o mecanismo de sessão do RF002 e aplica autenticação/autorização no backend, independentemente da proteção visual da página.
 
 ---
 
@@ -1317,7 +1317,7 @@ export function somenteAdmin(req, res, next) {
 
 **Implementação de registro:**
 
-Todas as rotas RF004 possuem `auditar(...)`. O middleware registra o evento ao terminar a resposta e classifica resultados como sucesso, falha, negado ou erro conforme status/contexto.
+Todas as rotas RF005 possuem `auditar(...)`. O middleware registra o evento ao terminar a resposta e classifica resultados como sucesso, falha, negado ou erro conforme status/contexto.
 
 O rate limit também registra evento de segurança:
 
@@ -1340,7 +1340,7 @@ logger.warn('Rate limit excedido', {
 - reativação confirma `USER_REATIVAR_CONTA` com sucesso;
 - bloqueios administrativos são registrados como `NEGADO` no teste geral de rotas administrativas.
 
-**Limite da implementação atual:** foi identificada implementação de **logging/auditoria**, porém não foi identificado na RF004 um mecanismo externo de alerta em tempo real ou encaminhamento para SOC. Portanto, a aderência documentada a A09 é parcial e limitada à geração de logs e trilha de auditoria.
+**Limite da implementação atual:** foi identificada implementação de **logging/auditoria**, porém não foi identificado na RF005 um mecanismo externo de alerta em tempo real ou encaminhamento para SOC. Portanto, a aderência documentada a A09 é parcial e limitada à geração de logs e trilha de auditoria.
 
 ---
 
@@ -1372,7 +1372,7 @@ confirmarAlteracao(res, alterados);
 
 **Testes automatizados existentes:**
 
-A suíte RF004 injeta falhas simuladas em cada etapa de banco das operações:
+A suíte RF005 injeta falhas simuladas em cada etapa de banco das operações:
 
 - criar conta;
 - listar contas;
@@ -1388,18 +1388,18 @@ Também existem testes em que o registro desaparece antes da escrita. Nesses cas
 - resposta HTTP `404`;
 - nenhum falso evento de auditoria `SUCESSO` é aceito.
 
-**Resultado:** a RF004 possui tratamento explícito de falhas do banco e testes para impedir falso sucesso nas alterações comuns.
+**Resultado:** a RF005 possui tratamento explícito de falhas do banco e testes para impedir falso sucesso nas alterações comuns.
 
 ---
 
-### Resumo da validação OWASP da RF004
+### Resumo da validação OWASP da RF005
 
-| Categoria OWASP 2025                            | Controle encontrado na RF004                                                   | Evidência de teste                                                                     |
+| Categoria OWASP 2025                            | Controle encontrado na RF005                                                   | Evidência de teste                                                                     |
 | ----------------------------------------------- | ------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------- |
 | **A01 — Broken Access Control**                 | Propriedade por sessão + `somenteAdmin`                                        | Sim — propriedade, IDOR de conta e bloqueio administrativo                             |
 | **A05 — Injection**                             | Joi + `allowUnknown: false` + tipos/constraints                                | Sim — entradas inválidas bloqueadas antes do banco; escopo parcial para pesquisa livre |
 | **A06 — Insecure Design**                       | Regras de conta padrão, transição de estado, constraints, índices e rate limit | Sim — duplicidade, conta reservada, estados repetidos e limites                        |
-| **A07 — Authentication Failures**               | `autenticar` em todas as APIs RF004 e `somenteAdmin` no admin                  | Sim — 401 sem sessão e 403 para usuário comum                                          |
+| **A07 — Authentication Failures**               | `autenticar` em todas as APIs RF005 e `somenteAdmin` no admin                  | Sim — 401 sem sessão e 403 para usuário comum                                          |
 | **A09 — Security Logging & Alerting Failures**  | Auditoria + logs de segurança de rate limit                                    | Parcial — logging testado; alerta externo não identificado                             |
 | **A10 — Mishandling of Exceptional Conditions** | Verificação de erros e confirmação da linha alterada                           | Sim — falhas simuladas retornam 500 e não geram falso sucesso                          |
 
@@ -1423,7 +1423,7 @@ testes direcionados de autenticação/autorização em tests/app.test.js
 0 falhas
 ```
 
-Verificações adicionais de rate limit executadas diretamente sobre as rotas da RF004:
+Verificações adicionais de rate limit executadas diretamente sobre as rotas da RF005:
 
 ```text
 GET /usuario/listar-contas

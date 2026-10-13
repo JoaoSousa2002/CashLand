@@ -12,11 +12,7 @@ app.listen = (...args) => {
     servidor = listen(...args);
     return servidor;
 };
-if (process.argv[2] === 'legado') {
-    await import('../../src/rf-001-Login/Servidor.js');
-} else {
-    await import('../../src/server.js');
-}
+await import('../../src/server.js');
 try {
     if (!servidor.listening) await once(servidor, 'listening');
     const resposta = await fetch(`http://127.0.0.1:${servidor.address().port}/login`);

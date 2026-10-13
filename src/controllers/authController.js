@@ -1,7 +1,7 @@
 import supabase from '../config/supabase.js';
 import { confirmarAlteracao } from '../middlewares/AuditoriaRota.js';
-import { gerarHashSenha, validarSenha, gerarToken, verificarToken } from '../rf-001-Login/Autenticacao.js';
-import { enviarEmail, normalizarEmail } from '../rf-002-Cadastro_usuario/Email.js';
+import { gerarHashSenha, validarSenha, gerarToken, verificarToken } from '../rf-002-Login/Autenticacao.js';
+import { enviarEmail, normalizarEmail } from '../rf-003-Cadastro_usuario/Email.js';
 import { codigos, buscarUsuario, emitirCodigo } from '../services/codigosService.js';
 
 export async function consultarSessao(req, res) {

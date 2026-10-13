@@ -6,11 +6,11 @@ Base: commit `aa619a4`, restaurado durante a implementação. Foram mantidos os 
 
 - `src/app.js`: configura Express, CORS, cookies, JSON, logger, Swagger, páginas, arquivos estáticos, routers e resposta 404; não abre porta nem testa conexão.
 - `src/server.js`: testa a conexão e inicia o servidor, mantendo a inicialização assíncrona original.
-- `src/rf-001-Login/Servidor.js`: entrada compatível com o comando antigo de deploy.
+- `src/rf-002-Login/Servidor.js`: entrada compatível com o comando antigo de deploy.
 - `src/config/supabase.js`: cliente único e função `testarConexao`, com as opções originais.
 - `src/controllers/`: `authController`, `usuarioController`, `adminUsuarioController`, `categoriaController` e `adminCategoriaController`.
 - `src/routes/`: os cinco routers correspondentes e `pageRoutes`.
-- `src/middlewares/Autenticacao.js`: `autenticar` e `somenteAdmin`. Hash, comparação de senha e JWT continuam no arquivo original `src/rf-001-Login/Autenticacao.js`.
+- `src/middlewares/Autenticacao.js`: `autenticar` e `somenteAdmin`. Hash, comparação de senha e JWT continuam no arquivo original `src/rf-002-Login/Autenticacao.js`.
 - `src/middlewares/RateLimit.js`: os seis limitadores originais, incluindo o handler de auditoria e segurança.
 - `src/services/codigosService.js`: serviço de códigos e funções compartilhadas de consulta do usuário e emissão por email.
 - `src/validacoes/validar.js`, schemas Joi, configuração e middleware de auditoria existentes foram reutilizados.
@@ -36,7 +36,7 @@ npm start
 npm test
 ```
 
-O comando antigo `node src/rf-001-Login/Servidor.js` continua funcionando.
+O comando antigo `node src/rf-002-Login/Servidor.js` continua funcionando.
 
 `npm test` executa 18 testes locais, sem acessar o banco configurado no `.env`:
 

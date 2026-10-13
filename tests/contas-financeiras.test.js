@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import request from 'supertest';
 import app from '../src/app.js';
 import supabase from '../src/config/supabase.js';
-import { gerarToken } from '../src/rf-001-Login/Autenticacao.js';
+import { gerarToken } from '../src/rf-002-Login/Autenticacao.js';
 import { observarLogs } from './helpers/auditoria.js';
 
 // Toda consulta é simulada. Uma chamada não prevista falha sem acessar o banco real.

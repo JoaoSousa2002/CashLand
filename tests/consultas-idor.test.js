@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import request from 'supertest';
 import app from '../src/app.js';
 import supabase from '../src/config/supabase.js';
-import { gerarToken } from '../src/rf-001-Login/Autenticacao.js';
+import { gerarToken } from '../src/rf-002-Login/Autenticacao.js';
 
 // Testes de regressão das consultas. O banco é simulado; E2E reais ficam em idor.test.js.
 before(() => {

@@ -2,7 +2,7 @@
 
 ## 🎯 1. IDENTIFICAÇÃO DO REQUISITO (2%)
 
-**ID:** RF-003  
+**ID:** RF-004  
 **Título:** Gerenciamento de Categorias Financeiras  
 **Tipo:** Requisito Funcional  
 **Prioridade:** **ALTA**, pois as categorias organizam os futuros lançamentos financeiros e são vinculadas individualmente a cada usuário.  
@@ -29,7 +29,7 @@
 
 ### Descrição detalhada
 
-A RF-003 organiza os dados financeiros por categorias pertencentes a uma conta específica. Seus benefícios são: permitir classificação consistente dos gastos/receitas; manter isolamento entre usuários; viabilizar busca e manutenção das classificações; fornecer uma categoria padrão para registros sem classificação específica; e permitir administração das categorias vinculadas às contas.
+A RF-004 organiza os dados financeiros por categorias pertencentes a uma conta específica. Seus benefícios são: permitir classificação consistente dos gastos/receitas; manter isolamento entre usuários; viabilizar busca e manutenção das classificações; fornecer uma categoria padrão para registros sem classificação específica; e permitir administração das categorias vinculadas às contas.
 
 ### Atores e permissões
 
@@ -303,7 +303,7 @@ As páginas usam o padrão visual compartilhado do CashLand, formulários em car
 ### Diagrama de Componentes
 
 ```text
-Telas RF-003 (HTML/CSS/JS)
+Telas RF-004 (HTML/CSS/JS)
           │ fetch + cookie
           ▼
 Express / Servidor.js
@@ -391,7 +391,7 @@ Tela → cookie de sessão → `autenticar` → validação Joi → filtro pelo 
 
 O Swagger do projeto está em `docs/api/API-SWAGGER.json` e é servido em `/api-docs`. A especificação documenta as operações de categoria para usuário e administrador, seus parâmetros/corpos, respostas e códigos HTTP, além da autenticação por cookie de sessão nas operações protegidas.
 
-Para a RF-003, o documento Swagger cobre criação, listagem/pesquisa, edição e exclusão de categorias do usuário, bem como consulta, edição e exclusão administrativas. Este documento não replica uma tabela de rotas, conforme o padrão adotado para a entrega.
+Para a RF-004, o documento Swagger cobre criação, listagem/pesquisa, edição e exclusão de categorias do usuário, bem como consulta, edição e exclusão administrativas. Este documento não replica uma tabela de rotas, conforme o padrão adotado para a entrega.
 
 ---
 

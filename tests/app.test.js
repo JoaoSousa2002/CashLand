@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import request from 'supertest';
 import app from '../src/app.js';
 import supabase from '../src/config/supabase.js';
-import { gerarHashSenha, gerarToken } from '../src/rf-001-Login/Autenticacao.js';
+import { gerarHashSenha, gerarToken } from '../src/rf-002-Login/Autenticacao.js';
 import { observarLogs } from './helpers/auditoria.js';
 
 const rotas = JSON.parse(readFileSync(new URL('./fixtures/rotas.json', import.meta.url)));
@@ -117,25 +117,30 @@ test('login e /me preservam cookie e JSON com banco simulado explicitamente', as
 });
 
 const limites = [
-    ['LOGIN', 'post', '/login', 10, 400, 'Muitas tentativas de login realizadas. Tente novamente em 15 minutos.'],
-    ['CONFIRMAR_SENHA', 'post', '/confirmar-senha', 5, 401, 'Muitas tentativas de confirmar senha realizadas. Tente novamente em 15 minutos.'],
-    ['SOLICITAR_CODIGO', 'post', '/solicitar-codigo', 5, 400, 'Muitas tentativas de envio de codigo realizadas. Tente novamente em 15 minutos.'],
-    ['VERIFICAR_CODIGO', 'post', '/confirmar-cadastro', 5, 400, 'Muitas tentativas de verificar codigo realizadas. Tente novamente em 15 minutos.'],
-    ['GENERICO_SIMPLES', 'get', '/usuario', 15, 401, 'Muitas solicitações para essa ação realizadas. Tente novamente em 15 minutos.'],
-    ['GENERICO_CRITICO', 'patch', '/usuario/desativar-usuario', 5, 401, 'Muitas solicitações para essa ação realizadas. Tente novamente em 15 minutos.']
+    ['LOGIN', 'post', '/login', 10, 900, 400, 'Muitas tentativas de login realizadas. Tente novamente em 15 minutos.'],
+    ['CONFIRMAR_SENHA', 'post', '/confirmar-senha', 5, 900, 401, 'Muitas tentativas de confirmar senha realizadas. Tente novamente em 15 minutos.'],
+    ['SOLICITAR_CODIGO', 'post', '/solicitar-codigo', 5, 900, 400, 'Muitas tentativas de envio de codigo realizadas. Tente novamente em 15 minutos.'],
+    ['VERIFICAR_CODIGO', 'post', '/confirmar-cadastro', 5, 900, 400, 'Muitas tentativas de verificar codigo realizadas. Tente novamente em 15 minutos.'],
+    // A janela atual é de 5 minutos; a mensagem configurada ainda informa 10 minutos.
+    ['GENERICO_SIMPLES', 'get', '/usuario', 60, 300, 401, 'Muitas solicitações para essa ação realizadas. Tente novamente em 10 minutos.'],
+    ['GENERICO_CRITICO', 'patch', '/usuario/desativar-usuario', 5, 900, 401, 'Muitas solicitações para essa ação realizadas. Tente novamente em 15 minutos.']
 ];
-for (const [nome, metodo, caminho, maximo, statusInicial, mensagem] of limites) {
-    test(`rate limit ${nome}: política original, headers, log e auditoria`, async t => {
+for (const [nome, metodo, caminho, maximo, janelaSegundos, statusInicial, mensagem] of limites) {
+    test(`rate limit ${nome}: configuração atual, headers, log e auditoria`, async t => {
         const eventos = observarLogs(t);
         const http = cliente();
+        const inicio = Date.now();
         for (let i = 0; i < maximo; i += 1) {
             await http(metodo, caminho).send({}).expect(statusInicial);
         }
         const bloqueio = await http(metodo, caminho).send({}).expect(429, { mensagem });
         assert.equal(Number(bloqueio.headers['x-ratelimit-limit']), maximo);
         assert.equal(Number(bloqueio.headers['x-ratelimit-remaining']), 0);
-        assert.ok(Number(bloqueio.headers['retry-after']) <= 900);
-        assert.ok(Number(bloqueio.headers['retry-after']) > 0);
+        const espera = Number(bloqueio.headers['retry-after']);
+        const decorrido = Math.ceil((Date.now() - inicio) / 1000);
+        assert.ok(espera <= janelaSegundos);
+        assert.ok(espera >= janelaSegundos - decorrido);
+        assert.ok(espera > 0);
         const evento = eventos.find(e => e.tipo_evento === 'AUDITORIA' && e.detalhes.status_http === 429);
         assert.equal(evento.resultado, 'NEGADO');
         assert.equal(evento.detalhes.motivo, `RATE_LIMIT_${nome}_EXCEDIDO`);

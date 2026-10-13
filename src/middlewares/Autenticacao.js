@@ -1,4 +1,4 @@
-import { verificarToken } from '../rf-001-Login/Autenticacao.js';
+import { verificarToken } from '../rf-002-Login/Autenticacao.js';
 
 export function autenticar(req, res, next) {
     const token = req.cookies.token;

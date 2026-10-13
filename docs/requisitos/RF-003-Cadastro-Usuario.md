@@ -2,7 +2,7 @@
 
 ## 🎯 1. IDENTIFICAÇÃO DO REQUISITO (2%)
 
-**ID:** RF-002  
+**ID:** RF-003  
 **Título:** Cadastro e Gerenciamento de Usuários  
 **Tipo:** Requisito Funcional  
 **Prioridade:** **ALTA**, pois cria as contas utilizadas pela autenticação e relaciona cada usuário aos dados financeiros.  
@@ -30,7 +30,7 @@
 
 ### Descrição detalhada
 
-A RF-002 cria e administra a identidade persistida no CashLand. Seus benefícios são: permitir auto cadastro com comprovação de acesso ao email; centralizar dados da conta; possibilitar manutenção do próprio perfil; oferecer governança administrativa sobre situação e reset das contas; e manter vínculo entre usuário e dados financeiros associados.
+A RF-003 cria e administra a identidade persistida no CashLand. Seus benefícios são: permitir auto cadastro com comprovação de acesso ao email; centralizar dados da conta; possibilitar manutenção do próprio perfil; oferecer governança administrativa sobre situação e reset das contas; e manter vínculo entre usuário e dados financeiros associados.
 
 ### Atores e permissões
 
@@ -75,7 +75,7 @@ A RF-002 cria e administra a identidade persistida no CashLand. Seus benefícios
 - Cadastro confirmado cria conta com `senha_hash` e valores padrão do banco.
 - Atualizações persistem somente os campos autorizados.
 - Desativação/reativação atualiza status e data de inativação.
-- Reset administrativo marca a conta para redefinição na RF-001.
+- Reset administrativo marca a conta para redefinição na RF-002.
 - Exclusão autorizada remove a conta e relacionamentos configurados com cascade.
 
 ### Pós-condições — falha

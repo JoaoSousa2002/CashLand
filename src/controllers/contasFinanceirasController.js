@@ -50,7 +50,7 @@ export async function listarContasFinanceiras(req, res) {
     if (!pesquisa || pesquisa === "") {
         const { data: listaContas, error: erroConsulta } = await supabase
             .from('contas_bancarias')
-            .select('id_conta, nome_conta, codigo_conta, tipo_conta, nome_instituicao, status_conta, data_inativacao')
+            .select('id_conta, nome_conta, codigo_conta, tipo_conta, nome_instituicao, status_conta, data_fechamento, data_vencimento, data_inativacao')
             .eq('id_usuario', req.usuario.id_usuario)
 
         if (erroConsulta) {
@@ -84,7 +84,7 @@ export async function listarContasFinanceiras(req, res) {
 
     const { data: pesquisaNome, error: erroPesquisaNome } = await supabase
         .from('contas_bancarias')
-        .select('id_conta, nome_conta, codigo_conta, tipo_conta, nome_instituicao, status_conta, data_inativacao')
+        .select('id_conta, nome_conta, codigo_conta, tipo_conta, nome_instituicao, status_conta, data_fechamento, data_vencimento, data_inativacao')
         .eq('id_usuario', req.usuario.id_usuario)
         .order('id_conta', { ascending: true })
         .or(condicoes.join(','))

@@ -20,6 +20,6 @@ router.patch('/reativar-usuario', auditar('REATIVAR_USUARIO', req => req.body?.i
 
 router.patch('/desativar-usuario', auditar('DESATIVAR_USUARIO', req => req.body?.id_usuario, true), limitadorGenericoCritico, autenticar, somenteAdmin, validar(schemaIdUsuarioObrigatorio), desativarUsuario);
 
-router.delete('/deletar-usuario/:id_usuario', auditar('EXCLUIR_USUARIO', req => req.query.id_usuario, true), limitadorGenericoCritico, autenticar, somenteAdmin, validar(schemaIdUsuarioObrigatorio), deletarUsuario);
+router.delete('/deletar-usuario/:id_usuario', auditar('EXCLUIR_USUARIO', req => req.params.id_usuario, true), limitadorGenericoCritico, autenticar, somenteAdmin, validar(schemaIdUsuarioObrigatorio), deletarUsuario);
 
 export default router;

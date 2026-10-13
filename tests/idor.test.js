@@ -77,7 +77,7 @@ describe('IDOR E2E — Express, login real, cookies e Supabase de teste', { skip
         process.env.SUPABASE_SECRET_KEY = process.env.SUPABASE_TEST_SECRET_KEY;
         ({ default: banco } = await import('../src/config/supabase.js'));
         ({ default: app } = await import('../src/app.js'));
-        ({ gerarHashSenha } = await import('../src/rf-001-Login/Autenticacao.js'));
+        ({ gerarHashSenha } = await import('../src/rf-002-Login/Autenticacao.js'));
         const senha_hash = await gerarHashSenha(senha);
         const usuarios = verificarBanco(await banco.from('usuarios').insert([
             { nome: 'IDOR Usuario A', email: emails[0], senha_hash, tipo: 'Comum', status_usuario: 'Ativo', status_reset_senha: false },

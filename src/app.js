@@ -16,6 +16,8 @@ import adminUsuarioRoutes from './routes/adminUsuarioRoutes.js';
 import adminCategoriaRoutes from './routes/adminCategoriaRoutes.js';
 import contasRoutes from './routes/contasFinanceirasRoutes.js';
 import adminContas from './routes/adminContasFinanceirasRoutes.js';
+import transacoesRoutes from './routes/transacoesRoutes.js';
+import adminTransacoesRoutes from './routes/adminTransacoesRoutes.js';
 
 // Array com as CORS local
 let origemAutorizada = [];
@@ -27,7 +29,7 @@ if (process.env.ORIGEM_AUTORIZADA) {
 // Isso garante que o Express.static funcione independente de onde o
 // comando "node" é executado (importante no Render, onde o start command
 // roda a partir da raiz do repositório).
-const __dirname = fileURLToPath(new URL('./rf-001-Login/', import.meta.url));
+const __dirname = fileURLToPath(new URL('./rf-002-Login/', import.meta.url));
 
 const app = Express()
 // Autoriza o acesso por proxy, necessario para funcionar no render
@@ -50,16 +52,18 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
 app.use('/', pageRoutes);
 
 app.use(Express.static(path.join(__dirname, 'public')));
-app.use(Express.static(path.join(__dirname, '../rf-002-Cadastro_usuario/public')));
+app.use(Express.static(path.join(__dirname, '../rf-003-Cadastro_usuario/public')));
 app.use(Express.static(path.join(__dirname, '../img')));
 
 app.use('/', authRoutes);
 app.use('/usuario', usuarioRoutes);
 app.use('/usuario', categoriaRoutes);
 app.use('/usuario', contasRoutes);
+app.use('/usuario', transacoesRoutes);
 app.use('/admin', adminUsuarioRoutes);
 app.use('/admin', adminCategoriaRoutes);
 app.use('/admin', adminContas);
+app.use('/admin', adminTransacoesRoutes);
 
 // IMPORTANTE: Ultima rota do sistema para redirecionar em caso de rota não existir
 app.use((req, res) => {

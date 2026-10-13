@@ -2,10 +2,10 @@
 
 ## 🎯 1. IDENTIFICAÇÃO DO REQUISITO (2%)
 
-**ID:** RF-001  
+**ID:** RF-002  
 **Título:** Sistema de Login, Sessão e Recuperação de Senha  
 **Tipo:** Requisito Funcional  
-**Prioridade:** **ALTA**, pois controla o acesso às funcionalidades autenticadas e fornece identidade para RF-002 e RF-003.  
+**Prioridade:** **ALTA**, pois controla o acesso às funcionalidades autenticadas e fornece identidade para RF-003 e RF-004.  
 **Complexidade:** **ALTA — 13 story points**  
 **Status:** Implementado  
 **Data de Criação:** 06/09/2026  

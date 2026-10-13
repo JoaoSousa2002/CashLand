@@ -3,7 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const router = Router();
-const __dirname = fileURLToPath(new URL('../rf-001-Login/', import.meta.url));
+const __dirname = fileURLToPath(new URL('../rf-002-Login/', import.meta.url));
 
 // rotas de URL para direcionar o front-end
 router.get('/', (req, res) => res.redirect('/login'));
@@ -12,7 +12,7 @@ router.get('/login', (req, res) => {
 });
 
 router.get('/cadastro-usuario', (req, res) => {
-    res.sendFile(path.join(__dirname, '../rf-002-Cadastro_usuario/public/cadastrar_usuario.html'));
+    res.sendFile(path.join(__dirname, '../rf-003-Cadastro_usuario/public/cadastrar_usuario.html'));
 });
 
 router.get('/resetar-senha', (req, res) => {
@@ -24,11 +24,11 @@ router.get('/tela-principal', (req, res) => {
 });
 
 router.get('/tela-principal/editar-usuario', (req, res) => {
-    res.sendFile(path.join(__dirname, '../rf-002-Cadastro_usuario/public/editar_usuario.html'));
+    res.sendFile(path.join(__dirname, '../rf-003-Cadastro_usuario/public/editar_usuario.html'));
 });
 
 router.get('/tela-principal/listar-categoria', (req, res) => {
-    res.sendFile(path.join(__dirname, '../rf-003-Gerir_categoria/public/listar_categoria.html'));
+    res.sendFile(path.join(__dirname, '../rf-004-Gerir_categoria/public/listar_categoria.html'));
 });
 
 router.get('/tela-admin', (req, res) => {
@@ -36,53 +36,53 @@ router.get('/tela-admin', (req, res) => {
 });
 
 router.get('/tela-admin/listar-usuarios', (req, res) => {
-    res.sendFile(path.join(__dirname, '../rf-002-Cadastro_usuario/public/ADMIN_listar_usuarios.html'));
+    res.sendFile(path.join(__dirname, '../rf-003-Cadastro_usuario/public/ADMIN_listar_usuarios.html'));
 });
 
 router.get('/tela-admin/editar-usuarios', (req, res) => {
-    res.sendFile(path.join(__dirname, '../rf-002-Cadastro_usuario/public/ADMIN_editar_usuario.html'));
+    res.sendFile(path.join(__dirname, '../rf-003-Cadastro_usuario/public/ADMIN_editar_usuario.html'));
 });
 
-// RF003 - Gerir Categorias ====================================================================================
+// RF004 - Gerir Categorias ====================================================================================
 
 // OK
 router.get('/tela-admin/editar-categoria', (req, res) => {
-    res.sendFile(path.join(__dirname, '../rf-003-Gerir_categoria/public/ADMIN_editar_categoria.html'));
+    res.sendFile(path.join(__dirname, '../rf-004-Gerir_categoria/public/ADMIN_editar_categoria.html'));
 });
 
 router.get('/tela-admin/listar-categoria', (req, res) => {
-    res.sendFile(path.join(__dirname, '../rf-003-Gerir_categoria/public/ADMIN_listar_categoria.html'));
+    res.sendFile(path.join(__dirname, '../rf-004-Gerir_categoria/public/ADMIN_listar_categoria.html'));
 });
 
 // 
 router.get('/tela-principal/criar-categoria', (req, res) => {
-    res.sendFile(path.join(__dirname, '../rf-003-Gerir_categoria/public/criar_categoria.html'));
+    res.sendFile(path.join(__dirname, '../rf-004-Gerir_categoria/public/criar_categoria.html'));
 });
 
 router.get('/tela-principal/editar-categoria', (req, res) => {
-    res.sendFile(path.join(__dirname, '../rf-003-Gerir_categoria/public/editar_categoria.html'));
+    res.sendFile(path.join(__dirname, '../rf-004-Gerir_categoria/public/editar_categoria.html'));
 });
 
-// RF004 - Gerir Contas Financeiras ============================================================================
+// RF005 - Gerir Contas Financeiras ============================================================================
 
 router.get('/tela-principal/listar-contas', (req, res) => {
-    res.sendFile(path.join(__dirname, '../rf-004-Gerir_contas_financeiras/public/listar-contas.html'));
+    res.sendFile(path.join(__dirname, '../rf-005-Gerir_contas_financeiras/public/listar-contas.html'));
 });
 
 router.get('/tela-principal/criar-conta', (req, res) => {
-    res.sendFile(path.join(__dirname, '../rf-004-Gerir_contas_financeiras/public/criar-conta.html'));
+    res.sendFile(path.join(__dirname, '../rf-005-Gerir_contas_financeiras/public/criar-conta.html'));
 });
 
 router.get('/tela-principal/editar-conta', (req, res) => {
-    res.sendFile(path.join(__dirname, '../rf-004-Gerir_contas_financeiras/public/editar-conta.html'));
+    res.sendFile(path.join(__dirname, '../rf-005-Gerir_contas_financeiras/public/editar-conta.html'));
 });
 
 router.get('/tela-admin/listar-contas', (req, res) => {
-    res.sendFile(path.join(__dirname, '../rf-004-Gerir_contas_financeiras/public/ADMIN_listar-contas.html'));
+    res.sendFile(path.join(__dirname, '../rf-005-Gerir_contas_financeiras/public/ADMIN_listar-contas.html'));
 });
 
 router.get('/tela-admin/editar-conta', (req, res) => {
-    res.sendFile(path.join(__dirname, '../rf-004-Gerir_contas_financeiras/public/ADMIN_editar-conta.html'));
+    res.sendFile(path.join(__dirname, '../rf-005-Gerir_contas_financeiras/public/ADMIN_editar-conta.html'));
 });
 
 export default router;

@@ -1,5 +1,5 @@
 import supabase from '../config/supabase.js';
-import { criarServicoCodigos, normalizarEmail, gerarCodigo, enviarEmail } from '../rf-002-Cadastro_usuario/Email.js';
+import { criarServicoCodigos, normalizarEmail, gerarCodigo, enviarEmail } from '../rf-003-Cadastro_usuario/Email.js';
 
 export const codigos = criarServicoCodigos(supabase);
 
