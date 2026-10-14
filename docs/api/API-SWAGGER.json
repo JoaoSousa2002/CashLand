@@ -3,7 +3,7 @@
   "info": {
     "title": "CashLand API",
     "version": "1.0.0",
-    "description": "API de autenticação, gerenciamento de usuários, categorias e contas financeiras do CashLand. A sessão usa o cookie HttpOnly token; as rotas /admin exigem tipo Admin no JWT. Os limites são por IP e compartilhados entre as rotas que usam a mesma instância de limitador. Login: 10 requisições/15 minutos; confirmação de senha: 5/15 minutos; solicitação de código: 5/15 minutos; confirmação de cadastro: 5/15 minutos; genérico simples: 60/5 minutos; genérico crítico: 5/15 minutos. Consulte a resposta 429 de cada operação. Páginas HTML (/tela-admin e /tela-principal, incluindo suas subrotas) e a interface /api-docs não são operações desta API."
+    "description": "API de autenticação, gerenciamento de usuários, categorias, contas financeiras, transações e recorrências do CashLand. A sessão usa o cookie HttpOnly token; as rotas /admin exigem tipo Admin no JWT. Os limites são por IP e compartilhados entre as rotas que usam a mesma instância de limitador. Login: 10 requisições/15 minutos; confirmação de senha: 5/15 minutos; solicitação de código: 5/15 minutos; confirmação de cadastro: 5/15 minutos; genérico simples: 60/5 minutos; genérico crítico: 5/15 minutos. Consulte a resposta 429 de cada operação. Páginas HTML (/tela-admin e /tela-principal, incluindo suas subrotas) e a interface /api-docs não são operações desta API."
   },
   "servers": [
     {
@@ -3068,6 +3068,1000 @@
               "type": "integer",
               "minimum": 0,
               "example": 1
+            }
+          }
+        ]
+      }
+    },
+    "/usuario/criar-recorrencia": {
+      "post": {
+        "summary": "Cria uma recorrência financeira",
+        "description": "O proprietário é obtido do cookie de sessão (JWT). Não envie id_usuario. Aceita tipo_transacao Entrada ou Saida e modalidade Parcelado ou Periodico. Parcelado exige qtd_parcelas e frequencia Mensal; Periodico aceita frequencia Semanal, Mensal ou Anual. Conta e categoria devem pertencer ao proprietário. data_inicio usa YYYY-MM-DD. Obrigatórios: id_conta, id_categoria, tipo_transacao, modalidade, nome, forma_pagamento, valor, frequencia, data_inicio e ativo. descricao e destino são opcionais. valor deve ser positivo, com até duas casas decimais.",
+        "tags": [
+          "Recorrências"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Recorrência criada com sucesso.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "mensagem": "Transações inseridas com sucesso"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/DadosInvalidos"
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "404": {
+            "description": "Registro não encontrado, não pertencente ao usuário informado ou usuário inexistente/inativo, conforme a operação."
+          },
+          "429": {
+            "$ref": "#/components/responses/LimiteGenericoSimples"
+          },
+          "500": {
+            "description": "Erro ao consultar ou persistir os dados. A resposta contém mensagem com a descrição da falha."
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "example": {
+                "id_conta": 1,
+                "id_categoria": 1,
+                "tipo_transacao": "Saida",
+                "modalidade": "Parcelado",
+                "nome": "Compra parcelada",
+                "forma_pagamento": "crédito",
+                "valor": 300,
+                "frequencia": "Mensal",
+                "qtd_parcelas": 3,
+                "data_inicio": "2026-10-13",
+                "ativo": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/usuario/criar-transacao": {
+      "post": {
+        "summary": "Cria uma transação financeira",
+        "description": "O proprietário é obtido do cookie de sessão (JWT). Não envie id_usuario. Entrada e Saida exigem categoria; Transferencia exige contas de origem e destino diferentes. Contas e categoria devem pertencer ao proprietário. O vínculo com metas ainda não está disponível: omita id_meta ou envie null. Para status_transacao Pendente, data_pagamento deve ser omitida ou null. Datas usam YYYY-MM-DD. Obrigatórios: id_conta_origem, tipo_transacao, nome, forma_pagamento, valor_transacao, status_transacao e data_transacao, além dos campos condicionais. descricao, destino, data_vencimento e data_pagamento são opcionais. valor_transacao deve ser positivo, com até duas casas decimais. status_transacao aceita Pendente ou Pago.",
+        "tags": [
+          "Transações financeiras"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Transação criada com sucesso.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "mensagem": "Transação criada com sucesso"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/DadosInvalidos"
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "404": {
+            "description": "Registro não encontrado, não pertencente ao usuário informado ou usuário inexistente/inativo, conforme a operação."
+          },
+          "429": {
+            "$ref": "#/components/responses/LimiteGenericoSimples"
+          },
+          "500": {
+            "description": "Erro ao consultar ou persistir os dados. A resposta contém mensagem com a descrição da falha."
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "example": {
+                "id_conta_origem": 1,
+                "id_categoria": 1,
+                "tipo_transacao": "Saida",
+                "nome": "Compra no mercado",
+                "forma_pagamento": "PIX",
+                "valor_transacao": 150.5,
+                "status_transacao": "Pendente",
+                "data_transacao": "2026-10-13",
+                "data_vencimento": "2026-10-20"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/usuario/editar-recorrencia": {
+      "patch": {
+        "summary": "Edita uma recorrência",
+        "description": "O proprietário é obtido do cookie de sessão (JWT). Não envie id_usuario. id_recorrencia é obrigatório; os demais campos da recorrência são opcionais e somente os enviados são alterados. Aceita tipo_transacao Entrada ou Saida e modalidade Parcelado ou Periodico. Parcelado exige qtd_parcelas e frequencia Mensal; Periodico aceita frequencia Semanal, Mensal ou Anual. Conta e categoria devem pertencer ao proprietário. data_inicio usa YYYY-MM-DD. ",
+        "tags": [
+          "Recorrências"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Recorrência editada com sucesso.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "mensagem": "Recorrencia e suas transações editadas com sucesso"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/DadosInvalidos"
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "404": {
+            "description": "Registro não encontrado, não pertencente ao usuário informado ou usuário inexistente/inativo, conforme a operação."
+          },
+          "429": {
+            "$ref": "#/components/responses/LimiteGenericoSimples"
+          },
+          "500": {
+            "description": "Erro ao consultar ou persistir os dados. A resposta contém mensagem com a descrição da falha."
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "example": {
+                "id_recorrencia": 1,
+                "nome": "Compra parcelada atualizada",
+                "valor": 350
+              }
+            }
+          }
+        }
+      }
+    },
+    "/usuario/editar-transacao": {
+      "patch": {
+        "summary": "Edita uma transação",
+        "description": "O proprietário é obtido do cookie de sessão (JWT). Não envie id_usuario. id_transacao é obrigatório; os demais campos da transação são opcionais e somente os enviados são alterados. Ao definir status_transacao como Pendente, data_pagamento é limpa. Entrada e Saida exigem categoria; Transferencia exige contas de origem e destino diferentes. Contas e categoria devem pertencer ao proprietário. O vínculo com metas ainda não está disponível: omita id_meta ou envie null. Para status_transacao Pendente, data_pagamento deve ser omitida ou null. Datas usam YYYY-MM-DD. ",
+        "tags": [
+          "Transações financeiras"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Transação editada com sucesso.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "mensagem": "Transação editada com sucesso"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/DadosInvalidos"
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "404": {
+            "description": "Registro não encontrado, não pertencente ao usuário informado ou usuário inexistente/inativo, conforme a operação."
+          },
+          "429": {
+            "$ref": "#/components/responses/LimiteGenericoSimples"
+          },
+          "500": {
+            "description": "Erro ao consultar ou persistir os dados. A resposta contém mensagem com a descrição da falha."
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "example": {
+                "id_transacao": 1,
+                "status_transacao": "Pago",
+                "data_pagamento": "2026-10-13"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/usuario/listar-recorrencias": {
+      "get": {
+        "summary": "Lista recorrências do usuário autenticado",
+        "description": "O proprietário é obtido do cookie de sessão (JWT). Não envie id_usuario. O filtro opcional id_contas aceita um ID ou vários repetindo a chave na query, por exemplo: ?id_contas=1&id_contas=2. id_recorrencia também é um filtro opcional. Retorna uma lista JSON, incluindo recorrências inativas; sem resultados, retorna [].",
+        "tags": [
+          "Recorrências"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de recorrências.",
+            "content": {
+              "application/json": {
+                "example": []
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/DadosInvalidos"
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "429": {
+            "$ref": "#/components/responses/LimiteGenericoSimples"
+          },
+          "500": {
+            "description": "Erro ao consultar ou persistir os dados. A resposta contém mensagem com a descrição da falha."
+          }
+        },
+        "parameters": [
+          {
+            "name": "id_contas",
+            "in": "query",
+            "required": false,
+            "description": "Filtro por conta. Para várias contas, repita a chave id_contas na query.",
+            "content": {
+              "text/plain": {
+                "example": "1"
+              }
+            }
+          },
+          {
+            "name": "id_recorrencia",
+            "in": "query",
+            "required": false,
+            "description": "Identificador inteiro de recorrencia.",
+            "content": {
+              "text/plain": {
+                "example": "1"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "/usuario/listar-transacoes": {
+      "get": {
+        "summary": "Lista transações do usuário autenticado",
+        "description": "O proprietário é obtido do cookie de sessão (JWT). Não envie id_usuario. A propriedade da transação é determinada pela conta de origem. O filtro opcional id_contas aceita um ID ou vários repetindo a chave na query, por exemplo: ?id_contas=1&id_contas=2. Os filtros opcionais periodo_criacao e periodo_vencimento recebem exatamente duas datas YYYY-MM-DD, repetindo a chave: ?periodo_criacao=2026-10-01&periodo_criacao=2026-10-31. A primeira data não pode ser posterior à segunda; ambos os limites são inclusivos. Também aceita filtros opcionais id_categoria, id_transacao, id_recorrencia, nome (busca parcial sem diferenciar maiúsculas e minúsculas) e status (Pendente ou Pago). Retorna uma lista JSON ou [] quando não há resultados.",
+        "tags": [
+          "Transações financeiras"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de transações.",
+            "content": {
+              "application/json": {
+                "example": []
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/DadosInvalidos"
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "429": {
+            "$ref": "#/components/responses/LimiteGenericoSimples"
+          },
+          "500": {
+            "description": "Erro ao consultar ou persistir os dados. A resposta contém mensagem com a descrição da falha."
+          }
+        },
+        "parameters": [
+          {
+            "name": "id_contas",
+            "in": "query",
+            "required": false,
+            "description": "Filtro por conta de origem. Para várias contas, repita a chave id_contas na query.",
+            "content": {
+              "text/plain": {
+                "example": "1"
+              }
+            }
+          },
+          {
+            "name": "id_categoria",
+            "in": "query",
+            "required": false,
+            "description": "Identificador inteiro de categoria.",
+            "content": {
+              "text/plain": {
+                "example": "1"
+              }
+            }
+          },
+          {
+            "name": "id_transacao",
+            "in": "query",
+            "required": false,
+            "description": "Identificador inteiro de transacao.",
+            "content": {
+              "text/plain": {
+                "example": "1"
+              }
+            }
+          },
+          {
+            "name": "id_recorrencia",
+            "in": "query",
+            "required": false,
+            "description": "Identificador inteiro de recorrencia.",
+            "content": {
+              "text/plain": {
+                "example": "1"
+              }
+            }
+          },
+          {
+            "name": "nome",
+            "in": "query",
+            "required": false,
+            "description": "Busca parcial pelo nome.",
+            "content": {
+              "text/plain": {
+                "example": "mercado"
+              }
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "Status da transação: Pendente ou Pago.",
+            "content": {
+              "text/plain": {
+                "example": "Pendente"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "/usuario/excluir-transacao/{id_transacao}": {
+      "delete": {
+        "summary": "Exclui uma transação",
+        "description": "Exige que o registro pertença ao usuário autenticado. Exclui a transação identificada na URL após verificar seu pertencimento ao proprietário.",
+        "tags": [
+          "Transações financeiras"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Transação excluída com sucesso.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "mensagem": "Transação excluída com sucesso"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/DadosInvalidos"
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "404": {
+            "description": "Registro não encontrado, não pertencente ao usuário informado ou usuário inexistente/inativo, conforme a operação."
+          },
+          "429": {
+            "$ref": "#/components/responses/LimiteGenericoCritico"
+          },
+          "500": {
+            "description": "Erro ao consultar ou persistir os dados. A resposta contém mensagem com a descrição da falha."
+          }
+        },
+        "parameters": [
+          {
+            "name": "id_transacao",
+            "in": "path",
+            "required": true,
+            "description": "Identificador inteiro de transacao.",
+            "content": {
+              "text/plain": {
+                "example": "1"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "/usuario/excluir-recorrencia/{id_recorrencia}": {
+      "delete": {
+        "summary": "Cancela uma recorrência",
+        "description": "Exige que o registro pertença ao usuário autenticado. Inativa a recorrência e exclui somente suas transações Pendentes, preservando as pagas. Se a exclusão das pendentes falhar, retorna 500 com a recorrência já inativada; o cancelamento pode ser repetido.",
+        "tags": [
+          "Recorrências"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Recorrencia cancelada com sucesso.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "mensagem": "Recorrencia cancelada com sucesso"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/DadosInvalidos"
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "404": {
+            "description": "Registro não encontrado, não pertencente ao usuário informado ou usuário inexistente/inativo, conforme a operação."
+          },
+          "429": {
+            "$ref": "#/components/responses/LimiteGenericoCritico"
+          },
+          "500": {
+            "description": "Erro ao consultar ou persistir os dados. A resposta contém mensagem com a descrição da falha."
+          }
+        },
+        "parameters": [
+          {
+            "name": "id_recorrencia",
+            "in": "path",
+            "required": true,
+            "description": "Identificador inteiro de recorrencia.",
+            "content": {
+              "text/plain": {
+                "example": "1"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "/admin/editar-recorrencia": {
+      "patch": {
+        "summary": "Edita uma recorrência de um usuário",
+        "description": "Exige sessão de administrador. Informe id_usuario do proprietário no corpo. id_recorrencia é obrigatório; os demais campos da recorrência são opcionais e somente os enviados são alterados. Aceita tipo_transacao Entrada ou Saida e modalidade Parcelado ou Periodico. Parcelado exige qtd_parcelas e frequencia Mensal; Periodico aceita frequencia Semanal, Mensal ou Anual. Conta e categoria devem pertencer ao proprietário. data_inicio usa YYYY-MM-DD. ",
+        "tags": [
+          "Admin - Recorrências"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Recorrência editada com sucesso.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "mensagem": "Recorrencia e suas transações editadas com sucesso"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/DadosInvalidos"
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SomenteAdmin"
+          },
+          "404": {
+            "description": "Registro não encontrado, não pertencente ao usuário informado ou usuário inexistente/inativo, conforme a operação."
+          },
+          "429": {
+            "$ref": "#/components/responses/LimiteGenericoCritico"
+          },
+          "500": {
+            "description": "Erro ao consultar ou persistir os dados. A resposta contém mensagem com a descrição da falha."
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "example": {
+                "id_usuario": 1,
+                "id_recorrencia": 1,
+                "nome": "Compra parcelada atualizada",
+                "valor": 350
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/editar-transacao": {
+      "patch": {
+        "summary": "Edita uma transação de um usuário",
+        "description": "Exige sessão de administrador. Informe id_usuario do proprietário no corpo. id_transacao é obrigatório; os demais campos da transação são opcionais e somente os enviados são alterados. Ao definir status_transacao como Pendente, data_pagamento é limpa. Entrada e Saida exigem categoria; Transferencia exige contas de origem e destino diferentes. Contas e categoria devem pertencer ao proprietário. O vínculo com metas ainda não está disponível: omita id_meta ou envie null. Para status_transacao Pendente, data_pagamento deve ser omitida ou null. Datas usam YYYY-MM-DD. ",
+        "tags": [
+          "Admin - Transações financeiras"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Transação editada com sucesso.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "mensagem": "Transação editada com sucesso"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/DadosInvalidos"
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SomenteAdmin"
+          },
+          "404": {
+            "description": "Registro não encontrado, não pertencente ao usuário informado ou usuário inexistente/inativo, conforme a operação."
+          },
+          "429": {
+            "$ref": "#/components/responses/LimiteGenericoCritico"
+          },
+          "500": {
+            "description": "Erro ao consultar ou persistir os dados. A resposta contém mensagem com a descrição da falha."
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "example": {
+                "id_usuario": 1,
+                "id_transacao": 1,
+                "status_transacao": "Pago",
+                "data_pagamento": "2026-10-13"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/listar-recorrencias": {
+      "get": {
+        "summary": "Lista recorrências dos usuários",
+        "description": "Exige sessão de administrador. id_usuario é um filtro opcional; sem ele, permite consultar registros de todos os usuários. O filtro opcional id_contas aceita um ID ou vários repetindo a chave na query, por exemplo: ?id_contas=1&id_contas=2. id_recorrencia também é um filtro opcional. Retorna uma lista JSON, incluindo recorrências inativas; sem resultados, retorna [].",
+        "tags": [
+          "Admin - Recorrências"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de recorrências.",
+            "content": {
+              "application/json": {
+                "example": []
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/DadosInvalidos"
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SomenteAdmin"
+          },
+          "429": {
+            "$ref": "#/components/responses/LimiteGenericoSimples"
+          },
+          "500": {
+            "description": "Erro ao consultar ou persistir os dados. A resposta contém mensagem com a descrição da falha."
+          }
+        },
+        "parameters": [
+          {
+            "name": "id_usuario",
+            "in": "query",
+            "required": false,
+            "description": "Filtro opcional pelo proprietário dos registros.",
+            "content": {
+              "text/plain": {
+                "example": "1"
+              }
+            }
+          },
+          {
+            "name": "id_contas",
+            "in": "query",
+            "required": false,
+            "description": "Filtro por conta. Para várias contas, repita a chave id_contas na query.",
+            "content": {
+              "text/plain": {
+                "example": "1"
+              }
+            }
+          },
+          {
+            "name": "id_recorrencia",
+            "in": "query",
+            "required": false,
+            "description": "Identificador inteiro de recorrencia.",
+            "content": {
+              "text/plain": {
+                "example": "1"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "/admin/listar-transacoes": {
+      "get": {
+        "summary": "Lista transações dos usuários",
+        "description": "Exige sessão de administrador. id_usuario é um filtro opcional; sem ele, permite consultar registros de todos os usuários. A propriedade da transação é determinada pela conta de origem. O filtro opcional id_contas aceita um ID ou vários repetindo a chave na query, por exemplo: ?id_contas=1&id_contas=2. Os filtros opcionais periodo_criacao e periodo_vencimento recebem exatamente duas datas YYYY-MM-DD, repetindo a chave: ?periodo_criacao=2026-10-01&periodo_criacao=2026-10-31. A primeira data não pode ser posterior à segunda; ambos os limites são inclusivos. Também aceita filtros opcionais id_categoria, id_transacao, id_recorrencia, nome (busca parcial sem diferenciar maiúsculas e minúsculas) e status (Pendente ou Pago). Retorna uma lista JSON ou [] quando não há resultados. Cada transação inclui id_usuario, obtido pela conta de origem.",
+        "tags": [
+          "Admin - Transações financeiras"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de transações.",
+            "content": {
+              "application/json": {
+                "example": []
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/DadosInvalidos"
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SomenteAdmin"
+          },
+          "429": {
+            "$ref": "#/components/responses/LimiteGenericoSimples"
+          },
+          "500": {
+            "description": "Erro ao consultar ou persistir os dados. A resposta contém mensagem com a descrição da falha."
+          }
+        },
+        "parameters": [
+          {
+            "name": "id_usuario",
+            "in": "query",
+            "required": false,
+            "description": "Filtro opcional pelo proprietário dos registros.",
+            "content": {
+              "text/plain": {
+                "example": "1"
+              }
+            }
+          },
+          {
+            "name": "id_contas",
+            "in": "query",
+            "required": false,
+            "description": "Filtro por conta de origem. Para várias contas, repita a chave id_contas na query.",
+            "content": {
+              "text/plain": {
+                "example": "1"
+              }
+            }
+          },
+          {
+            "name": "id_categoria",
+            "in": "query",
+            "required": false,
+            "description": "Identificador inteiro de categoria.",
+            "content": {
+              "text/plain": {
+                "example": "1"
+              }
+            }
+          },
+          {
+            "name": "id_transacao",
+            "in": "query",
+            "required": false,
+            "description": "Identificador inteiro de transacao.",
+            "content": {
+              "text/plain": {
+                "example": "1"
+              }
+            }
+          },
+          {
+            "name": "id_recorrencia",
+            "in": "query",
+            "required": false,
+            "description": "Identificador inteiro de recorrencia.",
+            "content": {
+              "text/plain": {
+                "example": "1"
+              }
+            }
+          },
+          {
+            "name": "nome",
+            "in": "query",
+            "required": false,
+            "description": "Busca parcial pelo nome.",
+            "content": {
+              "text/plain": {
+                "example": "mercado"
+              }
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "Status da transação: Pendente ou Pago.",
+            "content": {
+              "text/plain": {
+                "example": "Pendente"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "/admin/excluir-transacao/{id_transacao}/{id_usuario}": {
+      "delete": {
+        "summary": "Exclui uma transação de um usuário",
+        "description": "Exige sessão de administrador. Informe o proprietário em id_usuario na URL. Exclui a transação identificada na URL após verificar seu pertencimento ao proprietário.",
+        "tags": [
+          "Admin - Transações financeiras"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Transação excluída com sucesso.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "mensagem": "Transação excluída com sucesso"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/DadosInvalidos"
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SomenteAdmin"
+          },
+          "404": {
+            "description": "Registro não encontrado, não pertencente ao usuário informado ou usuário inexistente/inativo, conforme a operação."
+          },
+          "429": {
+            "$ref": "#/components/responses/LimiteGenericoCritico"
+          },
+          "500": {
+            "description": "Erro ao consultar ou persistir os dados. A resposta contém mensagem com a descrição da falha."
+          }
+        },
+        "parameters": [
+          {
+            "name": "id_transacao",
+            "in": "path",
+            "required": true,
+            "description": "Identificador inteiro de transacao.",
+            "content": {
+              "text/plain": {
+                "example": "1"
+              }
+            }
+          },
+          {
+            "name": "id_usuario",
+            "in": "path",
+            "required": true,
+            "description": "Identificador inteiro de usuario.",
+            "content": {
+              "text/plain": {
+                "example": "1"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "/admin/excluir-recorrencia/{id_recorrencia}/{id_usuario}": {
+      "delete": {
+        "summary": "Cancela uma recorrência de um usuário",
+        "description": "Exige sessão de administrador. Informe o proprietário em id_usuario na URL. Inativa a recorrência e exclui somente suas transações Pendentes, preservando as pagas. Se a exclusão das pendentes falhar, retorna 500 com a recorrência já inativada; o cancelamento pode ser repetido.",
+        "tags": [
+          "Admin - Recorrências"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Recorrencia cancelada com sucesso.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "mensagem": "Recorrencia cancelada com sucesso"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/DadosInvalidos"
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SomenteAdmin"
+          },
+          "404": {
+            "description": "Registro não encontrado, não pertencente ao usuário informado ou usuário inexistente/inativo, conforme a operação."
+          },
+          "429": {
+            "$ref": "#/components/responses/LimiteGenericoCritico"
+          },
+          "500": {
+            "description": "Erro ao consultar ou persistir os dados. A resposta contém mensagem com a descrição da falha."
+          }
+        },
+        "parameters": [
+          {
+            "name": "id_recorrencia",
+            "in": "path",
+            "required": true,
+            "description": "Identificador inteiro de recorrencia.",
+            "content": {
+              "text/plain": {
+                "example": "1"
+              }
+            }
+          },
+          {
+            "name": "id_usuario",
+            "in": "path",
+            "required": true,
+            "description": "Identificador inteiro de usuario.",
+            "content": {
+              "text/plain": {
+                "example": "1"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "/usuario/verificar-saldo": {
+      "get": {
+        "summary": "Consulta o saldo atual de uma conta",
+        "description": "O proprietário é obtido do cookie de sessão (JWT). Não envie id_usuario. Exige id_conta na query e verifica se a conta pertence ao usuário autenticado. Retorna o saldo mais recente; se não houver histórico, retorna saldo zero.",
+        "tags": [
+          "Transações financeiras"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Saldo atual da conta.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "saldo": 0
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/DadosInvalidos"
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "404": {
+            "description": "Registro não encontrado, não pertencente ao usuário informado ou usuário inexistente/inativo, conforme a operação."
+          },
+          "429": {
+            "$ref": "#/components/responses/LimiteGenericoSimples"
+          },
+          "500": {
+            "description": "Erro ao consultar ou persistir os dados. A resposta contém mensagem com a descrição da falha."
+          }
+        },
+        "parameters": [
+          {
+            "name": "id_conta",
+            "in": "query",
+            "required": true,
+            "description": "Identificador inteiro de conta.",
+            "content": {
+              "text/plain": {
+                "example": "1"
+              }
             }
           }
         ]
