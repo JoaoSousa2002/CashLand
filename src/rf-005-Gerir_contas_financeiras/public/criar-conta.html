@@ -98,6 +98,16 @@
                         </select>
                     </div>
                     <div id="erro-tipo_conta" aria-live="polite"></div>
+                    <div id="grupo-data_fechamento" hidden>
+                        <label for="data_fechamento">Dia de fechamento</label>
+                        <input type="number" id="data_fechamento" name="data_fechamento" min="1" max="31" step="1" disabled aria-describedby="erro-data_fechamento">
+                        <div id="erro-data_fechamento" aria-live="polite"></div>
+                    </div>
+                    <div id="grupo-data_vencimento" hidden>
+                        <label for="data_vencimento">Dia de vencimento</label>
+                        <input type="number" id="data_vencimento" name="data_vencimento" min="1" max="31" step="1" disabled aria-describedby="erro-data_vencimento">
+                        <div id="erro-data_vencimento" aria-live="polite"></div>
+                    </div>
                     <div class="input-dados">
                         <label for="nome_instituicao">Instituição (opcional):</label>
                         <input type="text" name="nome_instituicao" id="nome_instituicao" placeholder="Ex: Nome do banco"
@@ -120,6 +130,24 @@
 
     <script src="/protecao.js"></script>
     <script>
+
+        function atualizarDiasConta() {
+            const credito = document.getElementById('tipo_conta').value === 'Credito';
+            for (const id of ['data_fechamento', 'data_vencimento']) {
+                const campo = document.getElementById(id);
+                document.getElementById(`grupo-${id}`).hidden = !credito;
+                campo.disabled = !credito || document.getElementById('tipo_conta').disabled;
+                campo.required = credito;
+                if (!credito) campo.value = '';
+            }
+        }
+        function diasConta() {
+            const credito = document.getElementById('tipo_conta').value === 'Credito';
+            return Object.fromEntries(['data_fechamento', 'data_vencimento'].map(id =>
+                [id, credito && document.getElementById(id).value !== '' ? Number(document.getElementById(id).value) : null]));
+        }
+        document.getElementById('tipo_conta').addEventListener('change', atualizarDiasConta);
+
         let retonarLogin = false;
         let sessaoPronta = false;
         let enviando = false;
@@ -191,6 +219,8 @@
             loading.style.display = 'flex';
             MostrarErro('erro-nome_conta', '');
             MostrarErro('erro-tipo_conta', '');
+            MostrarErro('erro-data_fechamento', '');
+            MostrarErro('erro-data_vencimento', '');
             MostrarErro('erro-nome_instituicao', '');
             MostrarErro('erro-codigo_conta', '');
             const nome_conta = document.getElementById('nome_conta').value.trim();
@@ -202,7 +232,7 @@
                     method: 'POST',
                     credentials: 'include',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ nome_conta, tipo_conta, nome_instituicao, codigo_conta: codigo_conta === '' ? null : codigo_conta })
+                    body: JSON.stringify({ ...diasConta(), nome_conta, tipo_conta, nome_instituicao, codigo_conta: codigo_conta === '' ? null : codigo_conta })
                 });
                 const dados = await resposta.json();
                 if (resposta.status === 200) {
@@ -261,6 +291,9 @@
         }
 
         iniciar();
+        new MutationObserver(atualizarDiasConta).observe(document.getElementById('tipo_conta'), { attributes: true, attributeFilter: ['disabled'] });
+        document.getElementById('tipo_conta').closest('form').addEventListener('reset', () => setTimeout(atualizarDiasConta, 0));
+        atualizarDiasConta();
     </script>
 </body>
 

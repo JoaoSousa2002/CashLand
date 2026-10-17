@@ -1,5 +1,13 @@
 import Joi from "joi";
 
+const schemaIdMetaOpcional = Joi.number().integer().positive().max(2147483647).allow(null).optional().messages({
+    'number.base': 'O id_meta deve ser um número.',
+    'number.integer': 'O id_meta deve ser um número inteiro.',
+    'number.positive': 'O id_meta deve ser maior que zero.',
+    'number.max': 'O id_meta está fora do limite permitido.',
+    'number.unsafe': 'O id_meta está fora do limite permitido.'
+});
+
 export const schemaIdUsuarioObrigatorio = Joi.object({
     id_usuario: Joi.number()
         .integer()
@@ -164,7 +172,16 @@ export const schemaDescricaoCategoria = Joi.object({
 });
 
 
+const diaConta = Joi.number().integer().min(1).max(31).allow(null).optional().messages({
+    'number.base': 'O dia deve ser um número.',
+    'number.integer': 'O dia deve ser inteiro.',
+    'number.min': 'O dia deve estar entre 1 e 31.',
+    'number.max': 'O dia deve estar entre 1 e 31.'
+});
+
 export const schemaCriarConta = Joi.object({
+    data_fechamento: diaConta,
+    data_vencimento: diaConta,
 
     tipo_conta: Joi.string()
         .valid(
@@ -254,6 +271,7 @@ export const schemaPesquisa = Joi.object({
 // ============================================================
 
 export const schemaCriarRecorrencia = Joi.object({
+    id_meta: schemaIdMetaOpcional,
 
     id_conta: Joi.number()
         .integer()
@@ -474,16 +492,7 @@ export const schemaCriarTransacao = Joi.object({
                 })
         }),
 
-    id_meta: Joi.number()
-        .integer()
-        .min(0)
-        .allow(null)
-        .optional()
-        .messages({
-            'number.base': 'O id_meta deve ser um número.',
-            'number.integer': 'O id_meta deve ser um número inteiro.',
-            'number.min': 'O id_meta não pode ser menor que 0.'
-        }),
+    id_meta: schemaIdMetaOpcional,
 
     tipo_transacao: Joi.string()
         .valid('Entrada', 'Saida', 'Transferencia')
@@ -589,6 +598,7 @@ export const schemaCriarTransacao = Joi.object({
 });
 
 export const schemaListarTransacoes = Joi.object({
+    id_meta: schemaIdMetaOpcional,
 
     id_contas: Joi.array()
         .single()
@@ -695,6 +705,7 @@ export const schemaListarTransacoes = Joi.object({
 });
 
 export const schemaEditarRecorrencia = Joi.object({
+    id_meta: schemaIdMetaOpcional,
 
     id_recorrencia: Joi.number()
         .integer()
@@ -820,6 +831,7 @@ export const schemaEditarRecorrencia = Joi.object({
 });
 
 export const schemaListarRecorrencias = Joi.object({
+    id_meta: schemaIdMetaOpcional,
 
     id_contas: Joi.array()
         .single()
@@ -927,16 +939,7 @@ export const schemaEditarTransacao = Joi.object({
                 })
         }),
 
-    id_meta: Joi.number()
-        .integer()
-        .min(0)
-        .allow(null)
-        .optional()
-        .messages({
-            'number.base': 'O id_meta deve ser um número.',
-            'number.integer': 'O id_meta deve ser um número inteiro.',
-            'number.min': 'O id_meta não pode ser menor que 0.'
-        }),
+    id_meta: schemaIdMetaOpcional,
 
     tipo_transacao: Joi.string()
         .valid('Entrada', 'Saida', 'Transferencia')
@@ -1062,6 +1065,7 @@ export const schemaExcluirTransacao = Joi.object({
 
 
 export const schemaADMIN_listarRecorrencias = Joi.object({
+    id_meta: schemaIdMetaOpcional,
 
     id_usuario: Joi.number()
         .integer()
@@ -1105,6 +1109,7 @@ export const schemaADMIN_listarRecorrencias = Joi.object({
 });
 
 export const schemaADMIN_editarRecorrencia = Joi.object({
+    id_meta: schemaIdMetaOpcional,
 
     id_usuario: Joi.number()
         .integer()
@@ -1241,6 +1246,7 @@ export const schemaADMIN_editarRecorrencia = Joi.object({
 });
 
 export const schemaADMIN_listarTransacoes = Joi.object({
+    id_meta: schemaIdMetaOpcional,
 
     id_usuario: Joi.number()
         .integer()
@@ -1442,16 +1448,7 @@ export const schemaADMIN_editarTransacao = Joi.object({
                 })
         }),
 
-    id_meta: Joi.number()
-        .integer()
-        .min(0)
-        .allow(null)
-        .optional()
-        .messages({
-            'number.base': 'O id_meta deve ser um número.',
-            'number.integer': 'O id_meta deve ser um número inteiro.',
-            'number.min': 'O id_meta não pode ser menor que 0.'
-        }),
+    id_meta: schemaIdMetaOpcional,
 
     tipo_transacao: Joi.string()
         .valid('Entrada', 'Saida', 'Transferencia')

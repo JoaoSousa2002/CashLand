@@ -3,6 +3,9 @@ create table public.contas_bancarias (
   id_usuario integer not null,
   tipo_conta character varying(20) not null,
   codigo_conta integer null,
+  -- Tipos confirmados nos metadados REST em 16/10/2026; dias mensais.
+  data_fechamento smallint null,
+  data_vencimento smallint null,
   nome_instituicao character varying(100) null,
   nome_conta character varying(100) not null,
   data_criacao timestamp with time zone not null default now(),

@@ -1,5 +1,45 @@
 import supabase from '../config/supabase.js';
 
+export async function verificarMeta(id_meta, id_usuario) {
+    const { data: consultaMeta, error } = await supabase
+        .from('metas')
+        .select('*')
+        .eq('id_meta', id_meta)
+        .maybeSingle();
+
+    if (error) {
+        return { existencia: false, pertencimento: false, erro: true };
+    }
+    if (!consultaMeta) {
+        return { existencia: false, pertencimento: false, erro: false };
+    }
+    const { pertencimento, erro } = await verificarContaBancaria(consultaMeta.id_conta, id_usuario);
+    return { existencia: true, pertencimento, erro, ...(pertencimento ? { consultaMeta } : {}) };
+}
+
+// Valida a combinação final também nos PATCH que omitem id_meta.
+export async function validarVinculoMeta(id_meta, tipo_transacao, id_usuario, res) {
+    if (id_meta == null) return true;
+    if (tipo_transacao === 'Transferencia') {
+        res.status(400).json({
+            mensagem: 'Dados inválidos.', erros: [
+                { campo: 'id_meta', mensagem: 'Transferências não podem ser vinculadas a metas.' }
+            ]
+        });
+        return false;
+    }
+    const { pertencimento, erro } = await verificarMeta(id_meta, id_usuario);
+    if (erro || !pertencimento) {
+        res.status(erro ? 500 : 404).json({
+            mensagem: erro
+                ? 'Erro ao verificar a meta. Tente novamente mais tarde.'
+                : 'Essa meta não existe ou não pertence ao usuário.'
+        });
+        return false;
+    }
+    return true;
+}
+
 export async function verificarUsuario(id_usuario) {
     let existencia = false;
     let status = false;

@@ -1,12 +1,13 @@
 import supabase from '../config/supabase.js';
 import { confirmarAlteracao } from '../middlewares/AuditoriaRota.js';
-import { verificarUsuario, verificarCategoria, verificarContaBancaria, verificarTransacao, verificarRecorrencia } from '../validacoes/validarTabelas.js'
+import { validarVinculoMeta, verificarUsuario, verificarCategoria, verificarContaBancaria, verificarTransacao, verificarRecorrencia } from '../validacoes/validarTabelas.js'
 
 export async function editarRecorrencia(req, res) {
     const { id_usuario } = req.body
     const {
         id_recorrencia,
         id_conta,
+        id_meta,
         id_categoria,
         tipo_transacao,
         modalidade,
@@ -27,6 +28,9 @@ export async function editarRecorrencia(req, res) {
     } else if (!resRec) {
         return res.status(404).json({ mensagem: "Essa recorrencia não existe ou não pertence ao usuario" });
     }
+
+    const metaFinal = id_meta === undefined ? consultaRecorrencia.id_meta : id_meta;
+    if (!await validarVinculoMeta(metaFinal, tipo_transacao ?? consultaRecorrencia.tipo_transacao, id_usuario, res)) return;
 
     if ((modalidade ?? consultaRecorrencia.modalidade) === 'Parcelado') {
         const quantidade = qtd_parcelas === undefined ? consultaRecorrencia.qtd_parcelas : qtd_parcelas
@@ -66,6 +70,7 @@ export async function editarRecorrencia(req, res) {
         .from('recorrencias')
         .update({
             id_conta: id_conta,
+            id_meta: id_meta,
             id_categoria: id_categoria,
             tipo_transacao: tipo_transacao,
             modalidade: modalidade,
@@ -160,9 +165,8 @@ export async function editarTransacao(req, res) {
             return res.status(404).json({ mensagem: "Essa conta não existe ou não pertence ao usuario" });
         }
     }
-    if (id_meta != null) {
-        return res.status(400).json({ mensagem: "O vínculo com metas ainda não está disponível" })
-    }
+    const metaFinal = id_meta === undefined ? consultaTransacao.id_meta : id_meta;
+    if (!await validarVinculoMeta(metaFinal, tipoTransacao, id_usuario, res)) return;
 
     const { data: alterados, error: erroEditaTransacao } = await supabase
         .from('transacoes')
@@ -201,13 +205,16 @@ export async function editarTransacao(req, res) {
 
 export async function listarRecorrencias(req, res) {
     const { id_usuario } = req.query
-    const { id_contas, id_recorrencia } = req.query
+    const { id_contas, id_recorrencia, id_meta } = req.query
     let consulta = supabase
         .from('recorrencias')
         .select('*')
 
     if (id_usuario != null) {
         consulta = consulta.eq('id_usuario', id_usuario)
+    }
+    if (id_meta != null) {
+        consulta = consulta.eq('id_meta', id_meta)
     }
     if (id_recorrencia != null) {
         consulta = consulta.eq('id_recorrencia', id_recorrencia)
@@ -226,7 +233,7 @@ export async function listarRecorrencias(req, res) {
 
 export async function listarTransacoes(req, res) {
     const { id_usuario } = req.query
-    const { id_contas, id_categoria, id_transacao, id_recorrencia, nome, status, periodo_criacao, periodo_vencimento } = req.query
+    const { id_meta, id_contas, id_categoria, id_transacao, id_recorrencia, nome, status, periodo_criacao, periodo_vencimento } = req.query
 
     if (periodo_criacao && periodo_criacao[0] > periodo_criacao[1] || periodo_vencimento && periodo_vencimento[0] > periodo_vencimento[1]) {
         return res.status(400).json({ mensagem: "A data inicial não pode ser posterior à data final" })
@@ -260,6 +267,9 @@ export async function listarTransacoes(req, res) {
     }
     if (id_transacao != null) {
         consulta = consulta.eq('id_transacao', id_transacao)
+    }
+    if (id_meta != null) {
+        consulta = consulta.eq('id_meta', id_meta)
     }
     if (id_recorrencia != null) {
         consulta = consulta.eq('id_recorrencia', id_recorrencia)

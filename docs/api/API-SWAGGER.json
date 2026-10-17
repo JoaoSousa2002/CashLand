@@ -88,6 +88,19 @@
               }
             }
           },
+          "203": {
+            "description": "Reset de senha solicitado por um adminstrador",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                },
+                "example": {
+                  "mensagem": "Reset de senha solicitado por um adminstrador"
+                }
+              }
+            }
+          },
           "400": {
             "$ref": "#/components/responses/DadosInvalidos"
           },
@@ -116,19 +129,6 @@
           },
           "429": {
             "$ref": "#/components/responses/LimiteLogin"
-          },
-          "203": {
-            "description": "Reset de senha solicitado por um adminstrador",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Mensagem"
-                },
-                "example": {
-                  "mensagem": "Reset de senha solicitado por um adminstrador"
-                }
-              }
-            }
           }
         }
       }
@@ -426,6 +426,19 @@
           "400": {
             "$ref": "#/components/responses/DadosInvalidos"
           },
+          "401": {
+            "description": "Código inexistente, incorreto ou expirado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                },
+                "example": {
+                  "mensagem": "codigo expirado"
+                }
+              }
+            }
+          },
           "404": {
             "description": "Usuário não encontrado",
             "content": {
@@ -445,19 +458,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Mensagem"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Código inexistente, incorreto ou expirado.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Mensagem"
-                },
-                "example": {
-                  "mensagem": "codigo expirado"
                 }
               }
             }
@@ -534,6 +534,9 @@
               }
             }
           },
+          "400": {
+            "$ref": "#/components/responses/DadosInvalidos"
+          },
           "401": {
             "description": "Não autenticado, token inválido ou expirado, ou sessão inválida",
             "content": {
@@ -559,9 +562,6 @@
           },
           "429": {
             "$ref": "#/components/responses/LimiteGenericoSimples"
-          },
-          "400": {
-            "$ref": "#/components/responses/DadosInvalidos"
           }
         },
         "parameters": [
@@ -642,9 +642,6 @@
           "400": {
             "$ref": "#/components/responses/DadosInvalidos"
           },
-          "429": {
-            "$ref": "#/components/responses/LimiteSenha"
-          },
           "401": {
             "description": "Senha incorreta, sessão ausente ou token inválido/expirado.",
             "content": {
@@ -657,6 +654,9 @@
                 }
               }
             }
+          },
+          "429": {
+            "$ref": "#/components/responses/LimiteSenha"
           }
         },
         "requestBody": {
@@ -803,6 +803,15 @@
               }
             }
           },
+          "400": {
+            "$ref": "#/components/responses/DadosInvalidos"
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "429": {
+            "$ref": "#/components/responses/LimiteGenericoCritico"
+          },
           "500": {
             "description": "Erro em atualizar usuario, seguido do erro retornado pelo banco.",
             "content": {
@@ -812,15 +821,6 @@
                 }
               }
             }
-          },
-          "401": {
-            "$ref": "#/components/responses/NaoAutenticado"
-          },
-          "429": {
-            "$ref": "#/components/responses/LimiteGenericoCritico"
-          },
-          "400": {
-            "$ref": "#/components/responses/DadosInvalidos"
           }
         },
         "requestBody": {
@@ -891,22 +891,6 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/NaoAutenticado"
-          },
-          "403": {
-            "$ref": "#/components/responses/SomenteAdmin"
-          },
-          "500": {
-            "description": "Erro na consulta ao banco de dados",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Erro"
-                }
-              }
-            }
-          },
           "201": {
             "description": "Lista de usuários filtrada pela pesquisa.",
             "content": {
@@ -929,8 +913,24 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SomenteAdmin"
+          },
           "429": {
             "$ref": "#/components/responses/LimiteGenericoSimples"
+          },
+          "500": {
+            "description": "Erro na consulta ao banco de dados",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
           }
         }
       }
@@ -958,6 +958,9 @@
               }
             }
           },
+          "400": {
+            "$ref": "#/components/responses/DadosInvalidos"
+          },
           "401": {
             "description": "Não autenticado, token inválido ou expirado, ou falha ao consultar o usuário.",
             "content": {
@@ -976,9 +979,6 @@
           },
           "429": {
             "$ref": "#/components/responses/LimiteGenericoSimples"
-          },
-          "400": {
-            "$ref": "#/components/responses/DadosInvalidos"
           }
         },
         "parameters": [
@@ -1021,6 +1021,18 @@
               }
             }
           },
+          "400": {
+            "$ref": "#/components/responses/DadosInvalidos"
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SomenteAdmin"
+          },
+          "429": {
+            "$ref": "#/components/responses/LimiteGenericoSimples"
+          },
           "500": {
             "description": "Erro em atualizar usuario, seguido do erro retornado pelo banco.",
             "content": {
@@ -1030,18 +1042,6 @@
                 }
               }
             }
-          },
-          "401": {
-            "$ref": "#/components/responses/NaoAutenticado"
-          },
-          "403": {
-            "$ref": "#/components/responses/SomenteAdmin"
-          },
-          "400": {
-            "$ref": "#/components/responses/DadosInvalidos"
-          },
-          "429": {
-            "$ref": "#/components/responses/LimiteGenericoSimples"
           }
         },
         "requestBody": {
@@ -1115,6 +1115,15 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SomenteAdmin"
+          },
+          "429": {
+            "$ref": "#/components/responses/LimiteGenericoCritico"
+          },
           "500": {
             "description": "Ocorreu um erro ao consultar o usuario, verifique os logs",
             "content": {
@@ -1140,15 +1149,6 @@
                 }
               }
             }
-          },
-          "401": {
-            "$ref": "#/components/responses/NaoAutenticado"
-          },
-          "403": {
-            "$ref": "#/components/responses/SomenteAdmin"
-          },
-          "429": {
-            "$ref": "#/components/responses/LimiteGenericoCritico"
           }
         },
         "requestBody": {
@@ -1293,31 +1293,8 @@
               }
             }
           },
-          "404": {
-            "description": "Usuário não encontrado",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Mensagem"
-                },
-                "example": {
-                  "mensagem": "Usuário não encontrado"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Erro ao desativar a conta, tente novamente mais tarde",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Mensagem"
-                },
-                "example": {
-                  "mensagem": "Erro ao desativar a conta, tente novamente mais tarde"
-                }
-              }
-            }
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
           },
           "403": {
             "description": "JWT sem tipo Admin ou tentativa de desativar uma conta Admin.",
@@ -1348,11 +1325,34 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/NaoAutenticado"
+          "404": {
+            "description": "Usuário não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                },
+                "example": {
+                  "mensagem": "Usuário não encontrado"
+                }
+              }
+            }
           },
           "429": {
             "$ref": "#/components/responses/LimiteGenericoCritico"
+          },
+          "500": {
+            "description": "Erro ao desativar a conta, tente novamente mais tarde",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                },
+                "example": {
+                  "mensagem": "Erro ao desativar a conta, tente novamente mais tarde"
+                }
+              }
+            }
           }
         },
         "requestBody": {
@@ -1422,6 +1422,9 @@
               }
             }
           },
+          "429": {
+            "$ref": "#/components/responses/LimiteGenericoSimples"
+          },
           "500": {
             "description": "Erro ao consultar ou criar a categoria.",
             "content": {
@@ -1431,9 +1434,6 @@
                 }
               }
             }
-          },
-          "429": {
-            "$ref": "#/components/responses/LimiteGenericoSimples"
           }
         },
         "requestBody": {
@@ -1499,6 +1499,9 @@
               }
             }
           },
+          "429": {
+            "$ref": "#/components/responses/LimiteGenericoSimples"
+          },
           "500": {
             "description": "Erro na consulta.",
             "content": {
@@ -1515,9 +1518,6 @@
                 }
               }
             }
-          },
-          "429": {
-            "$ref": "#/components/responses/LimiteGenericoSimples"
           }
         },
         "parameters": [
@@ -1605,6 +1605,9 @@
               }
             }
           },
+          "429": {
+            "$ref": "#/components/responses/LimiteGenericoSimples"
+          },
           "500": {
             "description": "Erro ao consultar ou atualizar a categoria.",
             "content": {
@@ -1614,9 +1617,6 @@
                 }
               }
             }
-          },
-          "429": {
-            "$ref": "#/components/responses/LimiteGenericoSimples"
           }
         },
         "requestBody": {
@@ -1683,6 +1683,9 @@
               }
             }
           },
+          "429": {
+            "$ref": "#/components/responses/LimiteGenericoSimples"
+          },
           "500": {
             "description": "Erro ao consultar categorias.",
             "content": {
@@ -1692,9 +1695,6 @@
                 }
               }
             }
-          },
-          "429": {
-            "$ref": "#/components/responses/LimiteGenericoSimples"
           }
         },
         "parameters": [
@@ -1771,6 +1771,9 @@
               }
             }
           },
+          "429": {
+            "$ref": "#/components/responses/LimiteGenericoSimples"
+          },
           "500": {
             "description": "Erro ao consultar ou atualizar a categoria.",
             "content": {
@@ -1780,9 +1783,6 @@
                 }
               }
             }
-          },
-          "429": {
-            "$ref": "#/components/responses/LimiteGenericoSimples"
           }
         },
         "requestBody": {
@@ -1858,19 +1858,6 @@
               }
             }
           },
-          "500": {
-            "description": "Erro ao deletar o usuario, verifique o banco de dados",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Mensagem"
-                },
-                "example": {
-                  "mensagem": "Erro ao deletar o usuario, verifique o banco de dados"
-                }
-              }
-            }
-          },
           "404": {
             "description": "Usuário não encontrado.",
             "content": {
@@ -1886,6 +1873,19 @@
           },
           "429": {
             "$ref": "#/components/responses/LimiteGenericoCritico"
+          },
+          "500": {
+            "description": "Erro ao deletar o usuario, verifique o banco de dados",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                },
+                "example": {
+                  "mensagem": "Erro ao deletar o usuario, verifique o banco de dados"
+                }
+              }
+            }
           }
         }
       }
@@ -1948,6 +1948,9 @@
               }
             }
           },
+          "429": {
+            "$ref": "#/components/responses/LimiteGenericoCritico"
+          },
           "500": {
             "description": "Erro ao consultar ou excluir a categoria.",
             "content": {
@@ -1957,9 +1960,6 @@
                 }
               }
             }
-          },
-          "429": {
-            "$ref": "#/components/responses/LimiteGenericoCritico"
           }
         },
         "parameters": [
@@ -2038,6 +2038,9 @@
               }
             }
           },
+          "429": {
+            "$ref": "#/components/responses/LimiteGenericoCritico"
+          },
           "500": {
             "description": "Erro ao consultar ou excluir a categoria.",
             "content": {
@@ -2047,9 +2050,6 @@
                 }
               }
             }
-          },
-          "429": {
-            "$ref": "#/components/responses/LimiteGenericoCritico"
           }
         },
         "parameters": [
@@ -2079,7 +2079,7 @@
     "/usuario/criar-conta": {
       "post": {
         "summary": "Cria uma conta financeira",
-        "description": "O proprietário é obtido exclusivamente de req.usuario.id_usuario (JWT). Não envie id_usuario no corpo; o Joi rejeita campos extras. Recebe nome_conta e tipo_conta obrigatórios; codigo_conta e nome_instituicao são opcionais.",
+        "description": "O proprietário é obtido exclusivamente de req.usuario.id_usuario (JWT). Não envie id_usuario no corpo; o Joi rejeita campos extras. Recebe nome_conta e tipo_conta obrigatórios; codigo_conta e nome_instituicao são opcionais. data_fechamento e data_vencimento são dias de 1 a 31 (colunas smallint confirmadas via metadados REST); ambos obrigatórios em Credito. No PATCH, omitir preserva. Ao mudar para outro tipo, ambos ficam null. Não há ordem obrigatória entre fechamento e vencimento.",
         "tags": [
           "Contas financeiras"
         ],
@@ -2089,19 +2089,6 @@
           }
         ],
         "responses": {
-          "401": {
-            "$ref": "#/components/responses/NaoAutenticado"
-          },
-          "500": {
-            "description": "Erro ao consultar ou atualizar contas financeiras.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Mensagem"
-                }
-              }
-            }
-          },
           "200": {
             "description": "Conta criada com sucesso",
             "content": {
@@ -2118,6 +2105,9 @@
           "400": {
             "$ref": "#/components/responses/DadosInvalidos"
           },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
           "409": {
             "description": "Nome reservado pelo sistema ou já utilizado pelo proprietário.",
             "content": {
@@ -2130,6 +2120,16 @@
           },
           "429": {
             "$ref": "#/components/responses/LimiteGenericoSimples"
+          },
+          "500": {
+            "description": "Erro ao consultar ou atualizar contas financeiras.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                }
+              }
+            }
           }
         },
         "requestBody": {
@@ -2157,19 +2157,6 @@
           }
         ],
         "responses": {
-          "401": {
-            "$ref": "#/components/responses/NaoAutenticado"
-          },
-          "500": {
-            "description": "Erro ao consultar ou atualizar contas financeiras.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Mensagem"
-                }
-              }
-            }
-          },
           "200": {
             "description": "Contas encontradas; pode retornar array vazio.",
             "content": {
@@ -2182,6 +2169,9 @@
                 }
               }
             }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
           },
           "404": {
             "description": "Essa conta não existe",
@@ -2198,6 +2188,16 @@
           },
           "429": {
             "$ref": "#/components/responses/LimiteGenericoSimples"
+          },
+          "500": {
+            "description": "Erro ao consultar ou atualizar contas financeiras.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                }
+              }
+            }
           }
         },
         "parameters": [
@@ -2217,7 +2217,7 @@
     "/usuario/editar-conta": {
       "patch": {
         "summary": "Edita uma conta financeira",
-        "description": "O proprietário é obtido exclusivamente de req.usuario.id_usuario (JWT). Não envie id_usuario no corpo; o Joi rejeita campos extras. Exige nome_conta e tipo_conta mesmo usando PATCH. A conta padrão não pode ser editada; nome reservado ou duplicado retorna 409.",
+        "description": "O proprietário é obtido exclusivamente de req.usuario.id_usuario (JWT). Não envie id_usuario no corpo; o Joi rejeita campos extras. Exige nome_conta e tipo_conta mesmo usando PATCH. A conta padrão não pode ser editada; nome reservado ou duplicado retorna 409. data_fechamento e data_vencimento são dias de 1 a 31 (colunas smallint confirmadas via metadados REST); ambos obrigatórios em Credito. No PATCH, omitir preserva. Ao mudar para outro tipo, ambos ficam null. Não há ordem obrigatória entre fechamento e vencimento.",
         "tags": [
           "Contas financeiras"
         ],
@@ -2227,19 +2227,6 @@
           }
         ],
         "responses": {
-          "401": {
-            "$ref": "#/components/responses/NaoAutenticado"
-          },
-          "500": {
-            "description": "Erro ao consultar ou atualizar contas financeiras.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Mensagem"
-                }
-              }
-            }
-          },
           "200": {
             "description": "Conta editada com sucesso",
             "content": {
@@ -2288,6 +2275,9 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
           "404": {
             "description": "Essa conta não existe",
             "content": {
@@ -2313,6 +2303,16 @@
           },
           "429": {
             "$ref": "#/components/responses/LimiteGenericoSimples"
+          },
+          "500": {
+            "description": "Erro ao consultar ou atualizar contas financeiras.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                }
+              }
+            }
           }
         },
         "requestBody": {
@@ -2340,19 +2340,6 @@
           }
         ],
         "responses": {
-          "401": {
-            "$ref": "#/components/responses/NaoAutenticado"
-          },
-          "500": {
-            "description": "Erro ao consultar ou atualizar contas financeiras.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Mensagem"
-                }
-              }
-            }
-          },
           "200": {
             "description": "Conta inativada com sucesso",
             "content": {
@@ -2401,6 +2388,9 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
           "404": {
             "description": "Essa conta não existe",
             "content": {
@@ -2429,6 +2419,16 @@
           },
           "429": {
             "$ref": "#/components/responses/LimiteGenericoCritico"
+          },
+          "500": {
+            "description": "Erro ao consultar ou atualizar contas financeiras.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                }
+              }
+            }
           }
         },
         "requestBody": {
@@ -2456,19 +2456,6 @@
           }
         ],
         "responses": {
-          "401": {
-            "$ref": "#/components/responses/NaoAutenticado"
-          },
-          "500": {
-            "description": "Erro ao consultar ou atualizar contas financeiras.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Mensagem"
-                }
-              }
-            }
-          },
           "200": {
             "description": "Conta reativada com sucesso",
             "content": {
@@ -2484,6 +2471,9 @@
           },
           "400": {
             "$ref": "#/components/responses/DadosInvalidos"
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
           },
           "404": {
             "description": "Essa conta não existe",
@@ -2513,6 +2503,16 @@
           },
           "429": {
             "$ref": "#/components/responses/LimiteGenericoCritico"
+          },
+          "500": {
+            "description": "Erro ao consultar ou atualizar contas financeiras.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                }
+              }
+            }
           }
         },
         "requestBody": {
@@ -2540,22 +2540,6 @@
           }
         ],
         "responses": {
-          "401": {
-            "$ref": "#/components/responses/NaoAutenticado"
-          },
-          "500": {
-            "description": "Erro ao consultar ou atualizar contas financeiras.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Mensagem"
-                }
-              }
-            }
-          },
-          "403": {
-            "$ref": "#/components/responses/SomenteAdmin"
-          },
           "200": {
             "description": "Contas encontradas; pode retornar array vazio.",
             "content": {
@@ -2576,6 +2560,15 @@
               }
             }
           },
+          "400": {
+            "$ref": "#/components/responses/DadosInvalidos"
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SomenteAdmin"
+          },
           "404": {
             "description": "Essa conta não existe",
             "content": {
@@ -2589,9 +2582,6 @@
               }
             }
           },
-          "400": {
-            "$ref": "#/components/responses/DadosInvalidos"
-          },
           "409": {
             "description": "Conflito previsto pelo controlador para ausência de contas; arrays vazios normalmente retornam HTTP 200.",
             "content": {
@@ -2604,6 +2594,16 @@
           },
           "429": {
             "$ref": "#/components/responses/LimiteGenericoSimples"
+          },
+          "500": {
+            "description": "Erro ao consultar ou atualizar contas financeiras.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                }
+              }
+            }
           }
         },
         "parameters": [
@@ -2636,7 +2636,7 @@
     "/admin/editar-conta": {
       "patch": {
         "summary": "Edita uma conta financeira (Admin)",
-        "description": "Exige perfil Admin. Recebe id_conta e id_usuario no corpo JSON e restringe a operação à conta desse proprietário. Exige nome_conta e tipo_conta mesmo usando PATCH. A conta padrão não pode ser editada; nome reservado ou duplicado retorna 409.",
+        "description": "Exige perfil Admin. Recebe id_conta e id_usuario no corpo JSON e restringe a operação à conta desse proprietário. Exige nome_conta e tipo_conta mesmo usando PATCH. A conta padrão não pode ser editada; nome reservado ou duplicado retorna 409. data_fechamento e data_vencimento são dias de 1 a 31 (colunas smallint confirmadas via metadados REST); ambos obrigatórios em Credito. No PATCH, omitir preserva. Ao mudar para outro tipo, ambos ficam null. Não há ordem obrigatória entre fechamento e vencimento.",
         "tags": [
           "Administração de contas financeiras"
         ],
@@ -2646,22 +2646,6 @@
           }
         ],
         "responses": {
-          "401": {
-            "$ref": "#/components/responses/NaoAutenticado"
-          },
-          "500": {
-            "description": "Erro ao consultar ou atualizar contas financeiras.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Mensagem"
-                }
-              }
-            }
-          },
-          "403": {
-            "$ref": "#/components/responses/SomenteAdmin"
-          },
           "200": {
             "description": "Conta editada com sucesso",
             "content": {
@@ -2710,6 +2694,12 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SomenteAdmin"
+          },
           "404": {
             "description": "Essa conta não existe",
             "content": {
@@ -2735,6 +2725,16 @@
           },
           "429": {
             "$ref": "#/components/responses/LimiteGenericoCritico"
+          },
+          "500": {
+            "description": "Erro ao consultar ou atualizar contas financeiras.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                }
+              }
+            }
           }
         },
         "requestBody": {
@@ -2762,22 +2762,6 @@
           }
         ],
         "responses": {
-          "401": {
-            "$ref": "#/components/responses/NaoAutenticado"
-          },
-          "500": {
-            "description": "Erro ao consultar ou atualizar contas financeiras.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Mensagem"
-                }
-              }
-            }
-          },
-          "403": {
-            "$ref": "#/components/responses/SomenteAdmin"
-          },
           "200": {
             "description": "Conta inativada com sucesso",
             "content": {
@@ -2826,6 +2810,12 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SomenteAdmin"
+          },
           "404": {
             "description": "Essa conta não existe",
             "content": {
@@ -2854,6 +2844,16 @@
           },
           "429": {
             "$ref": "#/components/responses/LimiteGenericoCritico"
+          },
+          "500": {
+            "description": "Erro ao consultar ou atualizar contas financeiras.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                }
+              }
+            }
           }
         },
         "requestBody": {
@@ -2881,22 +2881,6 @@
           }
         ],
         "responses": {
-          "401": {
-            "$ref": "#/components/responses/NaoAutenticado"
-          },
-          "500": {
-            "description": "Erro ao consultar ou atualizar contas financeiras.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Mensagem"
-                }
-              }
-            }
-          },
-          "403": {
-            "$ref": "#/components/responses/SomenteAdmin"
-          },
           "200": {
             "description": "Conta reativada com sucesso",
             "content": {
@@ -2912,6 +2896,12 @@
           },
           "400": {
             "$ref": "#/components/responses/DadosInvalidos"
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SomenteAdmin"
           },
           "404": {
             "description": "Essa conta não existe",
@@ -2941,6 +2931,16 @@
           },
           "429": {
             "$ref": "#/components/responses/LimiteGenericoCritico"
+          },
+          "500": {
+            "description": "Erro ao consultar ou atualizar contas financeiras.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                }
+              }
+            }
           }
         },
         "requestBody": {
@@ -2968,22 +2968,6 @@
           }
         ],
         "responses": {
-          "401": {
-            "$ref": "#/components/responses/NaoAutenticado"
-          },
-          "500": {
-            "description": "Erro ao consultar ou atualizar contas financeiras.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Mensagem"
-                }
-              }
-            }
-          },
-          "403": {
-            "$ref": "#/components/responses/SomenteAdmin"
-          },
           "200": {
             "description": "Conta deletada com suceso",
             "content": {
@@ -3032,6 +3016,12 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SomenteAdmin"
+          },
           "404": {
             "description": "Essa conta não existe",
             "content": {
@@ -3047,6 +3037,16 @@
           },
           "429": {
             "$ref": "#/components/responses/LimiteGenericoCritico"
+          },
+          "500": {
+            "description": "Erro ao consultar ou atualizar contas financeiras.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                }
+              }
+            }
           }
         },
         "parameters": [
@@ -3076,7 +3076,7 @@
     "/usuario/criar-recorrencia": {
       "post": {
         "summary": "Cria uma recorrência financeira",
-        "description": "O proprietário é obtido do cookie de sessão (JWT). Não envie id_usuario. Aceita tipo_transacao Entrada ou Saida e modalidade Parcelado ou Periodico. Parcelado exige qtd_parcelas e frequencia Mensal; Periodico aceita frequencia Semanal, Mensal ou Anual. Conta e categoria devem pertencer ao proprietário. data_inicio usa YYYY-MM-DD. Obrigatórios: id_conta, id_categoria, tipo_transacao, modalidade, nome, forma_pagamento, valor, frequencia, data_inicio e ativo. descricao e destino são opcionais. valor deve ser positivo, com até duas casas decimais.",
+        "description": "O proprietário é obtido do cookie de sessão (JWT). Não envie id_usuario. Aceita tipo_transacao Entrada ou Saida e modalidade Parcelado ou Periodico. Parcelado exige qtd_parcelas e frequencia Mensal; Periodico aceita frequencia Semanal, Mensal ou Anual. Conta e categoria devem pertencer ao proprietário. data_inicio usa YYYY-MM-DD. Obrigatórios: id_conta, id_categoria, tipo_transacao, modalidade, nome, forma_pagamento, valor, frequencia, data_inicio e ativo. descricao e destino são opcionais. valor deve ser positivo, com até duas casas decimais. id_meta opcional identifica meta do mesmo proprietário; null remove e omissão preserva no PATCH. Transferencia não permite meta. Nas recorrências, os triggers propagam o vínculo somente às transações pendentes; alterar apenas a meta não recria parcelas.",
         "tags": [
           "Recorrências"
         ],
@@ -3128,6 +3128,93 @@
                 "qtd_parcelas": 3,
                 "data_inicio": "2026-10-13",
                 "ativo": true
+              },
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "id_meta": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647,
+                    "nullable": true,
+                    "description": "Meta do mesmo proprietário. Omitir preserva no PATCH; null remove. Proibido em Transferencia."
+                  },
+                  "id_conta": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "id_categoria": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "tipo_transacao": {
+                    "type": "string",
+                    "enum": [
+                      "Entrada",
+                      "Saida"
+                    ]
+                  },
+                  "modalidade": {
+                    "type": "string",
+                    "enum": [
+                      "Parcelado",
+                      "Periodico"
+                    ]
+                  },
+                  "nome": {
+                    "type": "string"
+                  },
+                  "descricao": {
+                    "type": "string"
+                  },
+                  "forma_pagamento": {
+                    "type": "string",
+                    "enum": [
+                      "PIX",
+                      "débito",
+                      "crédito",
+                      "boleto",
+                      "dinheiro"
+                    ]
+                  },
+                  "destino": {
+                    "type": "string"
+                  },
+                  "valor": {
+                    "type": "number",
+                    "minimum": 0,
+                    "exclusiveMinimum": true,
+                    "multipleOf": 0.01
+                  },
+                  "frequencia": {
+                    "type": "number",
+                    "nullable": true
+                  },
+                  "qtd_parcelas": {
+                    "type": "integer",
+                    "nullable": true,
+                    "minimum": 1
+                  },
+                  "data_inicio": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "ativo": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "id_conta",
+                  "id_categoria",
+                  "tipo_transacao",
+                  "modalidade",
+                  "nome",
+                  "forma_pagamento",
+                  "valor",
+                  "data_inicio",
+                  "ativo"
+                ]
               }
             }
           }
@@ -3137,7 +3224,7 @@
     "/usuario/criar-transacao": {
       "post": {
         "summary": "Cria uma transação financeira",
-        "description": "O proprietário é obtido do cookie de sessão (JWT). Não envie id_usuario. Entrada e Saida exigem categoria; Transferencia exige contas de origem e destino diferentes. Contas e categoria devem pertencer ao proprietário. O vínculo com metas ainda não está disponível: omita id_meta ou envie null. Para status_transacao Pendente, data_pagamento deve ser omitida ou null. Datas usam YYYY-MM-DD. Obrigatórios: id_conta_origem, tipo_transacao, nome, forma_pagamento, valor_transacao, status_transacao e data_transacao, além dos campos condicionais. descricao, destino, data_vencimento e data_pagamento são opcionais. valor_transacao deve ser positivo, com até duas casas decimais. status_transacao aceita Pendente ou Pago.",
+        "description": "O proprietário é obtido do cookie de sessão (JWT). Não envie id_usuario. Entrada e Saida exigem categoria; Transferencia exige contas de origem e destino diferentes. Contas e categoria devem pertencer ao proprietário.  Para status_transacao Pendente, data_pagamento deve ser omitida ou null. Datas usam YYYY-MM-DD. Obrigatórios: id_conta_origem, tipo_transacao, nome, forma_pagamento, valor_transacao, status_transacao e data_transacao, além dos campos condicionais. descricao, destino, data_vencimento e data_pagamento são opcionais. valor_transacao deve ser positivo, com até duas casas decimais. status_transacao aceita Pendente ou Pago. id_meta opcional identifica meta do mesmo proprietário; null remove e omissão preserva no PATCH. Transferencia não permite meta. Nas recorrências, os triggers propagam o vínculo somente às transações pendentes; alterar apenas a meta não recria parcelas.",
         "tags": [
           "Transações financeiras"
         ],
@@ -3187,6 +3274,98 @@
                 "status_transacao": "Pendente",
                 "data_transacao": "2026-10-13",
                 "data_vencimento": "2026-10-20"
+              },
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "id_conta_origem": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "id_conta_destino": {
+                    "type": "integer",
+                    "nullable": true,
+                    "minimum": 0
+                  },
+                  "id_categoria": {
+                    "type": "integer",
+                    "nullable": true,
+                    "minimum": 0
+                  },
+                  "id_meta": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647,
+                    "nullable": true,
+                    "description": "Meta do mesmo proprietário. Omitir preserva no PATCH; null remove. Proibido em Transferencia."
+                  },
+                  "tipo_transacao": {
+                    "type": "string",
+                    "enum": [
+                      "Entrada",
+                      "Saida",
+                      "Transferencia"
+                    ]
+                  },
+                  "nome": {
+                    "type": "string"
+                  },
+                  "descricao": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "forma_pagamento": {
+                    "type": "string",
+                    "enum": [
+                      "PIX",
+                      "débito",
+                      "crédito",
+                      "boleto",
+                      "dinheiro"
+                    ]
+                  },
+                  "destino": {
+                    "type": "string"
+                  },
+                  "valor_transacao": {
+                    "type": "number",
+                    "minimum": 0,
+                    "exclusiveMinimum": true,
+                    "multipleOf": 0.01
+                  },
+                  "status_transacao": {
+                    "type": "string",
+                    "enum": [
+                      "Pendente",
+                      "Pago"
+                    ]
+                  },
+                  "data_transacao": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "data_vencimento": {
+                    "type": "string",
+                    "nullable": true,
+                    "format": "date"
+                  },
+                  "data_pagamento": {
+                    "type": "string",
+                    "nullable": true,
+                    "format": "date",
+                    "description": "YYYY-MM-DD; quando Pendente, omitir ou enviar null."
+                  }
+                },
+                "required": [
+                  "id_conta_origem",
+                  "tipo_transacao",
+                  "nome",
+                  "forma_pagamento",
+                  "valor_transacao",
+                  "status_transacao",
+                  "data_transacao"
+                ]
               }
             }
           }
@@ -3196,7 +3375,7 @@
     "/usuario/editar-recorrencia": {
       "patch": {
         "summary": "Edita uma recorrência",
-        "description": "O proprietário é obtido do cookie de sessão (JWT). Não envie id_usuario. id_recorrencia é obrigatório; os demais campos da recorrência são opcionais e somente os enviados são alterados. Aceita tipo_transacao Entrada ou Saida e modalidade Parcelado ou Periodico. Parcelado exige qtd_parcelas e frequencia Mensal; Periodico aceita frequencia Semanal, Mensal ou Anual. Conta e categoria devem pertencer ao proprietário. data_inicio usa YYYY-MM-DD. ",
+        "description": "O proprietário é obtido do cookie de sessão (JWT). Não envie id_usuario. id_recorrencia é obrigatório; os demais campos da recorrência são opcionais e somente os enviados são alterados. Aceita tipo_transacao Entrada ou Saida e modalidade Parcelado ou Periodico. Parcelado exige qtd_parcelas e frequencia Mensal; Periodico aceita frequencia Semanal, Mensal ou Anual. Conta e categoria devem pertencer ao proprietário. data_inicio usa YYYY-MM-DD.  id_meta opcional identifica meta do mesmo proprietário; null remove e omissão preserva no PATCH. Transferencia não permite meta. Nas recorrências, os triggers propagam o vínculo somente às transações pendentes; alterar apenas a meta não recria parcelas.",
         "tags": [
           "Recorrências"
         ],
@@ -3240,6 +3419,93 @@
                 "id_recorrencia": 1,
                 "nome": "Compra parcelada atualizada",
                 "valor": 350
+              },
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "id_meta": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647,
+                    "nullable": true,
+                    "description": "Meta do mesmo proprietário. Omitir preserva no PATCH; null remove. Proibido em Transferencia."
+                  },
+                  "id_recorrencia": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "id_conta": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "id_categoria": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "tipo_transacao": {
+                    "type": "string",
+                    "enum": [
+                      "Entrada",
+                      "Saida"
+                    ]
+                  },
+                  "modalidade": {
+                    "type": "string",
+                    "enum": [
+                      "Parcelado",
+                      "Periodico"
+                    ]
+                  },
+                  "nome": {
+                    "type": "string"
+                  },
+                  "descricao": {
+                    "type": "string"
+                  },
+                  "forma_pagamento": {
+                    "type": "string",
+                    "enum": [
+                      "PIX",
+                      "débito",
+                      "crédito",
+                      "boleto",
+                      "dinheiro"
+                    ]
+                  },
+                  "destino": {
+                    "type": "string"
+                  },
+                  "valor": {
+                    "type": "number",
+                    "minimum": 0,
+                    "exclusiveMinimum": true,
+                    "multipleOf": 0.01
+                  },
+                  "frequencia": {
+                    "type": "string",
+                    "enum": [
+                      "Semanal",
+                      "Mensal",
+                      "Anual"
+                    ]
+                  },
+                  "qtd_parcelas": {
+                    "type": "integer",
+                    "nullable": true,
+                    "minimum": 1
+                  },
+                  "data_inicio": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "ativo": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "id_recorrencia"
+                ]
               }
             }
           }
@@ -3249,7 +3515,7 @@
     "/usuario/editar-transacao": {
       "patch": {
         "summary": "Edita uma transação",
-        "description": "O proprietário é obtido do cookie de sessão (JWT). Não envie id_usuario. id_transacao é obrigatório; os demais campos da transação são opcionais e somente os enviados são alterados. Ao definir status_transacao como Pendente, data_pagamento é limpa. Entrada e Saida exigem categoria; Transferencia exige contas de origem e destino diferentes. Contas e categoria devem pertencer ao proprietário. O vínculo com metas ainda não está disponível: omita id_meta ou envie null. Para status_transacao Pendente, data_pagamento deve ser omitida ou null. Datas usam YYYY-MM-DD. ",
+        "description": "O proprietário é obtido do cookie de sessão (JWT). Não envie id_usuario. id_transacao é obrigatório; os demais campos da transação são opcionais e somente os enviados são alterados. Ao definir status_transacao como Pendente, data_pagamento é limpa. Entrada e Saida exigem categoria; Transferencia exige contas de origem e destino diferentes. Contas e categoria devem pertencer ao proprietário.  Para status_transacao Pendente, data_pagamento deve ser omitida ou null. Datas usam YYYY-MM-DD.  id_meta opcional identifica meta do mesmo proprietário; null remove e omissão preserva no PATCH. Transferencia não permite meta. Nas recorrências, os triggers propagam o vínculo somente às transações pendentes; alterar apenas a meta não recria parcelas.",
         "tags": [
           "Transações financeiras"
         ],
@@ -3293,6 +3559,96 @@
                 "id_transacao": 1,
                 "status_transacao": "Pago",
                 "data_pagamento": "2026-10-13"
+              },
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "id_transacao": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "id_conta_origem": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "id_conta_destino": {
+                    "type": "integer",
+                    "nullable": true,
+                    "minimum": 0
+                  },
+                  "id_categoria": {
+                    "type": "integer",
+                    "nullable": true,
+                    "minimum": 0
+                  },
+                  "id_meta": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647,
+                    "nullable": true,
+                    "description": "Meta do mesmo proprietário. Omitir preserva no PATCH; null remove. Proibido em Transferencia."
+                  },
+                  "tipo_transacao": {
+                    "type": "string",
+                    "enum": [
+                      "Entrada",
+                      "Saida",
+                      "Transferencia"
+                    ]
+                  },
+                  "nome": {
+                    "type": "string"
+                  },
+                  "descricao": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "forma_pagamento": {
+                    "type": "string",
+                    "enum": [
+                      "PIX",
+                      "débito",
+                      "crédito",
+                      "boleto",
+                      "dinheiro"
+                    ]
+                  },
+                  "destino": {
+                    "type": "string"
+                  },
+                  "valor_transacao": {
+                    "type": "number",
+                    "minimum": 0,
+                    "exclusiveMinimum": true,
+                    "multipleOf": 0.01
+                  },
+                  "status_transacao": {
+                    "type": "string",
+                    "enum": [
+                      "Pendente",
+                      "Pago"
+                    ]
+                  },
+                  "data_transacao": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "data_vencimento": {
+                    "type": "string",
+                    "nullable": true,
+                    "format": "date"
+                  },
+                  "data_pagamento": {
+                    "type": "string",
+                    "nullable": true,
+                    "format": "date",
+                    "description": "YYYY-MM-DD; quando Pendente, omitir ou enviar null."
+                  }
+                },
+                "required": [
+                  "id_transacao"
+                ]
               }
             }
           }
@@ -3302,7 +3658,7 @@
     "/usuario/listar-recorrencias": {
       "get": {
         "summary": "Lista recorrências do usuário autenticado",
-        "description": "O proprietário é obtido do cookie de sessão (JWT). Não envie id_usuario. O filtro opcional id_contas aceita um ID ou vários repetindo a chave na query, por exemplo: ?id_contas=1&id_contas=2. id_recorrencia também é um filtro opcional. Retorna uma lista JSON, incluindo recorrências inativas; sem resultados, retorna [].",
+        "description": "O proprietário é obtido do cookie de sessão (JWT). Não envie id_usuario. O filtro opcional id_contas aceita um ID ou vários repetindo a chave na query, por exemplo: ?id_contas=1&id_contas=2. id_recorrencia também é um filtro opcional. Retorna uma lista JSON, incluindo recorrências inativas; sem resultados, retorna []. Aceita também id_meta; os registros retornados incluem id_meta (inteiro ou null).",
         "tags": [
           "Recorrências"
         ],
@@ -3316,7 +3672,23 @@
             "description": "Lista de recorrências.",
             "content": {
               "application/json": {
-                "example": []
+                "example": [],
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id_meta": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 2147483647,
+                        "nullable": true,
+                        "description": "Meta do mesmo proprietário. Omitir preserva no PATCH; null remove. Proibido em Transferencia."
+                      }
+                    },
+                    "additionalProperties": true
+                  }
+                }
               }
             }
           },
@@ -3355,6 +3727,16 @@
                 "example": "1"
               }
             }
+          },
+          {
+            "name": "id_meta",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "Filtro exato por meta, combinado por AND e mantendo o proprietário."
           }
         ]
       }
@@ -3362,7 +3744,7 @@
     "/usuario/listar-transacoes": {
       "get": {
         "summary": "Lista transações do usuário autenticado",
-        "description": "O proprietário é obtido do cookie de sessão (JWT). Não envie id_usuario. A propriedade da transação é determinada pela conta de origem. O filtro opcional id_contas aceita um ID ou vários repetindo a chave na query, por exemplo: ?id_contas=1&id_contas=2. Os filtros opcionais periodo_criacao e periodo_vencimento recebem exatamente duas datas YYYY-MM-DD, repetindo a chave: ?periodo_criacao=2026-10-01&periodo_criacao=2026-10-31. A primeira data não pode ser posterior à segunda; ambos os limites são inclusivos. Também aceita filtros opcionais id_categoria, id_transacao, id_recorrencia, nome (busca parcial sem diferenciar maiúsculas e minúsculas) e status (Pendente ou Pago). Retorna uma lista JSON ou [] quando não há resultados.",
+        "description": "O proprietário é obtido do cookie de sessão (JWT). Não envie id_usuario. A propriedade da transação é determinada pela conta de origem. O filtro opcional id_contas aceita um ID ou vários repetindo a chave na query, por exemplo: ?id_contas=1&id_contas=2. Os filtros opcionais periodo_criacao e periodo_vencimento recebem exatamente duas datas YYYY-MM-DD, repetindo a chave: ?periodo_criacao=2026-10-01&periodo_criacao=2026-10-31. A primeira data não pode ser posterior à segunda; ambos os limites são inclusivos. Também aceita filtros opcionais id_categoria, id_transacao, id_recorrencia, nome (busca parcial sem diferenciar maiúsculas e minúsculas) e status (Pendente ou Pago). Retorna uma lista JSON ou [] quando não há resultados. Aceita também id_meta; os registros retornados incluem id_meta (inteiro ou null).",
         "tags": [
           "Transações financeiras"
         ],
@@ -3376,7 +3758,23 @@
             "description": "Lista de transações.",
             "content": {
               "application/json": {
-                "example": []
+                "example": [],
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id_meta": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 2147483647,
+                        "nullable": true,
+                        "description": "Meta do mesmo proprietário. Omitir preserva no PATCH; null remove. Proibido em Transferencia."
+                      }
+                    },
+                    "additionalProperties": true
+                  }
+                }
               }
             }
           },
@@ -3459,6 +3857,16 @@
                 "example": "Pendente"
               }
             }
+          },
+          {
+            "name": "id_meta",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "Filtro exato por meta, combinado por AND e mantendo o proprietário."
           }
         ]
       }
@@ -3574,7 +3982,7 @@
     "/admin/editar-recorrencia": {
       "patch": {
         "summary": "Edita uma recorrência de um usuário",
-        "description": "Exige sessão de administrador. Informe id_usuario do proprietário no corpo. id_recorrencia é obrigatório; os demais campos da recorrência são opcionais e somente os enviados são alterados. Aceita tipo_transacao Entrada ou Saida e modalidade Parcelado ou Periodico. Parcelado exige qtd_parcelas e frequencia Mensal; Periodico aceita frequencia Semanal, Mensal ou Anual. Conta e categoria devem pertencer ao proprietário. data_inicio usa YYYY-MM-DD. ",
+        "description": "Exige sessão de administrador. Informe id_usuario do proprietário no corpo. id_recorrencia é obrigatório; os demais campos da recorrência são opcionais e somente os enviados são alterados. Aceita tipo_transacao Entrada ou Saida e modalidade Parcelado ou Periodico. Parcelado exige qtd_parcelas e frequencia Mensal; Periodico aceita frequencia Semanal, Mensal ou Anual. Conta e categoria devem pertencer ao proprietário. data_inicio usa YYYY-MM-DD.  id_meta opcional identifica meta do mesmo proprietário; null remove e omissão preserva no PATCH. Transferencia não permite meta. Nas recorrências, os triggers propagam o vínculo somente às transações pendentes; alterar apenas a meta não recria parcelas.",
         "tags": [
           "Admin - Recorrências"
         ],
@@ -3622,6 +4030,98 @@
                 "id_recorrencia": 1,
                 "nome": "Compra parcelada atualizada",
                 "valor": 350
+              },
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "id_meta": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647,
+                    "nullable": true,
+                    "description": "Meta do mesmo proprietário. Omitir preserva no PATCH; null remove. Proibido em Transferencia."
+                  },
+                  "id_usuario": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "id_recorrencia": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "id_conta": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "id_categoria": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "tipo_transacao": {
+                    "type": "string",
+                    "enum": [
+                      "Entrada",
+                      "Saida"
+                    ]
+                  },
+                  "modalidade": {
+                    "type": "string",
+                    "enum": [
+                      "Parcelado",
+                      "Periodico"
+                    ]
+                  },
+                  "nome": {
+                    "type": "string"
+                  },
+                  "descricao": {
+                    "type": "string"
+                  },
+                  "forma_pagamento": {
+                    "type": "string",
+                    "enum": [
+                      "PIX",
+                      "débito",
+                      "crédito",
+                      "boleto",
+                      "dinheiro"
+                    ]
+                  },
+                  "destino": {
+                    "type": "string"
+                  },
+                  "valor": {
+                    "type": "number",
+                    "minimum": 0,
+                    "exclusiveMinimum": true,
+                    "multipleOf": 0.01
+                  },
+                  "frequencia": {
+                    "type": "string",
+                    "enum": [
+                      "Semanal",
+                      "Mensal",
+                      "Anual"
+                    ]
+                  },
+                  "qtd_parcelas": {
+                    "type": "integer",
+                    "nullable": true,
+                    "minimum": 1
+                  },
+                  "data_inicio": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "ativo": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "id_usuario",
+                  "id_recorrencia"
+                ]
               }
             }
           }
@@ -3631,7 +4131,7 @@
     "/admin/editar-transacao": {
       "patch": {
         "summary": "Edita uma transação de um usuário",
-        "description": "Exige sessão de administrador. Informe id_usuario do proprietário no corpo. id_transacao é obrigatório; os demais campos da transação são opcionais e somente os enviados são alterados. Ao definir status_transacao como Pendente, data_pagamento é limpa. Entrada e Saida exigem categoria; Transferencia exige contas de origem e destino diferentes. Contas e categoria devem pertencer ao proprietário. O vínculo com metas ainda não está disponível: omita id_meta ou envie null. Para status_transacao Pendente, data_pagamento deve ser omitida ou null. Datas usam YYYY-MM-DD. ",
+        "description": "Exige sessão de administrador. Informe id_usuario do proprietário no corpo. id_transacao é obrigatório; os demais campos da transação são opcionais e somente os enviados são alterados. Ao definir status_transacao como Pendente, data_pagamento é limpa. Entrada e Saida exigem categoria; Transferencia exige contas de origem e destino diferentes. Contas e categoria devem pertencer ao proprietário.  Para status_transacao Pendente, data_pagamento deve ser omitida ou null. Datas usam YYYY-MM-DD.  id_meta opcional identifica meta do mesmo proprietário; null remove e omissão preserva no PATCH. Transferencia não permite meta. Nas recorrências, os triggers propagam o vínculo somente às transações pendentes; alterar apenas a meta não recria parcelas.",
         "tags": [
           "Admin - Transações financeiras"
         ],
@@ -3679,6 +4179,101 @@
                 "id_transacao": 1,
                 "status_transacao": "Pago",
                 "data_pagamento": "2026-10-13"
+              },
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "id_usuario": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "id_transacao": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "id_conta_origem": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "id_conta_destino": {
+                    "type": "integer",
+                    "nullable": true,
+                    "minimum": 0
+                  },
+                  "id_categoria": {
+                    "type": "integer",
+                    "nullable": true,
+                    "minimum": 0
+                  },
+                  "id_meta": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647,
+                    "nullable": true,
+                    "description": "Meta do mesmo proprietário. Omitir preserva no PATCH; null remove. Proibido em Transferencia."
+                  },
+                  "tipo_transacao": {
+                    "type": "string",
+                    "enum": [
+                      "Entrada",
+                      "Saida",
+                      "Transferencia"
+                    ]
+                  },
+                  "nome": {
+                    "type": "string"
+                  },
+                  "descricao": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "forma_pagamento": {
+                    "type": "string",
+                    "enum": [
+                      "PIX",
+                      "débito",
+                      "crédito",
+                      "boleto",
+                      "dinheiro"
+                    ]
+                  },
+                  "destino": {
+                    "type": "string"
+                  },
+                  "valor_transacao": {
+                    "type": "number",
+                    "minimum": 0,
+                    "exclusiveMinimum": true,
+                    "multipleOf": 0.01
+                  },
+                  "status_transacao": {
+                    "type": "string",
+                    "enum": [
+                      "Pendente",
+                      "Pago"
+                    ]
+                  },
+                  "data_transacao": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "data_vencimento": {
+                    "type": "string",
+                    "nullable": true,
+                    "format": "date"
+                  },
+                  "data_pagamento": {
+                    "type": "string",
+                    "nullable": true,
+                    "format": "date",
+                    "description": "YYYY-MM-DD; quando Pendente, omitir ou enviar null."
+                  }
+                },
+                "required": [
+                  "id_usuario",
+                  "id_transacao"
+                ]
               }
             }
           }
@@ -3688,7 +4283,7 @@
     "/admin/listar-recorrencias": {
       "get": {
         "summary": "Lista recorrências dos usuários",
-        "description": "Exige sessão de administrador. id_usuario é um filtro opcional; sem ele, permite consultar registros de todos os usuários. O filtro opcional id_contas aceita um ID ou vários repetindo a chave na query, por exemplo: ?id_contas=1&id_contas=2. id_recorrencia também é um filtro opcional. Retorna uma lista JSON, incluindo recorrências inativas; sem resultados, retorna [].",
+        "description": "Exige sessão de administrador. id_usuario é um filtro opcional; sem ele, permite consultar registros de todos os usuários. O filtro opcional id_contas aceita um ID ou vários repetindo a chave na query, por exemplo: ?id_contas=1&id_contas=2. id_recorrencia também é um filtro opcional. Retorna uma lista JSON, incluindo recorrências inativas; sem resultados, retorna []. Aceita também id_meta; os registros retornados incluem id_meta (inteiro ou null).",
         "tags": [
           "Admin - Recorrências"
         ],
@@ -3702,7 +4297,23 @@
             "description": "Lista de recorrências.",
             "content": {
               "application/json": {
-                "example": []
+                "example": [],
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id_meta": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 2147483647,
+                        "nullable": true,
+                        "description": "Meta do mesmo proprietário. Omitir preserva no PATCH; null remove. Proibido em Transferencia."
+                      }
+                    },
+                    "additionalProperties": true
+                  }
+                }
               }
             }
           },
@@ -3755,6 +4366,16 @@
                 "example": "1"
               }
             }
+          },
+          {
+            "name": "id_meta",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "Filtro exato por meta, combinado por AND e mantendo o proprietário."
           }
         ]
       }
@@ -3762,7 +4383,7 @@
     "/admin/listar-transacoes": {
       "get": {
         "summary": "Lista transações dos usuários",
-        "description": "Exige sessão de administrador. id_usuario é um filtro opcional; sem ele, permite consultar registros de todos os usuários. A propriedade da transação é determinada pela conta de origem. O filtro opcional id_contas aceita um ID ou vários repetindo a chave na query, por exemplo: ?id_contas=1&id_contas=2. Os filtros opcionais periodo_criacao e periodo_vencimento recebem exatamente duas datas YYYY-MM-DD, repetindo a chave: ?periodo_criacao=2026-10-01&periodo_criacao=2026-10-31. A primeira data não pode ser posterior à segunda; ambos os limites são inclusivos. Também aceita filtros opcionais id_categoria, id_transacao, id_recorrencia, nome (busca parcial sem diferenciar maiúsculas e minúsculas) e status (Pendente ou Pago). Retorna uma lista JSON ou [] quando não há resultados. Cada transação inclui id_usuario, obtido pela conta de origem.",
+        "description": "Exige sessão de administrador. id_usuario é um filtro opcional; sem ele, permite consultar registros de todos os usuários. A propriedade da transação é determinada pela conta de origem. O filtro opcional id_contas aceita um ID ou vários repetindo a chave na query, por exemplo: ?id_contas=1&id_contas=2. Os filtros opcionais periodo_criacao e periodo_vencimento recebem exatamente duas datas YYYY-MM-DD, repetindo a chave: ?periodo_criacao=2026-10-01&periodo_criacao=2026-10-31. A primeira data não pode ser posterior à segunda; ambos os limites são inclusivos. Também aceita filtros opcionais id_categoria, id_transacao, id_recorrencia, nome (busca parcial sem diferenciar maiúsculas e minúsculas) e status (Pendente ou Pago). Retorna uma lista JSON ou [] quando não há resultados. Cada transação inclui id_usuario, obtido pela conta de origem. Aceita também id_meta; os registros retornados incluem id_meta (inteiro ou null).",
         "tags": [
           "Admin - Transações financeiras"
         ],
@@ -3776,7 +4397,23 @@
             "description": "Lista de transações.",
             "content": {
               "application/json": {
-                "example": []
+                "example": [],
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id_meta": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 2147483647,
+                        "nullable": true,
+                        "description": "Meta do mesmo proprietário. Omitir preserva no PATCH; null remove. Proibido em Transferencia."
+                      }
+                    },
+                    "additionalProperties": true
+                  }
+                }
               }
             }
           },
@@ -3873,6 +4510,16 @@
                 "example": "Pendente"
               }
             }
+          },
+          {
+            "name": "id_meta",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "Filtro exato por meta, combinado por AND e mantendo o proprietário."
           }
         ]
       }
@@ -4392,6 +5039,20 @@
             "maxLength": 100,
             "example": "Banco exemplo",
             "description": "Opcional: aceita null ou texto vazio. Quando preenchido, deve ter entre 2 e 100 caracteres após remover espaços nas extremidades."
+          },
+          "data_fechamento": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 31,
+            "nullable": true,
+            "description": "Dia mensal (coluna smallint confirmada via REST; corpo de calcular_vencimento não inspecionado). Obrigatório em Credito; demais tipos gravam null. PATCH omitido mantém dia atual."
+          },
+          "data_vencimento": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 31,
+            "nullable": true,
+            "description": "Dia mensal (coluna smallint confirmada via REST; corpo de calcular_vencimento não inspecionado). Obrigatório em Credito; demais tipos gravam null. PATCH omitido mantém dia atual."
           }
         }
       },
@@ -4454,6 +5115,20 @@
             "maxLength": 100,
             "example": "Banco exemplo",
             "description": "Opcional: aceita null ou texto vazio. Quando preenchido, deve ter entre 2 e 100 caracteres após remover espaços nas extremidades."
+          },
+          "data_fechamento": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 31,
+            "nullable": true,
+            "description": "Dia mensal (coluna smallint confirmada via REST; corpo de calcular_vencimento não inspecionado). Obrigatório em Credito; demais tipos gravam null. PATCH omitido mantém dia atual."
+          },
+          "data_vencimento": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 31,
+            "nullable": true,
+            "description": "Dia mensal (coluna smallint confirmada via REST; corpo de calcular_vencimento não inspecionado). Obrigatório em Credito; demais tipos gravam null. PATCH omitido mantém dia atual."
           }
         }
       },
@@ -4528,6 +5203,20 @@
             "maxLength": 100,
             "example": "Banco exemplo",
             "description": "Opcional: aceita null ou texto vazio. Quando preenchido, deve ter entre 2 e 100 caracteres após remover espaços nas extremidades."
+          },
+          "data_fechamento": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 31,
+            "nullable": true,
+            "description": "Dia mensal (coluna smallint confirmada via REST; corpo de calcular_vencimento não inspecionado). Obrigatório em Credito; demais tipos gravam null. PATCH omitido mantém dia atual."
+          },
+          "data_vencimento": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 31,
+            "nullable": true,
+            "description": "Dia mensal (coluna smallint confirmada via REST; corpo de calcular_vencimento não inspecionado). Obrigatório em Credito; demais tipos gravam null. PATCH omitido mantém dia atual."
           }
         }
       },
@@ -4585,6 +5274,20 @@
             "nullable": true,
             "example": null,
             "description": "Instante de inativação em ISO 8601. Preenchido ao inativar e limpo (null) ao reativar. Registros anteriores à implementação podem não ter data."
+          },
+          "data_fechamento": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 31,
+            "nullable": true,
+            "description": "Dia mensal (coluna smallint confirmada via REST; corpo de calcular_vencimento não inspecionado). Obrigatório em Credito; demais tipos gravam null. PATCH omitido mantém dia atual."
+          },
+          "data_vencimento": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 31,
+            "nullable": true,
+            "description": "Dia mensal (coluna smallint confirmada via REST; corpo de calcular_vencimento não inspecionado). Obrigatório em Credito; demais tipos gravam null. PATCH omitido mantém dia atual."
           }
         }
       },

@@ -246,6 +246,11 @@
                         </select>
                         <div id="erro-ativo" aria-live="polite"></div>
                     </div>
+                    <div class="input-dados">
+                        <label for="id_meta">ID da meta (opcional):</label>
+                        <input id="id_meta" name="id_meta" type="number" min="1" max="2147483647" step="1" placeholder="Sem meta" disabled aria-describedby="erro-id_meta">
+                        <div id="erro-id_meta" aria-live="polite"></div>
+                    </div>
                     <div id="erro-formulario" aria-live="polite"></div>
                     <div id="input-submit">
                         <input type="button" value="Recarregar listas" id="botao-Carregar" hidden>
@@ -339,6 +344,7 @@
             opcaoTransferencia.disabled = !avulso;
             if (!avulso && tipo.value === 'Transferencia') tipo.value = '';
             const transferencia = tipo.value === 'Transferencia';
+            document.getElementById('id_meta').disabled = transferencia || !listasProntas || enviando || carregando;
             document.getElementById('label-conta').textContent = tipo.value === 'Entrada'
                 ? 'Conta de recebimento:' : tipo.value === 'Saida' || transferencia ? 'Conta de origem:' : 'Conta financeira:';
             document.getElementById('id_conta').name = avulso ? 'id_conta_origem' : 'id_conta';
@@ -434,6 +440,9 @@
             if (descricao !== '') dadosEnviar.descricao = descricao;
             if (destino !== '') dadosEnviar.destino = destino;
             if (categoria !== '') dadosEnviar.id_categoria = Number(categoria);
+            if (tipo_transacao !== 'Transferencia' && document.getElementById('id_meta').value !== '') {
+                dadosEnviar.id_meta = Number(document.getElementById('id_meta').value);
+            }
             let rota;
             if (modalidade === 'Avulso') {
                 rota = '/usuario/criar-transacao';
@@ -598,6 +607,22 @@
                 atualizarSaldoUsuario(usuario.id_usuario);
                 sessaoPronta = true;
                 await carregarListas();
+                const parametros = new URLSearchParams(location.search);
+                if (listasProntas && parametros.has('id_meta')) {
+                    document.getElementById('id_meta').value = parametros.get('id_meta');
+                    if (!document.getElementById('id_meta').value) {
+                        MostrarResultado_Overlay(0, 'Informe um ID de meta válido.');
+                    } else {
+                        const tipo = parametros.get('tipo_transacao');
+                        if (['Entrada', 'Saida'].includes(tipo)) document.getElementById('tipo_transacao').value = tipo;
+                        document.getElementById('status_transacao').value = 'Pago';
+                        const hoje = new Date();
+                        const data = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}-${String(hoje.getDate()).padStart(2, '0')}`;
+                        document.getElementById('data_transacao').value = data;
+                        document.getElementById('data_pagamento').value = data;
+                    }
+                    atualizarCampos();
+                }
             } finally {
                 loading.style.display = 'none';
             }

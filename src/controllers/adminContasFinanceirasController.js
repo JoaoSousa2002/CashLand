@@ -1,3 +1,5 @@
+import { confirmarAlteracao } from '../middlewares/AuditoriaRota.js';
+import { validarDiasConta } from '../validacoes/contas.js';
 import supabase from '../config/supabase.js';
 
 
@@ -180,7 +182,7 @@ export async function listarContasFinanceiras(req, res) {
 }
 // Editar conta
 export async function editarConta(req, res) {
-    const { id_conta,id_usuario, nome_conta, tipo_conta, codigo_conta, nome_instituicao } = req.body
+    const { id_conta,id_usuario, nome_conta, tipo_conta, codigo_conta, nome_instituicao, data_fechamento, data_vencimento } = req.body
     console.log("ID USUARIO: "+id_usuario)
     if (nome_conta.trim().toLowerCase() === "padrão") {
         return res.status(409).json({
@@ -190,7 +192,7 @@ export async function editarConta(req, res) {
     //Verifica se a conta existe ou se é a conta padrão
     const { data: Consulta, error: erroConsulta } = await supabase
         .from('contas_bancarias')
-        .select('id_conta, id_usuario, nome_conta')
+        .select('id_conta, id_usuario, nome_conta, tipo_conta, data_fechamento, data_vencimento')
         .eq('id_conta', id_conta)
         .eq('id_usuario', id_usuario)
         .select()
@@ -204,6 +206,9 @@ export async function editarConta(req, res) {
     } else if (Consulta.nome_conta === 'padrão') {
         return res.status(400).json({ mensagem: "Essa conta não pode ser editada" })
     }
+
+    const dias = validarDiasConta(req.body, Consulta, res);
+    if (!dias) return;
 
     //Verifica se existe outra conta com esse nome
     const { data: nomeExistente, error: erroNome } = await supabase
@@ -221,22 +226,26 @@ export async function editarConta(req, res) {
         return res.status(409).json({ mensagem: "já existe uma conta com esse nome" })
     }
 
-    const {error: erroEdita } = await supabase
+    const { data: alterados, error: erroEdita } = await supabase
         .from('contas_bancarias')
         .update({
             nome_conta: nome_conta,
             tipo_conta: tipo_conta,
             codigo_conta: codigo_conta,
-            nome_instituicao: nome_instituicao
+            nome_instituicao: nome_instituicao,
+            ...dias
         })
         .eq('id_conta', id_conta)
         .eq('id_usuario', id_usuario)
-        .single()
+        .select('id_conta, id_usuario')
+        .maybeSingle()
 
     if (erroEdita) {
         console.log("/usuairo/editar-conta: >>>>> Erro: " + erroEdita)
         return res.status(500).json({ mensagem: "Erro ao editar a conta, tente novamente mais tarde" })
     }
+    if (!alterados) return res.status(404).json({ mensagem: 'Essa conta não existe' });
+    confirmarAlteracao(res, alterados);
     return res.status(200).json({ mensagem: "Conta editada com sucesso" })
 
 }

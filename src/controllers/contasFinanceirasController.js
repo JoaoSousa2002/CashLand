@@ -1,14 +1,17 @@
+import { validarDiasConta } from '../validacoes/contas.js';
 import supabase from '../config/supabase.js';
 import { confirmarAlteracao } from '../middlewares/AuditoriaRota.js';
 
 // Criar conta
 export async function criarContaFinanceira(req, res) {
-    const { nome_conta, tipo_conta, codigo_conta, nome_instituicao } = req.body;
+    const { nome_conta, tipo_conta, codigo_conta, nome_instituicao, data_fechamento, data_vencimento } = req.body;
     if (nome_conta.trim().toLowerCase() === "padrão") {
         return res.status(409).json({
             mensagem: "O nome 'padrão' é reservado pelo sistema."
         });
     }
+    const dias = validarDiasConta(req.body, {}, res);
+    if (!dias) return;
     const { data: consultaNome, error: erroConsulta } = await supabase
         .from('contas_bancarias')
         .select('nome_conta')
@@ -31,7 +34,8 @@ export async function criarContaFinanceira(req, res) {
             id_usuario: req.usuario.id_usuario,
             tipo_conta: tipo_conta,
             codigo_conta: codigo_conta,
-            nome_instituicao: nome_instituicao
+            nome_instituicao: nome_instituicao,
+            ...dias
         })
         .eq('id_usuario', req.usuario.id_usuario)
         .select()
@@ -99,7 +103,7 @@ export async function listarContasFinanceiras(req, res) {
 }
 // Editar conta
 export async function editarConta(req, res) {
-    const { id_conta, nome_conta, tipo_conta, codigo_conta, nome_instituicao } = req.body
+    const { id_conta, nome_conta, tipo_conta, codigo_conta, nome_instituicao, data_fechamento, data_vencimento } = req.body
     if (nome_conta.trim().toLowerCase() === "padrão") {
         return res.status(409).json({
             mensagem: "Esse nome é reservado pelo sistema."
@@ -108,7 +112,7 @@ export async function editarConta(req, res) {
     //Verifica se a conta existe ou se é a conta padrão
     const { data: Consulta, error: erroConsulta } = await supabase
         .from('contas_bancarias')
-        .select('id_conta, id_usuario, nome_conta')
+        .select('id_conta, id_usuario, nome_conta, tipo_conta, data_fechamento, data_vencimento')
         .eq('id_conta', id_conta)
         .eq('id_usuario', req.usuario.id_usuario)
         .select()
@@ -122,6 +126,9 @@ export async function editarConta(req, res) {
     } else if (Consulta.nome_conta === 'padrão') {
         return res.status(400).json({ mensagem: "Essa conta não pode ser editada" })
     }
+
+    const dias = validarDiasConta(req.body, Consulta, res);
+    if (!dias) return;
 
     //Verifica se existe outra conta com esse nome
     const { data: nomeExistente, error: erroNome } = await supabase
@@ -145,7 +152,8 @@ export async function editarConta(req, res) {
             nome_conta: nome_conta,
             tipo_conta: tipo_conta,
             codigo_conta: codigo_conta,
-            nome_instituicao: nome_instituicao
+            nome_instituicao: nome_instituicao,
+            ...dias
         })
         .eq('id_conta', id_conta)
         .eq('id_usuario', req.usuario.id_usuario)

@@ -81,6 +81,11 @@
                     <button type="button" id="botao-adicionar-conta" disabled>Adicionar conta</button>
                     <div id="erro-id_contas" aria-live="polite"></div>
                 </div>
+                <div class="input-dados">
+                    <label for="id_meta">ID da meta:</label>
+                    <input id="id_meta" name="id_meta" type="number" min="1" max="2147483647" step="1" placeholder="Todas as metas" aria-describedby="erro-id_meta">
+                    <div id="erro-id_meta" aria-live="polite"></div>
+                </div>
                 <div id="filtros-transacoes">
                     <div class="input-dados">
                         <label for="id_categoria">Categoria:</label>
@@ -413,6 +418,7 @@
 
         function preencherFiltros() {
             formFiltros.reset();
+            document.getElementById('id_meta').value = filtrosAplicados.id_meta || '';
             renderizarSelecaoContas(filtrosAplicados.id_contas || []);
             if (modo === 'Transacoes') {
                 ['id_categoria', 'id_recorrencia', 'status'].forEach(id => {
@@ -443,6 +449,7 @@
 
         function coletarFiltros() {
             const filtros = {};
+            if (document.getElementById('id_meta').value) filtros.id_meta = document.getElementById('id_meta').value;
             const selecionadas = contasSelecionadas();
             if (selecionadas.length) filtros.id_contas = selecionadas;
             if (modo === 'Transacoes') {
@@ -478,7 +485,7 @@
                 parametros.set(campo, texto);
             }
             const campos = modo === 'Transacoes'
-                ? ['id_contas', 'id_categoria', 'id_recorrencia', 'status', 'periodo_criacao', 'periodo_vencimento'] : ['id_contas'];
+                ? ['id_meta', 'id_contas', 'id_categoria', 'id_recorrencia', 'status', 'periodo_criacao', 'periodo_vencimento'] : ['id_meta', 'id_contas'];
             campos.forEach(campo => {
                 const valor = filtrosAplicados[campo];
                 if (Array.isArray(valor)) {
@@ -767,7 +774,8 @@
         document.getElementById('seletor-listagem').addEventListener('change', async evento => {
             modo = evento.target.value;
             pesquisa.value = '';
-            filtrosAplicados = filtrosAplicados.id_contas ? { id_contas: filtrosAplicados.id_contas } : {};
+            filtrosAplicados = { ...(filtrosAplicados.id_contas ? { id_contas: filtrosAplicados.id_contas } : {}),
+                ...(filtrosAplicados.id_meta ? { id_meta: filtrosAplicados.id_meta } : {}) };
             filtros_overlay.style.display = 'none';
             limparErros();
             atualizarModo();
@@ -868,6 +876,8 @@
                 document.getElementById('nome-usuario').textContent = usuario.nome.slice(0, 8);
                 atualizarSaldoUsuario(usuario.id_usuario);
                 sessaoPronta = true;
+                const metaUrl = new URLSearchParams(location.search).get('id_meta');
+                if (metaUrl) filtrosAplicados.id_meta = metaUrl;
                 document.getElementById('botao-pesquisar').disabled = false;
                 document.getElementById('botao-filtrar').disabled = false;
                 await carregarOpcoesFiltros();

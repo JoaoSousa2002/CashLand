@@ -106,9 +106,9 @@
                         <input id="data_criacao" name="data_criacao" disabled aria-describedby="erro-data_criacao" readonly data-bloqueado="true" type="text" >
                         <div id="erro-data_criacao" aria-live="polite"></div>
                     </div>
-                    <div class="input-dados" id="campo-id_meta" data-modo="transacao" hidden>
-                        <label for="id_meta" id="label-id_meta">Meta associada:</label>
-                        <input id="id_meta" name="id_meta" disabled aria-describedby="erro-id_meta" readonly data-bloqueado="true" type="text" >
+                    <div class="input-dados" id="campo-id_meta">
+                        <label for="id_meta" id="label-id_meta">ID da meta associada:</label>
+                        <input id="id_meta" name="id_meta" type="number" min="1" max="2147483647" step="1" placeholder="Sem meta" disabled aria-describedby="erro-id_meta">
                         <div id="erro-id_meta" aria-live="polite"></div>
                     </div>
                     <div class="input-dados" id="campo-nome">
@@ -232,7 +232,7 @@
         const salvar = document.getElementById('salvar');
         const pagar = document.getElementById('botao-pagar');
         const recarregar = document.getElementById('botao-recarregar');
-        const camposComuns = ['nome', 'descricao', 'tipo_transacao', 'id_categoria', 'forma_pagamento', 'destino'];
+        const camposComuns = ['id_meta', 'nome', 'descricao', 'tipo_transacao', 'id_categoria', 'forma_pagamento', 'destino'];
         const camposTransacao = [...camposComuns, 'id_conta_origem', 'id_conta_destino', 'valor_transacao',
             'status_transacao', 'data_transacao', 'data_vencimento', 'data_pagamento'];
         const camposRecorrencia = [...camposComuns, 'id_conta', 'modalidade', 'valor', 'frequencia', 'qtd_parcelas', 'data_inicio', 'ativo'];
@@ -350,6 +350,7 @@
                 document.getElementById('label-valor').textContent = parcelado ? 'Valor total (R$):' : 'Valor por ocorrência (R$):';
                 document.getElementById('label-qtd_parcelas').textContent = parcelado ? 'Quantidade de parcelas:' : 'Quantidade de ocorrências (vazio = sem fim definido):';
             }
+            document.getElementById('id_meta').disabled = !pronto || ocupado || document.getElementById('tipo_transacao').value === 'Transferencia';
             salvar.disabled = !pronto || ocupado;
             pagar.hidden = !sessaoPronta || !registroPronto || modo !== 'transacao' || registro?.status_transacao !== 'Pendente';
             document.getElementById('aviso-pagamento').hidden = pagar.hidden;
@@ -451,19 +452,20 @@
         function coletarDados() {
             const dados = { [chaveId]: idRegistro };
             const editaveis = modo === 'transacao' ? camposTransacao : camposRecorrencia;
-            const numeros = ['id_conta_origem', 'id_conta_destino', 'id_conta', 'id_categoria', 'valor_transacao', 'valor', 'qtd_parcelas'];
+            const numeros = ['id_meta', 'id_conta_origem', 'id_conta_destino', 'id_conta', 'id_categoria', 'valor_transacao', 'valor', 'qtd_parcelas'];
             editaveis.forEach(id => {
                 const campo = document.getElementById(id);
                 if (campo.disabled || campo.value === valoresIniciais[id]) return;
                 let valor = campo.value.trim();
                 if (id === 'ativo') valor = valor === 'true';
-                else if (valor === '' && (['qtd_parcelas', 'data_vencimento', 'data_pagamento', 'id_conta_destino'].includes(id)
+                else if (valor === '' && (['id_meta', 'qtd_parcelas', 'data_vencimento', 'data_pagamento', 'id_conta_destino'].includes(id)
                     || (id === 'id_categoria' && modo === 'transacao' && document.getElementById('tipo_transacao').value === 'Transferencia'))) valor = null;
                 else if (numeros.includes(id) && valor !== '') valor = Number(valor);
                 dados[id] = valor;
             });
             if (modo === 'transacao') {
                 if (dados.tipo_transacao === 'Transferencia') {
+                    dados.id_meta = null;
                     const destino = document.getElementById('id_conta_destino').value;
                     dados.id_conta_destino = destino === '' ? null : Number(destino);
                 } else if (dados.tipo_transacao) dados.id_conta_destino = null;

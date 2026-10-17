@@ -64,7 +64,7 @@ test('criação usa o proprietário da sessão e persiste somente os campos da c
         .expect(200, { mensagem: 'Conta criada com sucesso' });
     filtro(consultas[0], 'id_usuario', usuario);
     assert.equal(consultas[1].operacao, 'insert');
-    assert.deepEqual(consultas[1].valores, { ...dados, id_usuario: usuario });
+    assert.deepEqual(consultas[1].valores, { ...dados, id_usuario: usuario, data_fechamento: null, data_vencimento: null });
 });
 
 for (const pesquisa of [undefined, '', 'Minha conta', '789']) {
@@ -121,7 +121,7 @@ test('edição restringe leitura, duplicidade e escrita ao proprietário e confi
     proprietario(consultas);
     filtro(consultas[1], 'id_conta', conta.id_conta, 'neq');
     filtro(consultas[2], 'id_conta', conta.id_conta);
-    assert.deepEqual(consultas[2].valores, dados);
+    assert.deepEqual(consultas[2].valores, { ...dados, data_fechamento: null, data_vencimento: null });
     assert.ok(eventos.some(e => e.rota === 'USER_EDITAR_CONTA' && e.resultado === 'SUCESSO'));
 });
 
@@ -286,5 +286,53 @@ for (const [metodo, caminho, body, respostas] of operacoes.filter(([metodo]) => 
         await http(metodo, caminho).send(body)
             .expect(404, { mensagem: 'Essa conta não existe' });
         assert.ok(!eventos.some(e => e.tipo_evento === 'AUDITORIA' && e.resultado === 'SUCESSO'));
+    });
+}
+
+for (const admin of [false, true]) {
+    const prefixo = admin ? 'admin' : 'usuario';
+    const alvo = admin ? 456 : usuario;
+    const credito = { ...conta, id_usuario: alvo, tipo_conta: 'Credito', data_fechamento: 25, data_vencimento: 5 };
+    test(`${prefixo}: editar Credito preserva dias omitidos`, async t => {
+        const consultas = simular(t, [credito, null, credito]);
+        await http('patch', `/${prefixo}/editar-conta`, admin ? 'Admin' : 'Comum')
+            .send({ ...dados, tipo_conta: 'Credito', id_conta: conta.id_conta, ...(admin ? { id_usuario: alvo } : {}) }).expect(200);
+        assert.equal(consultas[2].valores.data_fechamento, 25);
+        assert.equal(consultas[2].valores.data_vencimento, 5);
+        consultas.forEach(c => filtro(c, 'id_usuario', alvo));
+    });
+    test(`${prefixo}: mudar para Credito exige os dois dias por campo`, async t => {
+        simular(t, [{ ...conta, id_usuario: alvo, tipo_conta: 'Corrente' }]);
+        const resposta = await http('patch', `/${prefixo}/editar-conta`, admin ? 'Admin' : 'Comum')
+            .send({ ...dados, tipo_conta: 'Credito', id_conta: conta.id_conta, ...(admin ? { id_usuario: alvo } : {}) }).expect(400);
+        assert.deepEqual(resposta.body.erros.map(e => e.campo), ['data_fechamento', 'data_vencimento']);
+    });
+    test(`${prefixo}: mudar de Credito limpa ambos os dias`, async t => {
+        const consultas = simular(t, [credito, null, credito]);
+        await http('patch', `/${prefixo}/editar-conta`, admin ? 'Admin' : 'Comum')
+            .send({ ...dados, id_conta: conta.id_conta, ...(admin ? { id_usuario: alvo } : {}) }).expect(200);
+        assert.equal(consultas[2].valores.data_fechamento, null);
+        assert.equal(consultas[2].valores.data_vencimento, null);
+    });
+    test(`${prefixo}: editar somente um dia mantém o outro e aceita virada de mês`, async t => {
+        const consultas = simular(t, [credito, null, credito]);
+        await http('patch', `/${prefixo}/editar-conta`, admin ? 'Admin' : 'Comum')
+            .send({ ...dados, tipo_conta: 'Credito', id_conta: conta.id_conta, data_fechamento: 31, ...(admin ? { id_usuario: alvo } : {}) }).expect(200);
+        assert.equal(consultas[2].valores.data_fechamento, 31);
+        assert.equal(consultas[2].valores.data_vencimento, 5);
+    });
+}
+test('criar Credito persiste dias e permite vencimento menor que fechamento', async t => {
+    const consultas = simular(t, [null, conta]);
+    await http('post', '/usuario/criar-conta').send({ ...dados, tipo_conta: 'Credito', data_fechamento: 25, data_vencimento: 5 }).expect(200);
+    assert.equal(consultas[1].valores.data_fechamento, 25);
+    assert.equal(consultas[1].valores.data_vencimento, 5);
+});
+for (const valor of [0, 32, 1.5, '2026-10-16', null, undefined]) {
+    test(`Credito rejeita dia inválido: ${valor}`, async t => {
+        simular(t, []);
+        const resposta = await http('post', '/usuario/criar-conta')
+            .send({ ...dados, tipo_conta: 'Credito', data_fechamento: valor, data_vencimento: 5 }).expect(400);
+        assert.ok(resposta.body.erros.some(e => e.campo === 'data_fechamento'));
     });
 }
