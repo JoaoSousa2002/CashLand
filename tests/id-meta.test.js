@@ -50,9 +50,9 @@ const novaTransacao = { id_conta_origem: 10, id_categoria: 40, id_meta: 20, tipo
 test('verificarMeta distingue inexistência, propriedade, erro e dados autorizados', async t => {
     for (const [respostas, esperado] of [
         [[null], { existencia: false, pertencimento: false, erro: false }],
-        [[meta, {id_usuario:456}], { existencia: true, pertencimento: false, erro: false }],
+        [[{...meta, contas_bancarias:{id_usuario:456}}], { existencia: true, pertencimento: false, erro: false }],
         [[{error:{message:'falha'}}], { existencia: false, pertencimento: false, erro: true }],
-        [[meta, conta], { existencia: true, pertencimento: true, erro: false, consultaMeta:meta }]
+        [[meta], { existencia: true, pertencimento: true, erro: false, consultaMeta:meta }]
     ]) {
         simular(t, respostas);
         assert.deepEqual(await verificarMeta(20,123), esperado);
@@ -66,7 +66,7 @@ for (const admin of [false,true]) {
         test(`${prefixo}: editar ${recurso}, meta ${vinculo} usa estado final`, async t => {
             const registro=recurso==='transacao'?transacao:recorrencia;
             const respostas=recurso==='transacao'?[{status_usuario:'Ativo'},registro,alvo]:[registro];
-            if(vinculo!==null) respostas.push(meta,alvo);
+            if(vinculo!==null) respostas.push({...meta, contas_bancarias:alvo});
             if(recurso==='recorrencia') respostas.push({status_usuario:'Ativo'});
             respostas.push(registro);
             const consultas=simular(t,respostas);
@@ -85,7 +85,7 @@ for (const admin of [false,true]) {
         assert.equal(resposta.body.erros[0].campo,'id_meta');
     });
     test(`${prefixo}: trocar conta revalida meta omitida`,async t=>{
-        simular(t,[{status_usuario:'Ativo'},transacao,alvo,alvo,meta,{id_usuario:789}]);
+        simular(t,[{status_usuario:'Ativo'},transacao,alvo,alvo,{...meta,contas_bancarias:{id_usuario:789}}]);
         await http('patch',`/${prefixo}/editar-transacao`,admin).send({id_transacao:30,id_conta_origem:11,...(admin?{id_usuario:456}:{})}).expect(404);
     });
     for(const recurso of ['transacoes','recorrencias']) {
@@ -99,17 +99,17 @@ for (const admin of [false,true]) {
     }
 }
 test('criar transação com meta de outra conta própria é permitido',async t=>{
-    const consultas=simular(t,[{id_usuario:123},conta,{...meta,id_conta:11},conta,{status_usuario:'Ativo'},transacao]);
+    const consultas=simular(t,[{id_usuario:123},conta,{...meta,id_conta:11},{status_usuario:'Ativo'},transacao]);
     await http('post','/usuario/criar-transacao').send(novaTransacao).expect(201);
     assert.equal(consultas.at(-1).valores.id_meta,20);
     assert.equal(consultas.at(-1).valores.id_usuario,undefined);
 });
 for(const indisponivel of [null,meta]) test(`criar transação rejeita meta ${indisponivel?'de outro usuário':'inexistente'}`,async t=>{
-    simular(t,[{id_usuario:123},conta,indisponivel,...(indisponivel?[{id_usuario:456}]:[])]);
+    simular(t,[{id_usuario:123},conta,indisponivel?{...indisponivel,contas_bancarias:{id_usuario:456}}:null]);
     await http('post','/usuario/criar-transacao').send(novaTransacao).expect(404);
 });
 for(const modalidade of ['Parcelado','Periodico']) test(`criar recorrência ${modalidade} persiste vínculo uma única vez`,async t=>{
-    const consultas=simular(t,[{id_usuario:123},conta,{status_usuario:'Ativo'},meta,conta,recorrencia]);
+    const consultas=simular(t,[{id_usuario:123},conta,{status_usuario:'Ativo'},meta,recorrencia]);
     await http('post','/usuario/criar-recorrencia').send({id_conta:10,id_categoria:40,id_meta:20,tipo_transacao:'Entrada',modalidade,nome:'Reserva',forma_pagamento:'PIX',valor:100,frequencia:'Mensal',qtd_parcelas:3,data_inicio:'2026-10-16',ativo:true}).expect(201);
     assert.equal(consultas.at(-1).valores.id_meta,20);
     assert.deepEqual(consultas.filter(c=>c.operacao==='insert').map(c=>c.tabela),['recorrencias']);
@@ -126,14 +126,8 @@ for (const [metodo,rota,body] of [
     assert.ok(resposta.body.erros.some(e=>e.campo==='id_meta'));
 });
 
-test('rotas, telas e script da RF-007 foram removidos', async () => {
-    for (const [metodo, rota] of [
-        ['post', '/usuario/criar-meta'], ['patch', '/usuario/editar-meta'],
-        ['get', '/usuario/listar-metas'], ['patch', '/admin/editar-meta'],
-        ['get', '/admin/listar-metas']
-    ]) {
-        await http(metodo, rota, rota.startsWith('/admin')).expect(404);
-    }
+// As rotas administrativas são exercitadas em testar_rotas.py --testes-admin-metas.
+test('telas e script da RF-007 continuam indisponíveis', async () => {
     for (const raiz of ['tela-principal', 'tela-admin']) {
         for (const pagina of ['listar-metas', 'editar-meta', 'criar-meta']) {
             await request(app).get(`/${raiz}/${pagina}`).expect(404);

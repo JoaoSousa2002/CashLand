@@ -1593,3 +1593,399 @@ export const schemaADMIN_excluirTransacao = Joi.object({
             'any.required': 'O id_transacao é obrigatório.'
         })
 });
+
+
+//RF-007 ==============================================================
+
+export const schemaCriarMeta = Joi.object({
+
+    id_conta: Joi.number()
+        .integer()
+        .min(1)
+        .max(2147483647)
+        .required()
+        .messages({
+            'number.base': 'A identificação da conta bancária deve ser um número.',
+            'number.integer': 'A identificação da conta bancária deve ser um número inteiro.',
+            'number.min': 'A identificação da conta bancária deve ser maior que zero.',
+            'number.max': 'A identificação da conta bancária ultrapassa o limite permitido.',
+            'number.unsafe': 'A identificação da conta bancária ultrapassa o limite permitido.',
+            'number.infinity': 'A identificação da conta bancária deve ser um número finito.',
+            'any.required': 'A conta bancária é obrigatória.'
+        }),
+
+    nome: Joi.string()
+        .trim()
+        .min(1)
+        .required()
+        .messages({
+            'string.base': 'O nome da meta deve ser um texto.',
+            'string.empty': 'O nome da meta é obrigatório.',
+            'string.min': 'O nome da meta deve possuir pelo menos um caractere.',
+            'any.required': 'O nome da meta é obrigatório.'
+        }),
+
+    descricao: Joi.string()
+        .trim()
+        .allow('', null)
+        .optional()
+        .messages({
+            'string.base': 'A descrição da meta deve ser um texto.'
+        }),
+
+    valor_meta: Joi.number()
+        .positive()
+        .precision(2)
+        .strict()
+        .required()
+        .messages({
+            'number.base': 'O valor objetivo deve ser um número.',
+            'number.positive': 'O valor objetivo deve ser maior que zero.',
+            'number.precision': 'O valor objetivo deve possuir no máximo duas casas decimais.',
+            'number.unsafe': 'O valor objetivo ultrapassa o limite permitido.',
+            'number.infinity': 'O valor objetivo deve ser um número finito.',
+            'any.required': 'O valor objetivo é obrigatório.'
+        }),
+
+    data_meta: Joi.string()
+        .pattern(/^\d{4}-\d{2}-\d{2}$/)
+        .custom((valor, helpers) => {
+
+            const data = new Date(`${valor}T00:00:00.000Z`);
+
+            if (
+                Number(valor.slice(0, 4)) < 1
+                || Number.isNaN(data.getTime())
+                || data.toISOString().slice(0, 10) !== valor
+            ) {
+                return helpers.error('data.invalida');
+            }
+
+            return valor;
+
+        })
+        .allow(null)
+        .optional()
+        .messages({
+            'string.base': 'A data limite deve ser um texto no formato AAAA-MM-DD.',
+            'string.empty': 'Informe a data limite ou envie nulo para deixar sem prazo.',
+            'string.pattern.base': 'A data limite deve estar no formato AAAA-MM-DD.',
+            'data.invalida': 'A data limite deve ser uma data válida.',
+            'any.custom': 'Não foi possível validar a data limite.'
+        })
+
+})
+
+export const schemaListarMetas = Joi.object({
+
+    pesquisa: Joi.string()
+        .trim()
+        .min(1)
+        .optional()
+        .messages({
+            'string.base': 'A pesquisa deve ser um texto ou numero.',
+            'string.empty': 'A pesquisa não pode estar vazia.',
+            'string.min': 'A pesquisa deve possuir pelo menos um caractere.'
+        }),
+
+    id_contas: Joi.array()
+        .single()
+        .items(
+            Joi.number()
+                .integer()
+                .min(1)
+                .max(2147483647)
+                .messages({
+                    'number.base': 'A identificação de cada conta bancária deve ser um número.',
+                    'number.integer': 'A identificação de cada conta bancária deve ser um número inteiro.',
+                    'number.min': 'A identificação de cada conta bancária deve ser maior que zero.',
+                    'number.max': 'A identificação de uma das contas bancárias ultrapassa o limite permitido.',
+                    'number.unsafe': 'A identificação de uma das contas bancárias ultrapassa o limite permitido.',
+                    'number.infinity': 'A identificação de cada conta bancária deve ser um número finito.'
+                })
+        )
+        .optional()
+        .messages({
+            'array.base': 'As contas bancárias devem ser enviadas em uma lista.',
+            'array.sparse': 'A lista de contas bancárias não pode conter posições vazias.'
+        }),
+
+    status: Joi.string()
+        .valid('Em progresso', 'Finalizado')
+        .optional()
+        .messages({
+            'string.base': 'O status da meta deve ser um texto.',
+            'string.empty': 'O status da meta não pode estar vazio.',
+            'any.only': 'O status da meta deve ser Em progresso ou Finalizado.'
+        })
+
+})
+
+export const schemaEditarMeta = Joi.object({
+
+    id_meta: Joi.number()
+        .integer()
+        .min(1)
+        .max(2147483647)
+        .required()
+        .messages({
+            'number.base': 'A identificação da meta deve ser um número.',
+            'number.integer': 'A identificação da meta deve ser um número inteiro.',
+            'number.min': 'A identificação da meta deve ser maior que zero.',
+            'number.max': 'A identificação da meta ultrapassa o limite permitido.',
+            'number.unsafe': 'A identificação da meta ultrapassa o limite permitido.',
+            'number.infinity': 'A identificação da meta deve ser um número finito.',
+            'any.required': 'A meta é obrigatória.'
+        }),
+
+    id_conta: Joi.number()
+        .integer()
+        .min(1)
+        .max(2147483647)
+        .optional()
+        .messages({
+            'number.base': 'A identificação da conta bancária deve ser um número.',
+            'number.integer': 'A identificação da conta bancária deve ser um número inteiro.',
+            'number.min': 'A identificação da conta bancária deve ser maior que zero.',
+            'number.max': 'A identificação da conta bancária ultrapassa o limite permitido.',
+            'number.unsafe': 'A identificação da conta bancária ultrapassa o limite permitido.',
+            'number.infinity': 'A identificação da conta bancária deve ser um número finito.'
+        }),
+
+    nome: Joi.string()
+        .trim()
+        .min(1)
+        .optional()
+        .messages({
+            'string.base': 'O nome da meta deve ser um texto.',
+            'string.empty': 'O nome da meta não pode estar vazio.',
+            'string.min': 'O nome da meta deve possuir pelo menos um caractere.'
+        }),
+
+    descricao: Joi.string()
+        .trim()
+        .allow('', null)
+        .optional()
+        .messages({
+            'string.base': 'A descrição da meta deve ser um texto.'
+        }),
+
+    valor_meta: Joi.number()
+        .positive()
+        .precision(2)
+        .strict()
+        .optional()
+        .messages({
+            'number.base': 'O valor objetivo deve ser um número.',
+            'number.positive': 'O valor objetivo deve ser maior que zero.',
+            'number.precision': 'O valor objetivo deve possuir no máximo duas casas decimais.',
+            'number.unsafe': 'O valor objetivo ultrapassa o limite permitido.',
+            'number.infinity': 'O valor objetivo deve ser um número finito.'
+        }),
+
+    data_meta: Joi.string()
+        .pattern(/^\d{4}-\d{2}-\d{2}$/)
+        .custom((valor, helpers) => {
+
+            const data = new Date(`${valor}T00:00:00.000Z`);
+
+            if (
+                Number(valor.slice(0, 4)) < 1
+                || Number.isNaN(data.getTime())
+                || data.toISOString().slice(0, 10) !== valor
+            ) {
+                return helpers.error('data.invalida');
+            }
+
+            return valor;
+
+        })
+        .allow(null)
+        .optional()
+        .messages({
+            'string.base': 'A data limite deve ser um texto no formato AAAA-MM-DD.',
+            'string.empty': 'Informe a data limite ou envie nulo para remover o prazo.',
+            'string.pattern.base': 'A data limite deve estar no formato AAAA-MM-DD.',
+            'data.invalida': 'A data limite deve ser uma data válida.',
+            'any.custom': 'Não foi possível validar a data limite.'
+        })
+
+})
+
+export const schemaExcluirMeta = Joi.object({
+
+    id_meta: Joi.number()
+        .integer()
+        .min(1)
+        .max(2147483647)
+        .required()
+        .messages({
+            'number.base': 'A identificação da meta deve ser um número.',
+            'number.integer': 'A identificação da meta deve ser um número inteiro.',
+            'number.min': 'A identificação da meta deve ser maior que zero.',
+            'number.max': 'A identificação da meta ultrapassa o limite permitido.',
+            'number.unsafe': 'A identificação da meta ultrapassa o limite permitido.',
+            'number.infinity': 'A identificação da meta deve ser um número finito.',
+            'any.required': 'A meta é obrigatória.'
+        })
+
+})
+
+export const schemaADMIN_listarMetas = schemaListarMetas.keys({
+
+    id_usuario: Joi.number()
+        .integer()
+        .min(1)
+        .max(2147483647)
+        .optional()
+        .messages({
+            'number.base': 'A identificação do usuário deve ser um número.',
+            'number.integer': 'A identificação do usuário deve ser um número inteiro.',
+            'number.min': 'A identificação do usuário deve ser maior que zero.',
+            'number.max': 'A identificação do usuário ultrapassa o limite permitido.',
+            'number.unsafe': 'A identificação do usuário ultrapassa o limite permitido.',
+            'number.infinity': 'A identificação do usuário deve ser um número finito.',
+            'any.required': 'O usuário é obrigatório.'
+        })
+
+})
+
+export const schemaADMIN_editarMeta = Joi.object({
+
+    id_usuario: Joi.number()
+        .integer()
+        .min(1)
+        .max(2147483647)
+        .required()
+        .messages({
+            'number.base': 'A identificação do usuário deve ser um número.',
+            'number.integer': 'A identificação do usuário deve ser um número inteiro.',
+            'number.min': 'A identificação do usuário deve ser maior que zero.',
+            'number.max': 'A identificação do usuário ultrapassa o limite permitido.',
+            'number.unsafe': 'A identificação do usuário ultrapassa o limite permitido.',
+            'number.infinity': 'A identificação do usuário deve ser um número finito.',
+            'any.required': 'O usuário é obrigatório.'
+        }),
+
+    id_meta: Joi.number()
+        .integer()
+        .min(1)
+        .max(2147483647)
+        .required()
+        .messages({
+            'number.base': 'A identificação da meta deve ser um número.',
+            'number.integer': 'A identificação da meta deve ser um número inteiro.',
+            'number.min': 'A identificação da meta deve ser maior que zero.',
+            'number.max': 'A identificação da meta ultrapassa o limite permitido.',
+            'number.unsafe': 'A identificação da meta ultrapassa o limite permitido.',
+            'number.infinity': 'A identificação da meta deve ser um número finito.',
+            'any.required': 'A meta é obrigatória.'
+        }),
+
+    id_conta: Joi.number()
+        .integer()
+        .min(1)
+        .max(2147483647)
+        .optional()
+        .messages({
+            'number.base': 'A identificação da conta bancária deve ser um número.',
+            'number.integer': 'A identificação da conta bancária deve ser um número inteiro.',
+            'number.min': 'A identificação da conta bancária deve ser maior que zero.',
+            'number.max': 'A identificação da conta bancária ultrapassa o limite permitido.',
+            'number.unsafe': 'A identificação da conta bancária ultrapassa o limite permitido.',
+            'number.infinity': 'A identificação da conta bancária deve ser um número finito.'
+        }),
+
+    nome: Joi.string()
+        .trim()
+        .min(1)
+        .optional()
+        .messages({
+            'string.base': 'O nome da meta deve ser um texto.',
+            'string.empty': 'O nome da meta não pode estar vazio.',
+            'string.min': 'O nome da meta deve possuir pelo menos um caractere.'
+        }),
+
+    descricao: Joi.string()
+        .trim()
+        .allow('', null)
+        .optional()
+        .messages({
+            'string.base': 'A descrição da meta deve ser um texto.'
+        }),
+
+    valor_meta: Joi.number()
+        .positive()
+        .precision(2)
+        .strict()
+        .optional()
+        .messages({
+            'number.base': 'O valor objetivo deve ser um número.',
+            'number.positive': 'O valor objetivo deve ser maior que zero.',
+            'number.precision': 'O valor objetivo deve possuir no máximo duas casas decimais.',
+            'number.unsafe': 'O valor objetivo ultrapassa o limite permitido.',
+            'number.infinity': 'O valor objetivo deve ser um número finito.'
+        }),
+
+    data_meta: Joi.string()
+        .pattern(/^\d{4}-\d{2}-\d{2}$/)
+        .custom((valor, helpers) => {
+
+            const data = new Date(`${valor}T00:00:00.000Z`);
+
+            if (
+                Number(valor.slice(0, 4)) < 1
+                || Number.isNaN(data.getTime())
+                || data.toISOString().slice(0, 10) !== valor
+            ) {
+                return helpers.error('data.invalida');
+            }
+
+            return valor;
+
+        })
+        .allow(null)
+        .optional()
+        .messages({
+            'string.base': 'A data limite deve ser um texto no formato AAAA-MM-DD.',
+            'string.empty': 'Informe a data limite ou envie nulo para remover o prazo.',
+            'string.pattern.base': 'A data limite deve estar no formato AAAA-MM-DD.',
+            'data.invalida': 'A data limite deve ser uma data válida.',
+            'any.custom': 'Não foi possível validar a data limite.'
+        })
+
+})
+
+export const schemaADMIN_excluirMeta = Joi.object({
+
+    id_usuario: Joi.number()
+        .integer()
+        .min(1)
+        .max(2147483647)
+        .required()
+        .messages({
+            'number.base': 'A identificação do usuário deve ser um número.',
+            'number.integer': 'A identificação do usuário deve ser um número inteiro.',
+            'number.min': 'A identificação do usuário deve ser maior que zero.',
+            'number.max': 'A identificação do usuário ultrapassa o limite permitido.',
+            'number.unsafe': 'A identificação do usuário ultrapassa o limite permitido.',
+            'number.infinity': 'A identificação do usuário deve ser um número finito.',
+            'any.required': 'O usuário é obrigatório.'
+        }),
+
+    id_meta: Joi.number()
+        .integer()
+        .min(1)
+        .max(2147483647)
+        .required()
+        .messages({
+            'number.base': 'A identificação da meta deve ser um número.',
+            'number.integer': 'A identificação da meta deve ser um número inteiro.',
+            'number.min': 'A identificação da meta deve ser maior que zero.',
+            'number.max': 'A identificação da meta ultrapassa o limite permitido.',
+            'number.unsafe': 'A identificação da meta ultrapassa o limite permitido.',
+            'number.infinity': 'A identificação da meta deve ser um número finito.',
+            'any.required': 'A meta é obrigatória.'
+        })
+
+})

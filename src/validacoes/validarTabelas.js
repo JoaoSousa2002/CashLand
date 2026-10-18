@@ -1,20 +1,33 @@
 import supabase from '../config/supabase.js';
 
 export async function verificarMeta(id_meta, id_usuario) {
-    const { data: consultaMeta, error } = await supabase
-        .from('metas')
-        .select('*')
-        .eq('id_meta', id_meta)
-        .maybeSingle();
+    let existencia = false;
+    let pertencimento = false;
+    let erro = false;
 
-    if (error) {
-        return { existencia: false, pertencimento: false, erro: true };
+    const { data: consulta, error: erroConsulta } = await supabase
+        .from('metas')
+        .select('*, contas_bancarias!inner(id_usuario)')
+        .eq('id_meta', id_meta)
+        .maybeSingle()
+
+    if (erroConsulta) {
+        erro = true
+        console.log("validarTabelas.js/verificarMeta: >>>>> " + erroConsulta.message)
+        return { existencia, pertencimento, erro }
+    } else if (!consulta) {
+        return { existencia, pertencimento, erro }
+    } else {
+        existencia = true
     }
-    if (!consultaMeta) {
-        return { existencia: false, pertencimento: false, erro: false };
+
+    // Verifica se o a meta pertence ao usuario
+    if (Number(consulta.contas_bancarias?.id_usuario) === Number(id_usuario)) {
+        pertencimento = true
+        return { existencia, pertencimento, erro, consultaMeta: consulta }
     }
-    const { pertencimento, erro } = await verificarContaBancaria(consultaMeta.id_conta, id_usuario);
-    return { existencia: true, pertencimento, erro, ...(pertencimento ? { consultaMeta } : {}) };
+
+    return { existencia, pertencimento, erro }
 }
 
 // Valida a combinação final também nos PATCH que omitem id_meta.

@@ -9,6 +9,8 @@ Instalação:
 Execução:
     python3 tests/testar_rotas.py
     python3 tests/testar_rotas.py --testes-rf06  # testes locais sem banco real
+    python3 tests/testar_rotas.py --testes-rf07  # metas de usuário/admin, sem banco real
+    python3 tests/testar_rotas.py --testes-admin-metas  # somente metas de admin
 
 O programa:
 - pergunta a URL base da API;
@@ -23,6 +25,7 @@ import json
 import subprocess
 import sys
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 from getpass import getpass
 
@@ -690,6 +693,69 @@ for caminho_rf06 in (
     })
 
 
+# RF07: quatro rotas de usuário e três operações administrativas.
+ROTAS_RF07 = [
+    {
+        "nome": "Criar meta financeira", "metodo": "POST", "caminho": "/usuario/criar-meta",
+        "login": True, "admin": False,
+        "body": [
+            {"nome": "id_conta", "tipo": "int", "obrigatorio": True},
+            {"nome": "nome", "tipo": "str", "obrigatorio": True},
+            {"nome": "descricao", "tipo": "str", "obrigatorio": False, "aceita_null": True},
+            {"nome": "valor_meta", "tipo": "float", "obrigatorio": True},
+            {"nome": "data_meta", "tipo": "str", "obrigatorio": False, "aceita_null": True},
+        ],
+    },
+    {
+        "nome": "Listar metas financeiras", "metodo": "GET", "caminho": "/usuario/listar-metas",
+        "login": True, "admin": False,
+        "query": [
+            {"nome": "pesquisa", "tipo": "str", "obrigatorio": False},
+            {"nome": "id_contas", "tipo": "json", "obrigatorio": False},
+            {"nome": "status", "tipo": "str", "obrigatorio": False},
+        ],
+    },
+    {
+        "nome": "Editar meta financeira", "metodo": "PATCH", "caminho": "/usuario/editar-meta",
+        "login": True, "admin": False,
+        "body": [
+            {"nome": "id_meta", "tipo": "int", "obrigatorio": True},
+            {"nome": "id_conta", "tipo": "int", "obrigatorio": False},
+            {"nome": "nome", "tipo": "str", "obrigatorio": False},
+            {"nome": "descricao", "tipo": "str", "obrigatorio": False, "aceita_null": True},
+            {"nome": "valor_meta", "tipo": "float", "obrigatorio": False},
+            {"nome": "data_meta", "tipo": "str", "obrigatorio": False, "aceita_null": True},
+        ],
+    },
+    {
+        "nome": "Excluir meta financeira", "metodo": "DELETE", "caminho": "/usuario/deletar-meta/{id_meta}",
+        "login": True, "admin": False,
+        "path_params": [{"nome": "id_meta", "tipo": "int", "obrigatorio": True}],
+    },
+]
+ROTAS.extend(ROTAS_RF07)
+
+ROTAS_ADMIN_RF07 = []
+for rota_usuario in ROTAS_RF07[1:]:
+    origem = "query" if rota_usuario["metodo"] == "GET" else "path_params" if rota_usuario["metodo"] == "DELETE" else "body"
+    campos_admin = [campo.copy() for campo in rota_usuario[origem]]
+    campo_usuario = {"nome": "id_usuario", "tipo": "int", "obrigatorio": origem != "query"}
+    caminho_admin = rota_usuario["caminho"].replace("/usuario/", "/admin/", 1)
+    if origem == "path_params":
+        caminho_admin += "/{id_usuario}"
+        campos_admin.append(campo_usuario)
+    else:
+        campos_admin.insert(0, campo_usuario)
+    ROTAS_ADMIN_RF07.append({
+        **rota_usuario,
+        "nome": rota_usuario["nome"] + " como ADMIN",
+        "caminho": caminho_admin,
+        "admin": True,
+        origem: campos_admin,
+    })
+ROTAS.extend(ROTAS_ADMIN_RF07)
+
+
 def converter_valor(valor, tipo):
     if tipo == "str":
         return valor
@@ -716,6 +782,9 @@ def pedir_campos(campos):
         while True:
             indicador = "" if obrigatorio else " [opcional - ENTER para ignorar]"
 
+            if campo.get("aceita_null"):
+                indicador += " [null para limpar]"
+
             if secreto:
                 valor = getpass(f"{nome}{indicador}: ").strip()
             else:
@@ -728,7 +797,7 @@ def pedir_campos(campos):
                 break
 
             try:
-                dados[nome] = converter_valor(valor, tipo)
+                dados[nome] = None if campo.get("aceita_null") and valor == "null" else converter_valor(valor, tipo)
                 break
             except (ValueError, json.JSONDecodeError):
                 print(f"Valor inválido. Tipo esperado: {tipo}")
@@ -945,7 +1014,32 @@ def main():
 
 
 
-class TestesRF06(unittest.TestCase):
+class TestesHTTP(unittest.TestCase):
+    """Ponte HTTP local com Supabase simulado, compartilhada pelas suítes."""
+
+    def chamada(self, metodo, caminho, body=None, query=None, admin=False, autenticado=True):
+        dados = {"metodo": metodo, "caminho": caminho}
+        if autenticado:
+            dados["usuario"] = {"id_usuario": 99 if admin else 1, "tipo": "Admin" if admin else "Comum"}
+        if body is not None:
+            dados["body"] = body
+        if query is not None:
+            dados["query"] = query
+        return dados
+
+    def executar(self, chamadas, falha=None, banco=None):
+        raiz = Path(__file__).resolve().parents[1]
+        processo = subprocess.run(
+            ["node", "tests/helpers/rf06-http.js"], cwd=raiz,
+            input=json.dumps({"banco": banco if banco is not None else self.banco(), "chamadas": chamadas, "falha": falha}),
+            text=True, capture_output=True, timeout=30,
+        )
+        self.assertEqual(processo.returncode, 0, processo.stderr + processo.stdout)
+        resultado = next(linha for linha in processo.stdout.splitlines() if linha.startswith("RESULTADO_RF06="))
+        return json.loads(resultado.split("=", 1)[1])
+
+
+class TestesRF06(TestesHTTP):
     """Exercita as rotas Express com banco simulado pela ponte Node local."""
 
     def banco(self):
@@ -972,27 +1066,6 @@ class TestesRF06(unittest.TestCase):
                  "nome": "Outro", "tipo_transacao": "Transferencia", "status_transacao": "Pendente"},
             ],
         }
-
-    def chamada(self, metodo, caminho, body=None, query=None, admin=False, autenticado=True):
-        dados = {"metodo": metodo, "caminho": caminho}
-        if autenticado:
-            dados["usuario"] = {"id_usuario": 99 if admin else 1, "tipo": "Admin" if admin else "Comum"}
-        if body is not None:
-            dados["body"] = body
-        if query is not None:
-            dados["query"] = query
-        return dados
-
-    def executar(self, chamadas, falha=None, banco=None):
-        raiz = Path(__file__).resolve().parents[1]
-        processo = subprocess.run(
-            ["node", "tests/helpers/rf06-http.js"], cwd=raiz,
-            input=json.dumps({"banco": banco if banco is not None else self.banco(), "chamadas": chamadas, "falha": falha}),
-            text=True, capture_output=True, timeout=30,
-        )
-        self.assertEqual(processo.returncode, 0, processo.stderr + processo.stdout)
-        resultado = next(linha for linha in processo.stdout.splitlines() if linha.startswith("RESULTADO_RF06="))
-        return json.loads(resultado.split("=", 1)[1])
 
     def rotas_rf06(self):
         return [r for r in ROTAS if any(r["caminho"].split("/")[2:3] == [sufixo] for sufixo in (
@@ -1391,8 +1464,342 @@ class TestesRF06(unittest.TestCase):
                     self.assertIn("Tente cancelar novamente", resultado["respostas"][0]["body"]["mensagem"])
 
 
+class TestesRF07(TestesHTTP):
+    """Rotas reais de metas, com autenticação/Joi e Supabase em memória."""
+
+    def banco(self):
+        return {
+            "contas_bancarias": [
+                {"id_conta": 10, "id_usuario": 1},
+                {"id_conta": 11, "id_usuario": 1},
+                {"id_conta": 20, "id_usuario": 2},
+            ],
+            "metas": [
+                {"id_meta": 100, "id_conta": 10, "nome": "Reserva", "descricao": "Emergência",
+                 "valor_meta": 1000, "valor_atual": 100, "status": "Em progresso", "data_meta": "2028-02-29"},
+                {"id_meta": 101, "id_conta": 11, "nome": "Viagem 100", "valor_meta": 2000,
+                 "valor_atual": 2000, "status": "Finalizado"},
+                {"id_meta": 200, "id_conta": 20, "nome": "Reserva alheia", "valor_meta": 3000,
+                 "valor_atual": 0, "status": "Em progresso"},
+            ],
+        }
+
+    def dados_meta(self, **alteracoes):
+        return {"id_conta": 10, "nome": "Reserva nova", "valor_meta": 1200.50, **alteracoes}
+
+    def assert_sem_escritas(self, resultado):
+        self.assertEqual(resultado["banco"], self.banco())
+        self.assertTrue(all(c["operacao"] == "select" for c in resultado["consultas"]))
+
+    def test_menu_contem_somente_as_quatro_rotas_registradas(self):
+        self.assertEqual([(r["metodo"], r["caminho"]) for r in ROTAS_RF07], [
+            ("POST", "/usuario/criar-meta"), ("GET", "/usuario/listar-metas"),
+            ("PATCH", "/usuario/editar-meta"), ("DELETE", "/usuario/deletar-meta/{id_meta}"),
+        ])
+        self.assertTrue(all(r["login"] and not r["admin"] for r in ROTAS_RF07))
+        self.assertEqual([c["nome"] for c in ROTAS_RF07[3]["path_params"]], ["id_meta"])
+
+    def test_todas_as_rotas_exigem_sessao_antes_do_banco(self):
+        chamadas = [self.chamada(r["metodo"], r["caminho"].replace("{id_meta}", "100"), autenticado=False)
+                    for r in ROTAS_RF07]
+        resultado = self.executar(chamadas)
+        self.assertEqual([r["status"] for r in resultado["respostas"]], [401] * 4)
+        self.assertEqual(resultado["consultas"], [])
+
+    def test_menu_distingue_omissao_null_e_valores_tipados(self):
+        with patch("builtins.input", side_effect=["100", "", "", "null", "1500.25", "null"]):
+            dados = pedir_campos(ROTAS_RF07[2]["body"])
+        self.assertEqual(dados, {"id_meta": 100, "descricao": None, "valor_meta": 1500.25, "data_meta": None})
+        with patch("builtins.input", side_effect=["Reserva", "[10, 11]", "Em progresso"]):
+            filtros = pedir_campos(ROTAS_RF07[1]["query"])
+        self.assertEqual(filtros, {"pesquisa": "Reserva", "id_contas": [10, 11], "status": "Em progresso"})
+
+    def test_criar_meta_trim_opcionais_e_auditoria(self):
+        casos = [self.dados_meta(), self.dados_meta(nome="  Reserva  ", descricao="  Detalhes  ", data_meta="2028-02-29"),
+                 self.dados_meta(descricao=None, data_meta=None)]
+        resultado = self.executar([self.chamada("POST", "/usuario/criar-meta", body) for body in casos])
+        self.assertEqual([r["status"] for r in resultado["respostas"]], [201] * len(casos))
+        inseridas = resultado["banco"]["metas"][3:]
+        self.assertEqual(inseridas, [casos[0], {**casos[1], "nome": "Reserva", "descricao": "Detalhes"}, casos[2]])
+        self.assertTrue(all("id_usuario" not in m and "valor_atual" not in m and "status" not in m for m in inseridas))
+        self.assertEqual([e["rota"] for e in resultado["eventos"]], ["USER_CRIAR_META"] * len(casos))
+        self.assertEqual([e["resultado"] for e in resultado["eventos"]], ["SUCESSO"] * len(casos))
+
+    def test_joi_campos_obrigatorios_e_rejeicao_de_invalidos(self):
+        casos = [("POST", "/usuario/criar-meta", {}, {"id_conta", "nome", "valor_meta"}),
+                 ("PATCH", "/usuario/editar-meta", {"nome": "Reserva"}, {"id_meta"})]
+        invalidos = [("id_conta", 0), ("id_conta", -1), ("id_conta", 1.5), ("id_conta", 2147483648),
+                     ("nome", "  "), ("nome", None), ("descricao", 42),
+                     ("valor_meta", 0), ("valor_meta", -1), ("valor_meta", 10.001), ("valor_meta", "100"),
+                     ("data_meta", "2026-02-29"), ("data_meta", "2026-04-31"), ("data_meta", "17/10/2026"),
+                     ("data_meta", "0000-01-01"), ("data_meta", ""),
+                     ("id_usuario", 2), ("valor_atual", 100), ("status", "Finalizado"), ("data_criacao", "2026-10-17")]
+        for campo, valor in invalidos:
+            casos.append(("POST", "/usuario/criar-meta", self.dados_meta(**{campo: valor}), {campo}))
+            casos.append(("PATCH", "/usuario/editar-meta", {"id_meta": 100, campo: valor}, {campo}))
+        for valor in (0, -1, 1.5, 2147483648, "abc"):
+            casos.append(("PATCH", "/usuario/editar-meta", {"id_meta": valor, "nome": "Nova"}, {"id_meta"}))
+        resultado = self.executar([self.chamada(m, r, body) for m, r, body, _ in casos])
+        for caso, resposta in zip(casos, resultado["respostas"]):
+            with self.subTest(caso=caso):
+                self.assertEqual(resposta["status"], 400)
+                self.assertEqual(resposta["body"]["mensagem"], "Dados inválidos.")
+                self.assertTrue(caso[3] <= {e["campo"] for e in resposta["body"]["erros"]})
+        self.assertEqual(resultado["consultas"], [])
+        self.assert_sem_escritas(resultado)
+
+    def test_criar_e_trocar_conta_rejeita_conta_alheia_ou_inexistente(self):
+        chamadas = []
+        for conta in (20, 999):
+            chamadas.extend([self.chamada("POST", "/usuario/criar-meta", self.dados_meta(id_conta=conta)),
+                             self.chamada("PATCH", "/usuario/editar-meta", {"id_meta": 100, "id_conta": conta})])
+        resultado = self.executar(chamadas)
+        self.assertEqual([r["status"] for r in resultado["respostas"]], [404] * len(chamadas))
+        self.assert_sem_escritas(resultado)
+
+    def test_listar_isola_proprietario_e_combina_filtros(self):
+        casos = [({}, [100, 101]), ({"id_contas": [10, 11], "status": "Em progresso", "pesquisa": "resERVa"}, [100]),
+                 ({"pesquisa": "100"}, [100, 101]), ({"pesquisa": "101"}, [101]),
+                 ({"status": "Finalizado"}, [101]), ({"pesquisa": "alheia"}, []),
+                 ({"pesquisa": 'x,or(id_meta.eq.200)'}, [])]
+        resultado = self.executar([self.chamada("GET", "/usuario/listar-metas", query=q) for q, _ in casos])
+        for (query, ids), resposta in zip(casos, resultado["respostas"]):
+            with self.subTest(query=query):
+                self.assertEqual(resposta["status"], 200 if ids else 404)
+                self.assertEqual(resposta["body"]["mensagem"], "Metas listadas com sucesso" if ids else "Nenhuma meta encontrada")
+                self.assertEqual([m["id_meta"] for m in resposta["body"].get("metas", [])], ids)
+        consultas = [c for c in resultado["consultas"] if c["tabela"] == "metas"]
+        for consulta in consultas:
+            self.assertEqual(consulta["campos"], "*, contas_bancarias!inner(id_usuario)")
+            self.assertIn(["eq", "contas_bancarias.id_usuario", 1], consulta["filtros"])
+        self.assertIn(["or", 'and(id_meta.not.is.null,id_conta.in.(10,11),status.eq."Em progresso",nome.ilike."%resERVa%")'], consultas[1]["filtros"])
+        self.assertEqual([e["resultado"] for e in resultado["eventos"]],
+                         ["SUCESSO" if ids else "FALHA" for _, ids in casos])
+
+    def test_listar_com_uma_conta_e_sem_resultados(self):
+        resultado = self.executar([self.chamada("GET", "/usuario/listar-metas", query={"id_contas": [10]})])
+        self.assertEqual(resultado["respostas"][0]["status"], 200)
+        self.assertEqual([m["id_meta"] for m in resultado["respostas"][0]["body"]["metas"]], [100])
+        banco = self.banco()
+        banco["metas"] = []
+        resultado = self.executar([self.chamada("GET", "/usuario/listar-metas")], banco=banco)
+        self.assertEqual(resultado["respostas"][0]["status"], 404)
+        self.assertEqual(resultado["respostas"][0]["body"]["mensagem"], "Nenhuma meta encontrada")
+
+    def test_listagem_rejeita_filtros_invalidos_e_contas_alheias(self):
+        casos = [({"pesquisa": "  "}, 400), ({"status": "Cancelado"}, 400), ({"id_meta": 100}, 400),
+                 ({"id_usuario": 2}, 400), ({"id_contas": [0, 10]}, 400), ({"id_contas": [10, 1.5]}, 400),
+                 ({"id_contas": [10, 20]}, 404), ({"id_contas": [10, 999]}, 404)]
+        resultado = self.executar([self.chamada("GET", "/usuario/listar-metas", query=q) for q, _ in casos])
+        self.assertEqual([r["status"] for r in resultado["respostas"]], [status for _, status in casos])
+        self.assertTrue(all(c["tabela"] == "contas_bancarias" for c in resultado["consultas"]))
+        self.assert_sem_escritas(resultado)
+
+    def test_patch_preserva_omitidos_limpa_null_e_troca_conta_propria(self):
+        patches = [{"id_meta": 100, "nome": "  Nova reserva  "}, {"id_meta": 100, "descricao": None, "data_meta": None},
+                   {"id_meta": 100, "id_conta": 11, "valor_meta": 1500.25}]
+        resultado = self.executar([self.chamada("PATCH", "/usuario/editar-meta", body) for body in patches])
+        self.assertEqual([r["status"] for r in resultado["respostas"]], [200] * 3)
+        esperado = {**self.banco()["metas"][0], "nome": "Nova reserva", "descricao": None, "data_meta": None,
+                    "id_conta": 11, "valor_meta": 1500.25}
+        self.assertEqual(resultado["banco"]["metas"], [esperado, *self.banco()["metas"][1:]])
+        alteracoes = [c for c in resultado["consultas"] if c["operacao"] == "update"]
+        self.assertEqual([c["valores"] for c in alteracoes], [{"nome": "Nova reserva"}, {"descricao": None, "data_meta": None},
+                                                            {"id_conta": 11, "valor_meta": 1500.25}])
+        self.assertTrue(all(["eq", "id_meta", 100] in c["filtros"] for c in alteracoes))
+        self.assertEqual([e["resultado"] for e in resultado["eventos"]], ["SUCESSO"] * 3)
+
+    def test_editar_excluir_meta_alheia_ou_inexistente_nao_escreve(self):
+        chamadas = []
+        for meta in (200, 999):
+            chamadas.extend([self.chamada("PATCH", "/usuario/editar-meta", {"id_meta": meta, "nome": "Invasão"}),
+                             self.chamada("DELETE", f"/usuario/deletar-meta/{meta}")])
+        resultado = self.executar(chamadas)
+        self.assertEqual([r["status"] for r in resultado["respostas"]], [404] * len(chamadas))
+        self.assert_sem_escritas(resultado)
+
+    def test_delete_usa_id_da_url_e_registra_acao_correta(self):
+        resultado = self.executar([self.chamada("DELETE", "/usuario/deletar-meta/100", {"id_meta": 200}, query={"id_meta": 200})])
+        self.assertEqual(resultado["respostas"][0]["status"], 200)
+        self.assertEqual([m["id_meta"] for m in resultado["banco"]["metas"]], [101, 200])
+        self.assertEqual(resultado["eventos"][0]["rota"], "USER_DELETAR_META")
+        self.assertEqual(resultado["eventos"][0]["resultado"], "SUCESSO")
+        self.assertIn(["eq", "id_meta", 100], resultado["consultas"][-1]["filtros"])
+
+    def test_delete_rejeita_id_invalido_antes_do_banco(self):
+        resultado = self.executar([self.chamada("DELETE", f"/usuario/deletar-meta/{meta}")
+                                  for meta in ("abc", 0, -1, 1.5, 2147483648)])
+        self.assertEqual([r["status"] for r in resultado["respostas"]], [400] * 5)
+        self.assertTrue(all(r["body"]["erros"][0]["campo"] == "id_meta" for r in resultado["respostas"]))
+        self.assertEqual(resultado["consultas"], [])
+
+    def test_erros_de_banco_nao_retornam_sucesso_nem_alteram_dados(self):
+        casos = [
+            ("POST", "criar-meta", self.dados_meta(), None, "contas_bancarias", "select"),
+            ("POST", "criar-meta", self.dados_meta(), None, "metas", "insert"),
+            ("GET", "listar-metas", None, {"id_contas": [10, 11]}, "contas_bancarias", "select"),
+            ("GET", "listar-metas", None, None, "metas", "select"),
+            ("PATCH", "editar-meta", {"id_meta": 100, "id_conta": 11}, None, "contas_bancarias", "select"),
+            ("PATCH", "editar-meta", {"id_meta": 100, "nome": "Nova"}, None, "metas", "select"),
+            ("PATCH", "editar-meta", {"id_meta": 100, "nome": "Nova"}, None, "metas", "update"),
+            ("DELETE", "deletar-meta/100", None, None, "metas", "select"),
+            ("DELETE", "deletar-meta/100", None, None, "metas", "delete"),
+        ]
+        for metodo, acao, body, query, tabela, operacao in casos:
+            with self.subTest(acao=acao, tabela=tabela, operacao=operacao):
+                resultado = self.executar([self.chamada(metodo, "/usuario/" + acao, body, query)],
+                                          falha={"tabela": tabela, "operacao": operacao})
+                self.assertEqual(resultado["respostas"][0]["status"], 500)
+                self.assertTrue(resultado["respostas"][0]["body"]["mensagem"])
+                self.assertEqual(resultado["banco"], self.banco())
+                self.assertTrue(all(e["resultado"] != "SUCESSO" for e in resultado["eventos"]))
+
+
+class TestesAdminRF07(TestesHTTP):
+    """Metas administrativas: autorização, proprietário, filtros e alterações."""
+
+    def banco(self):
+        return {
+            **TestesRF07.banco(self),
+            "usuarios": [{"id_usuario": i, "status_usuario": "Ativo"} for i in (1, 2)],
+        }
+
+    def assert_sem_escritas(self, resultado):
+        self.assertEqual(resultado["banco"], self.banco())
+        self.assertTrue(all(c["operacao"] == "select" for c in resultado["consultas"]))
+
+    def test_menu_e_parametros_das_tres_rotas(self):
+        self.assertEqual([(r["metodo"], r["caminho"]) for r in ROTAS_ADMIN_RF07], [
+            ("GET", "/admin/listar-metas"), ("PATCH", "/admin/editar-meta"),
+            ("DELETE", "/admin/deletar-meta/{id_meta}/{id_usuario}"),
+        ])
+        self.assertTrue(all(r["login"] and r["admin"] for r in ROTAS_ADMIN_RF07))
+        with patch("builtins.input", side_effect=["", "Reserva", "[10, 20]", "Em progresso"]):
+            self.assertEqual(pedir_campos(ROTAS_ADMIN_RF07[0]["query"]), {
+                "pesquisa": "Reserva", "id_contas": [10, 20], "status": "Em progresso",
+            })
+        with patch("builtins.input", side_effect=["2", "200", "", "", "null", "1500.25", "null"]):
+            self.assertEqual(pedir_campos(ROTAS_ADMIN_RF07[1]["body"]), {
+                "id_usuario": 2, "id_meta": 200, "descricao": None, "valor_meta": 1500.25, "data_meta": None,
+            })
+        with patch("builtins.input", side_effect=["200", "2"]):
+            self.assertEqual(montar_caminho(ROTAS_ADMIN_RF07[2]), "/admin/deletar-meta/200/2")
+
+    def test_exige_sessao_e_admin_antes_do_banco(self):
+        chamadas = []
+        for autenticado in (False, True):
+            for rota in ROTAS_ADMIN_RF07:
+                caminho = rota["caminho"].format(id_meta=200, id_usuario=2)
+                chamadas.append(self.chamada(rota["metodo"], caminho, autenticado=autenticado))
+        resultado = self.executar(chamadas)
+        self.assertEqual([r["status"] for r in resultado["respostas"]], [401] * 3 + [403] * 3)
+        self.assertEqual(resultado["consultas"], [])
+        self.assert_sem_escritas(resultado)
+
+    def test_listar_global_por_proprietario_e_filtros_combinados(self):
+        casos = [({}, [100, 101, 200]), ({"id_usuario": 2}, [200]),
+                 ({"id_contas": [10, 20], "status": "Em progresso", "pesquisa": "resERVa"}, [100, 200]),
+                 ({"id_usuario": 1, "id_contas": [10, 11], "status": "Finalizado"}, [101]),
+                 ({"pesquisa": "100"}, [100, 101]), ({"id_contas": 20}, [200]),
+                 ({"pesquisa": "inexistente"}, []), ({"id_usuario": 999}, []),
+                 ({"id_usuario": 1, "id_contas": [20]}, []), ({"id_contas": [999]}, [])]
+        resultado = self.executar([self.chamada("GET", "/admin/listar-metas", query=q, admin=True) for q, _ in casos])
+        for (query, ids), resposta in zip(casos, resultado["respostas"]):
+            with self.subTest(query=query):
+                self.assertEqual(resposta["status"], 200 if ids else 404)
+                self.assertEqual([m["id_meta"] for m in resposta["body"].get("metas", [])], ids)
+        self.assertEqual([m["contas_bancarias"]["id_usuario"] for m in resultado["respostas"][0]["body"]["metas"]], [1, 1, 2])
+        self.assert_sem_escritas(resultado)
+
+    def test_validacao_rejeita_ids_filtros_e_campos_invalidos(self):
+        chamadas = []
+        for valor in (0, -1, 1.5, 2147483648, "abc"):
+            chamadas.extend([
+                self.chamada("GET", "/admin/listar-metas", query={"id_usuario": valor}, admin=True),
+                self.chamada("PATCH", "/admin/editar-meta", {"id_meta": 200, "id_usuario": valor}, admin=True),
+                self.chamada("DELETE", f"/admin/deletar-meta/200/{valor}", admin=True),
+                self.chamada("DELETE", f"/admin/deletar-meta/{valor}/2", admin=True),
+            ])
+        for query in ({"id_contas": [0]}, {"status": "Inválido"}, {"pesquisa": " "}, {"extra": 1}):
+            chamadas.append(self.chamada("GET", "/admin/listar-metas", query=query, admin=True))
+        for body in ({"id_meta": 200}, {"id_usuario": 2},
+                     {"id_usuario": 2, "id_meta": 0}, {"id_usuario": 2, "id_meta": 200, "valor_atual": 1},
+                     {"id_usuario": 2, "id_meta": 200, "valor_meta": 10.001},
+                     {"id_usuario": 2, "id_meta": 200, "data_meta": "2026-02-29"}):
+            chamadas.append(self.chamada("PATCH", "/admin/editar-meta", body, admin=True))
+        resultado = self.executar(chamadas)
+        for chamada, resposta in zip(chamadas, resultado["respostas"]):
+            with self.subTest(chamada=chamada):
+                self.assertEqual(resposta["status"], 400)
+                self.assertEqual(resposta["body"]["mensagem"], "Dados inválidos.")
+        self.assertEqual(resultado["consultas"], [])
+
+    def test_patch_parcial_troca_conta_e_confirma_auditoria(self):
+        patches = [{"id_usuario": 2, "id_meta": 200, "nome": "  Nova reserva  "},
+                   {"id_usuario": 2, "id_meta": 200, "descricao": None, "data_meta": None},
+                   {"id_usuario": 1, "id_meta": 100, "id_conta": 11, "valor_meta": 1500.25}]
+        resultado = self.executar([self.chamada("PATCH", "/admin/editar-meta", b, admin=True) for b in patches])
+        self.assertEqual([r["status"] for r in resultado["respostas"]], [200] * 3)
+        esperado = self.banco()
+        esperado["metas"][2].update(nome="Nova reserva", descricao=None, data_meta=None)
+        esperado["metas"][0].update(id_conta=11, valor_meta=1500.25)
+        self.assertEqual(resultado["banco"], esperado)
+        self.assertEqual([e["rota"] for e in resultado["eventos"]], ["ADMIN_EDITAR_META"] * 3)
+        self.assertEqual([e["resultado"] for e in resultado["eventos"]], ["SUCESSO"] * 3)
+
+    def test_impede_alteracoes_com_proprietario_ou_conta_incorretos(self):
+        patches = [{"id_usuario": 1, "id_meta": 200, "nome": "Inválida"},
+                   {"id_usuario": 999, "id_meta": 200, "nome": "Inválida"},
+                   {"id_usuario": 2, "id_meta": 999, "nome": "Inválida"},
+                   {"id_usuario": 2, "id_meta": 200, "id_conta": 10},
+                   {"id_usuario": 2, "id_meta": 200, "id_conta": 999}]
+        chamadas = [self.chamada("PATCH", "/admin/editar-meta", b, admin=True) for b in patches]
+        chamadas += [self.chamada("DELETE", "/admin/deletar-meta/" + ids, admin=True)
+                     for ids in ("200/1", "200/999", "999/2")]
+        resultado = self.executar(chamadas)
+        self.assertEqual([r["status"] for r in resultado["respostas"]], [404] * len(chamadas))
+        self.assert_sem_escritas(resultado)
+        self.assertTrue(all(e["resultado"] != "SUCESSO" for e in resultado["eventos"]))
+
+    def test_delete_usa_ids_da_url_e_confirma_auditoria(self):
+        chamada = self.chamada("DELETE", "/admin/deletar-meta/200/2", {"id_meta": 100, "id_usuario": 1},
+                               query={"id_meta": 100, "id_usuario": 1}, admin=True)
+        resultado = self.executar([chamada, chamada])
+        self.assertEqual([r["status"] for r in resultado["respostas"]], [200, 404])
+        self.assertEqual([m["id_meta"] for m in resultado["banco"]["metas"]], [100, 101])
+        self.assertEqual([e["rota"] for e in resultado["eventos"]], ["ADMIN_DELETAR_META"] * 2)
+        self.assertEqual([e["resultado"] for e in resultado["eventos"]], ["SUCESSO", "FALHA"])
+
+    def test_falhas_de_banco_retornam_500_sem_alterar_dados(self):
+        casos = [
+            ("GET", "/admin/listar-metas", None, {"id_contas": [20]}, "contas_bancarias", "select"),
+            ("GET", "/admin/listar-metas", None, {"id_usuario": 2}, "usuarios", "select"),
+            ("GET", "/admin/listar-metas", None, {}, "metas", "select"),
+            ("PATCH", "/admin/editar-meta", {"id_usuario": 2, "id_meta": 200, "id_conta": 20}, None, "contas_bancarias", "select"),
+            ("PATCH", "/admin/editar-meta", {"id_usuario": 2, "id_meta": 200, "nome": "Nova"}, None, "usuarios", "select"),
+            ("PATCH", "/admin/editar-meta", {"id_usuario": 2, "id_meta": 200, "nome": "Nova"}, None, "metas", "select"),
+            ("PATCH", "/admin/editar-meta", {"id_usuario": 2, "id_meta": 200, "nome": "Nova"}, None, "metas", "update"),
+            ("DELETE", "/admin/deletar-meta/200/2", None, None, "metas", "select"),
+            ("DELETE", "/admin/deletar-meta/200/2", None, None, "metas", "delete"),
+        ]
+        for metodo, caminho, body, query, tabela, operacao in casos:
+            with self.subTest(caminho=caminho, tabela=tabela, operacao=operacao):
+                resultado = self.executar([self.chamada(metodo, caminho, body, query, admin=True)],
+                                          falha={"tabela": tabela, "operacao": operacao})
+                self.assertEqual(resultado["respostas"][0]["status"], 500)
+                self.assertEqual(resultado["banco"], self.banco())
+                self.assertTrue(all(e["resultado"] != "SUCESSO" for e in resultado["eventos"]))
+
+
 if __name__ == "__main__":
+    suites = []
     if "--testes-rf06" in sys.argv:
-        unittest.main(argv=[sys.argv[0]], verbosity=2)
+        suites.append("TestesRF06")
+    if "--testes-rf07" in sys.argv:
+        suites.extend(["TestesRF07", "TestesAdminRF07"])
+    elif "--testes-admin-metas" in sys.argv:
+        suites.append("TestesAdminRF07")
+    if suites:
+        unittest.main(argv=[sys.argv[0], *suites], verbosity=2)
     else:
         main()

@@ -18,6 +18,8 @@ import contasRoutes from './routes/contasFinanceirasRoutes.js';
 import adminContas from './routes/adminContasFinanceirasRoutes.js';
 import transacoesRoutes from './routes/transacoesRoutes.js';
 import adminTransacoesRoutes from './routes/adminTransacoesRoutes.js';
+import metasRoutes from './routes/metasRoutes.js';
+import adminMetasRoutes from './routes/adminMetasRoutes.js';
 
 // Array com as CORS local
 let origemAutorizada = [];
@@ -60,10 +62,12 @@ app.use('/usuario', usuarioRoutes);
 app.use('/usuario', categoriaRoutes);
 app.use('/usuario', contasRoutes);
 app.use('/usuario', transacoesRoutes);
+app.use('/usuario', metasRoutes)
 app.use('/admin', adminUsuarioRoutes);
 app.use('/admin', adminCategoriaRoutes);
 app.use('/admin', adminContas);
 app.use('/admin', adminTransacoesRoutes);
+app.use('/admin', adminMetasRoutes);
 
 // IMPORTANTE: Ultima rota do sistema para redirecionar em caso de rota não existir
 app.use((req, res) => {
