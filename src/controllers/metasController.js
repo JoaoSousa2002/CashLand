@@ -14,6 +14,22 @@ export async function criarMeta(req, res) {
     }
 
 
+    // Verifica se já existe uma meta com esse nome nas contas do usuario
+    const { data: nomeExistente, error: erroNome } = await supabase
+        .from('metas')
+        .select('id_meta, contas_bancarias!inner(id_usuario)')
+        .eq('contas_bancarias.id_usuario', req.usuario.id_usuario)
+        .eq('nome', nome)
+        .limit(1)
+        .maybeSingle()
+
+    if (erroNome) {
+        return res.status(500).json({ mensagem: "Erro ao verificar o nome da meta, tente novamente mais tarde" })
+    }
+    if (nomeExistente) {
+        return res.status(409).json({ mensagem: "Já existe uma meta com esse nome" })
+    }
+
     // Cria a meta
     const { data: criada, error: erroCriaMeta } = await supabase
         .from('metas')
@@ -128,6 +144,25 @@ export async function editarMeta(req, res) {
     }
     if (!resMeta) {
         return res.status(404).json({ mensagem: "Essa meta não existe" })
+    }
+
+    if (nome !== undefined) {
+        // Desconsidera a própria meta ao verificar nomes repetidos do usuario
+        const { data: nomeExistente, error: erroNome } = await supabase
+            .from('metas')
+            .select('id_meta, contas_bancarias!inner(id_usuario)')
+            .eq('contas_bancarias.id_usuario', req.usuario.id_usuario)
+            .eq('nome', nome)
+            .neq('id_meta', id_meta)
+            .limit(1)
+            .maybeSingle()
+
+        if (erroNome) {
+            return res.status(500).json({ mensagem: "Erro ao verificar o nome da meta, tente novamente mais tarde" })
+        }
+        if (nomeExistente) {
+            return res.status(409).json({ mensagem: "Já existe uma meta com esse nome" })
+        }
     }
 
     // Edita a meta
