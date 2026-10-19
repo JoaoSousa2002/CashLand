@@ -2,19 +2,30 @@
 
 ## 1. Identificação
 
+**ID:** RF-007  
+**Título:** Gerenciamento de Metas Financeiras  
+**Tipo:** Requisito Funcional  
+**Prioridade:** ALTA — depende das contas financeiras da RF-005 e possui integração com transações e recorrências da RF-006.  
+**Complexidade:** MÉDIA — 21 story points, estimativa documental.  
+**Status:** CRUD e cinco telas identificados no projeto; validação funcional integral e comprovação das automações do banco pendentes.  
+**Data de criação:** não confirmada pelos arquivos examinados.  
+**Última revisão documental:** 19/10/2026.
+
+**Breve descrição:** permitir que o usuário crie, consulte, filtre, edite e exclua metas vinculadas às suas contas financeiras, acompanhe valor atual, valor objetivo, prazo e status, e permita a administração desses registros por usuários autorizados.
+
 ### a) URL da Aplicação (Deploy Online)
 
-- **URL:** https://seu-projeto.vercel.app/rf-001
-- **Plataforma:** Vercel
+- **URL:** https://cashland-cdf0.onrender.com/
+- **Plataforma:** Render
 
 ### b) Link do Banco de Dados Online
 
 - **BD:** Supabase
-- **Link:** https://supabase.com/project/seu-projeto
+- **Link:** https://supabase.com/dashboard/project/xjfgkakjpuxoznbwznyb
 
 ### c) Link do GitHub
 
-- **Repositório:** https://github.com/seu-usuario/seu-projeto
+- **Repositório:** https://github.com/JoaoSousa2002/CashLand
 - **Branch:** main
 
 ---
@@ -44,7 +55,7 @@
 
 ## 4. Protótipo
 
-Interface com CRUD completo em: [URL da aplicação]
+Interface com CRUD completo em: https://cashland-cdf0.onrender.com/
 
 | Operação | Método | Endpoint           | Status esperado |
 | -------- | ------ | ------------------ | --------------- |

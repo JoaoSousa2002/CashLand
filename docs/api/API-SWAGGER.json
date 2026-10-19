@@ -3,7 +3,7 @@
   "info": {
     "title": "CashLand API",
     "version": "1.0.0",
-    "description": "API de autenticação, gerenciamento de usuários, categorias, contas financeiras, transações e recorrências do CashLand. A sessão usa o cookie HttpOnly token; as rotas /admin exigem tipo Admin no JWT. Os limites são por IP e compartilhados entre as rotas que usam a mesma instância de limitador. Login: 10 requisições/15 minutos; confirmação de senha: 5/15 minutos; solicitação de código: 5/15 minutos; confirmação de cadastro: 5/15 minutos; genérico simples: 60/5 minutos; genérico crítico: 5/15 minutos. Consulte a resposta 429 de cada operação. Páginas HTML (/tela-admin e /tela-principal, incluindo suas subrotas) e a interface /api-docs não são operações desta API."
+    "description": "API de autenticação, gerenciamento de usuários, categorias, contas financeiras, transações, recorrências e metas financeiras do CashLand. A sessão usa o cookie HttpOnly token; as rotas /admin exigem tipo Admin no JWT. Os limites são por IP e compartilhados entre as rotas que usam a mesma instância de limitador. Login: 10 requisições/15 minutos; confirmação de senha: 5/15 minutos; solicitação de código: 5/15 minutos; confirmação de cadastro: 5/15 minutos; genérico simples: 60/5 minutos; genérico crítico: 5/15 minutos. Consulte a resposta 429 de cada operação. Páginas HTML (/tela-admin e /tela-principal, incluindo suas subrotas) e a interface /api-docs não são operações desta API."
   },
   "servers": [
     {
@@ -4705,6 +4705,524 @@
             "in": "query",
             "required": true,
             "description": "Identificador inteiro de conta.",
+            "content": {
+              "text/plain": {
+                "example": "1"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "/usuario/criar-meta": {
+      "post": {
+        "summary": "Cria uma meta financeira",
+        "description": "O proprietário é obtido do cookie de sessão. A conta informada deve pertencer ao usuário autenticado. Obrigatórios: id_conta, nome e valor_meta. descricao e data_meta são opcionais. id_conta deve ser um inteiro de 1 a 2147483647. nome deve conter pelo menos um caractere após remover espaços nas extremidades e ser único entre as metas do proprietário. descricao aceita texto, texto vazio ou null. valor_meta deve ser um número JSON positivo com no máximo duas casas decimais. data_meta aceita uma data válida YYYY-MM-DD ou null para deixar sem prazo. Campos desconhecidos são rejeitados.",
+        "tags": [
+          "Metas financeiras"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Meta criada com sucesso.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "mensagem": "Meta criada com sucesso"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/DadosInvalidos"
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "404": {
+            "description": "Meta ou conta bancária inexistente ou não pertencente ao usuário."
+          },
+          "409": {
+            "description": "Já existe outra meta com esse nome nas contas do proprietário.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "mensagem": "Já existe uma meta com esse nome"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Limite de 30 requisições por IP a cada 15 minutos, compartilhado entre as rotas que usam o mesmo limitador."
+          },
+          "500": {
+            "description": "Erro ao consultar ou persistir os dados. A resposta contém mensagem com a descrição da falha."
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "description": "Dados da meta financeira.",
+          "content": {
+            "application/json": {
+              "example": {
+                "id_conta": 1,
+                "nome": "Reserva de emergência",
+                "descricao": "Reserva para imprevistos",
+                "valor_meta": 5000,
+                "data_meta": "2027-12-31"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/usuario/listar-metas": {
+      "get": {
+        "summary": "Lista metas financeiras do usuário autenticado",
+        "description": "O proprietário é obtido do cookie de sessão. Consulta somente metas das contas do usuário autenticado. As contas do filtro devem pertencer a ele. Todos os filtros são opcionais e combinados. pesquisa busca parte do nome sem diferenciar maiúsculas e minúsculas; quando contém apenas dígitos, também busca pelo id_meta. id_contas aceita uma conta ou várias repetindo a chave: ?id_contas=1&id_contas=2. status aceita Em progresso ou Finalizado. Retorna 404 quando nenhuma meta corresponde aos filtros.",
+        "tags": [
+          "Metas financeiras"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Metas listadas com sucesso. Retorna mensagem e metas, com todos os campos da meta e contas_bancarias.id_usuario.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "mensagem": "Metas listadas com sucesso",
+                  "metas": [
+                    {
+                      "id_meta": 1,
+                      "id_conta": 1,
+                      "nome": "Reserva de emergência",
+                      "descricao": "Reserva para imprevistos",
+                      "valor_meta": 5000,
+                      "data_meta": "2027-12-31",
+                      "status": "Em progresso",
+                      "valor_atual": 1000,
+                      "contas_bancarias": {
+                        "id_usuario": 1
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/DadosInvalidos"
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "404": {
+            "description": "Nenhuma meta encontrada ou uma das contas não existe ou não pertence ao usuário autenticado."
+          },
+          "429": {
+            "description": "Limite de 120 requisições por IP a cada 10 minutos, compartilhado entre as rotas que usam o mesmo limitador."
+          },
+          "500": {
+            "description": "Erro ao consultar ou persistir os dados. A resposta contém mensagem com a descrição da falha."
+          }
+        },
+        "parameters": [
+          {
+            "name": "pesquisa",
+            "in": "query",
+            "required": false,
+            "description": "Busca parcial por nome ou pelo identificador exato quando o texto contém apenas dígitos. Não aceita texto vazio.",
+            "content": {
+              "text/plain": {
+                "example": "Reserva"
+              }
+            }
+          },
+          {
+            "name": "id_contas",
+            "in": "query",
+            "required": false,
+            "description": "Identificadores inteiros de 1 a 2147483647. Para várias contas, repita a chave id_contas na query.",
+            "content": {
+              "text/plain": {
+                "example": "1"
+              }
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "Status da meta: Em progresso ou Finalizado.",
+            "content": {
+              "text/plain": {
+                "example": "Em progresso"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "/usuario/editar-meta": {
+      "patch": {
+        "summary": "Edita uma meta financeira",
+        "description": "O proprietário é obtido do cookie de sessão. Obrigatório: id_meta. A meta e a nova conta, se informada, devem pertencer ao usuário autenticado. Os identificadores devem ser inteiros de 1 a 2147483647. id_conta, nome, descricao, valor_meta e data_meta são opcionais; campos omitidos são preservados. id_conta deve ser um inteiro de 1 a 2147483647. nome deve conter pelo menos um caractere após remover espaços nas extremidades e ser único entre as metas do proprietário. descricao aceita texto, texto vazio ou null. valor_meta deve ser um número JSON positivo com no máximo duas casas decimais. data_meta aceita uma data válida YYYY-MM-DD ou null para deixar sem prazo. Campos desconhecidos são rejeitados.",
+        "tags": [
+          "Metas financeiras"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Meta editada com sucesso.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "mensagem": "Meta editada com sucesso"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/DadosInvalidos"
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "404": {
+            "description": "Meta ou conta inexistente ou não pertencente ao proprietário."
+          },
+          "409": {
+            "description": "Já existe outra meta com esse nome nas contas do proprietário.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "mensagem": "Já existe uma meta com esse nome"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Limite de 30 requisições por IP a cada 15 minutos, compartilhado entre as rotas que usam o mesmo limitador."
+          },
+          "500": {
+            "description": "Erro ao consultar ou persistir os dados. A resposta contém mensagem com a descrição da falha."
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "description": "Campos a alterar. Envie data_meta: null para remover o prazo.",
+          "content": {
+            "application/json": {
+              "example": {
+                "id_meta": 1,
+                "nome": "Reserva de emergência",
+                "valor_meta": 7500,
+                "data_meta": null
+              }
+            }
+          }
+        }
+      }
+    },
+    "/usuario/deletar-meta/{id_meta}": {
+      "delete": {
+        "summary": "Exclui uma meta financeira",
+        "description": "O proprietário é obtido do cookie de sessão. Identifique a meta na URL. A exclusão verifica se a meta pertence ao usuário autenticado.",
+        "tags": [
+          "Metas financeiras"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Meta deletada com sucesso.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "mensagem": "Meta deletada com sucesso"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/DadosInvalidos"
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "404": {
+            "description": "Meta inexistente ou não pertencente ao proprietário."
+          },
+          "429": {
+            "description": "Limite de 15 requisições por IP a cada 15 minutos, compartilhado entre as rotas que usam o mesmo limitador."
+          },
+          "500": {
+            "description": "Erro ao consultar ou persistir os dados. A resposta contém mensagem com a descrição da falha."
+          }
+        },
+        "parameters": [
+          {
+            "name": "id_meta",
+            "in": "path",
+            "required": true,
+            "description": "Identificador da meta. Inteiro de 1 a 2147483647.",
+            "content": {
+              "text/plain": {
+                "example": "1"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "/admin/listar-metas": {
+      "get": {
+        "summary": "Lista metas financeiras de usuários",
+        "description": "Exige sessão de administrador. Sem id_usuario, consulta metas de todos os usuários. Quando informado, verifica a existência do usuário e restringe os resultados às suas contas. As contas do filtro devem existir e, quando id_usuario for informado, pertencer a ele. Todos os filtros são opcionais e combinados. pesquisa busca parte do nome sem diferenciar maiúsculas e minúsculas; quando contém apenas dígitos, também busca pelo id_meta. id_contas aceita uma conta ou várias repetindo a chave: ?id_contas=1&id_contas=2. status aceita Em progresso ou Finalizado. Retorna 404 quando nenhuma meta corresponde aos filtros.",
+        "tags": [
+          "Admin - Metas financeiras"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Metas listadas com sucesso. Retorna mensagem e metas, com todos os campos da meta e contas_bancarias.id_usuario.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "mensagem": "Metas listadas com sucesso",
+                  "metas": [
+                    {
+                      "id_meta": 1,
+                      "id_conta": 1,
+                      "nome": "Reserva de emergência",
+                      "descricao": "Reserva para imprevistos",
+                      "valor_meta": 5000,
+                      "data_meta": "2027-12-31",
+                      "status": "Em progresso",
+                      "valor_atual": 1000,
+                      "contas_bancarias": {
+                        "id_usuario": 1
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/DadosInvalidos"
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SomenteAdmin"
+          },
+          "404": {
+            "description": "Nenhuma meta encontrada ou uma das contas não existe; conta não pertence ao usuário informado ou usuário inexistente."
+          },
+          "429": {
+            "description": "Limite de 240 requisições por IP a cada 10 minutos, compartilhado entre as rotas que usam o mesmo limitador."
+          },
+          "500": {
+            "description": "Erro ao consultar ou persistir os dados. A resposta contém mensagem com a descrição da falha."
+          }
+        },
+        "parameters": [
+          {
+            "name": "pesquisa",
+            "in": "query",
+            "required": false,
+            "description": "Busca parcial por nome ou pelo identificador exato quando o texto contém apenas dígitos. Não aceita texto vazio.",
+            "content": {
+              "text/plain": {
+                "example": "Reserva"
+              }
+            }
+          },
+          {
+            "name": "id_contas",
+            "in": "query",
+            "required": false,
+            "description": "Identificadores inteiros de 1 a 2147483647. Para várias contas, repita a chave id_contas na query.",
+            "content": {
+              "text/plain": {
+                "example": "1"
+              }
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "Status da meta: Em progresso ou Finalizado.",
+            "content": {
+              "text/plain": {
+                "example": "Em progresso"
+              }
+            }
+          },
+          {
+            "name": "id_usuario",
+            "in": "query",
+            "required": false,
+            "description": "Proprietário das metas. Inteiro de 1 a 2147483647. Quando omitido, consulta todos os usuários.",
+            "content": {
+              "text/plain": {
+                "example": "1"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "/admin/editar-meta": {
+      "patch": {
+        "summary": "Edita uma meta financeira de um usuário",
+        "description": "Exige sessão de administrador. Obrigatórios: id_meta e id_usuario. A meta e a nova conta, se informada, devem pertencer ao usuário indicado. Os identificadores devem ser inteiros de 1 a 2147483647. id_conta, nome, descricao, valor_meta e data_meta são opcionais; campos omitidos são preservados. id_conta deve ser um inteiro de 1 a 2147483647. nome deve conter pelo menos um caractere após remover espaços nas extremidades e ser único entre as metas do proprietário. descricao aceita texto, texto vazio ou null. valor_meta deve ser um número JSON positivo com no máximo duas casas decimais. data_meta aceita uma data válida YYYY-MM-DD ou null para deixar sem prazo. Campos desconhecidos são rejeitados.",
+        "tags": [
+          "Admin - Metas financeiras"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Meta editada com sucesso.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "mensagem": "Meta editada com sucesso"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/DadosInvalidos"
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SomenteAdmin"
+          },
+          "404": {
+            "description": "Meta ou conta inexistente ou não pertencente ao proprietário; usuário inexistente."
+          },
+          "409": {
+            "description": "Já existe outra meta com esse nome nas contas do proprietário.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "mensagem": "Já existe uma meta com esse nome"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Limite de 60 requisições por IP a cada 15 minutos, compartilhado entre as rotas que usam o mesmo limitador."
+          },
+          "500": {
+            "description": "Erro ao consultar ou persistir os dados. A resposta contém mensagem com a descrição da falha."
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "description": "Campos a alterar. Envie data_meta: null para remover o prazo.",
+          "content": {
+            "application/json": {
+              "example": {
+                "id_meta": 1,
+                "id_usuario": 1,
+                "nome": "Reserva de emergência",
+                "valor_meta": 7500,
+                "data_meta": null
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/deletar-meta/{id_meta}/{id_usuario}": {
+      "delete": {
+        "summary": "Exclui uma meta financeira de um usuário",
+        "description": "Exige sessão de administrador. Identifique a meta e o proprietário na URL. A exclusão verifica se a meta pertence ao usuário informado.",
+        "tags": [
+          "Admin - Metas financeiras"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Meta deletada com sucesso.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "mensagem": "Meta deletada com sucesso"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/DadosInvalidos"
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SomenteAdmin"
+          },
+          "404": {
+            "description": "Meta inexistente ou não pertencente ao proprietário."
+          },
+          "429": {
+            "description": "Limite de 60 requisições por IP a cada 15 minutos, compartilhado entre as rotas que usam o mesmo limitador."
+          },
+          "500": {
+            "description": "Erro ao consultar ou persistir os dados. A resposta contém mensagem com a descrição da falha."
+          }
+        },
+        "parameters": [
+          {
+            "name": "id_meta",
+            "in": "path",
+            "required": true,
+            "description": "Identificador da meta. Inteiro de 1 a 2147483647.",
+            "content": {
+              "text/plain": {
+                "example": "1"
+              }
+            }
+          },
+          {
+            "name": "id_usuario",
+            "in": "path",
+            "required": true,
+            "description": "Identificador do proprietário da meta. Inteiro de 1 a 2147483647.",
             "content": {
               "text/plain": {
                 "example": "1"
