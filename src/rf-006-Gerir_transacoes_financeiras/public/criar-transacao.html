@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Criar transação — CashLand</title>
     <link rel="stylesheet" href="/template.css">
+    <script src="/menu-superior.js" defer></script>
     <style>
         #seletor-modalidade {
             display: flex;
@@ -79,11 +80,15 @@
             </div>
 
             <div id="div-nav">
-                <nav>
+                <button id="botao-opcoes" type="button" aria-expanded="false" aria-controls="lista-opcoes">
+                    Opções <span aria-hidden="true">▾</span>
+                </button>
+                <nav id="lista-opcoes" aria-label="Opções de navegação" hidden>
                     <a href="/tela-principal/listar-categoria">Gerir categorias</a>
                     <a href="/tela-principal/listar-contas">Gerir contas financeiras</a>
                     <a href="/tela-principal/criar-transacao">Adicionar transação</a>
                     <a href="/tela-principal/listar-transacoes">Gerir transações</a>
+                    <a href="/tela-principal/listar-metas">Gerir metas</a>
                 </nav>
             </div>
             <div id="div-resumo-usuario">
@@ -151,6 +156,13 @@
                         <div id="erro-descricao" aria-live="polite"></div>
                     </div>
                     <div class="input-dados">
+                        <label for="id_meta">Adicionar meta (opcional):</label>
+                        <select id="id_meta" name="id_meta" disabled aria-describedby="erro-id_meta">
+                            <option value="">Carregando metas...</option>
+                        </select>
+                        <div id="erro-id_meta" aria-live="polite"></div>
+                    </div>
+                    <div class="input-dados">
                         <label for="id_conta" id="label-conta">Conta financeira:</label>
                         <select name="id_conta_origem" id="id_conta" required aria-describedby="erro-id_conta">
                             <option value="">Carregando contas...</option>
@@ -215,7 +227,7 @@
                         <div id="erro-data_vencimento" aria-live="polite"></div>
                     </div>
                     <div class="input-dados" hidden>
-                        <label for="data_pagamento">Data de pagamento (opcional):</label>
+                        <label for="data_pagamento">Data de pagamento:</label>
                         <input type="date" name="data_pagamento" id="data_pagamento" disabled aria-describedby="erro-data_pagamento">
                         <div id="erro-data_pagamento" aria-live="polite"></div>
                     </div>
@@ -245,11 +257,6 @@
                             <option value="false">Não</option>
                         </select>
                         <div id="erro-ativo" aria-live="polite"></div>
-                    </div>
-                    <div class="input-dados">
-                        <label for="id_meta">ID da meta (opcional):</label>
-                        <input id="id_meta" name="id_meta" type="number" min="1" max="2147483647" step="1" placeholder="Sem meta" disabled aria-describedby="erro-id_meta">
-                        <div id="erro-id_meta" aria-live="polite"></div>
                     </div>
                     <div id="erro-formulario" aria-live="polite"></div>
                     <div id="input-submit">
@@ -524,7 +531,16 @@
                     MostrarResultado_Overlay(0, mensagemResposta(respostaCategorias, categorias));
                     return;
                 }
-                if (!Array.isArray(contas) || !Array.isArray(categorias)) throw new Error('Formato de resposta inesperado.');
+                const respostaMetas = await fetch('/usuario/listar-metas', { method: 'GET', credentials: 'include' });
+                const dadosMetas = await respostaMetas.json();
+                const semMetas = respostaMetas.status === 404 && dadosMetas.mensagem === 'Nenhuma meta encontrada';
+                if (respostaMetas.status !== 200 && !semMetas) {
+                    loading.style.display = 'none';
+                    MostrarResultado_Overlay(0, mensagemResposta(respostaMetas, dadosMetas));
+                    return;
+                }
+                const metas = semMetas ? [] : dadosMetas.metas;
+                if (!Array.isArray(contas) || !Array.isArray(categorias) || !Array.isArray(metas)) throw new Error('Formato de resposta inesperado.');
                 ['id_conta', 'id_conta_destino'].forEach(id => {
                     const select = document.getElementById(id);
                     const selecionado = select.value;
@@ -557,6 +573,21 @@
                 });
                 select.value = selecionado;
                 if (select.selectedIndex === -1) select.value = '';
+                const selectMeta = document.getElementById('id_meta');
+                const metaSelecionada = selectMeta.value;
+                selectMeta.replaceChildren();
+                const opcaoSemMeta = document.createElement('option');
+                opcaoSemMeta.value = '';
+                opcaoSemMeta.textContent = metas.length ? 'Sem meta' : 'Nenhuma meta encontrada';
+                selectMeta.appendChild(opcaoSemMeta);
+                metas.forEach(meta => {
+                    const opcao = document.createElement('option');
+                    opcao.value = meta.id_meta;
+                    opcao.textContent = `${meta.nome} (#${meta.id_meta})`;
+                    selectMeta.appendChild(opcao);
+                });
+                selectMeta.value = metaSelecionada;
+                if (selectMeta.selectedIndex === -1) selectMeta.value = '';
                 quantidadeContas = contas.length;
                 quantidadeCategorias = categorias.length;
                 listasProntas = true;
@@ -564,7 +595,7 @@
                 document.getElementById('aviso-categorias').hidden = categorias.length !== 0;
             } catch {
                 loading.style.display = 'none';
-                MostrarResultado_Overlay(0, 'Não foi possível carregar as contas e categorias. Tente novamente.');
+                MostrarResultado_Overlay(0, 'Não foi possível carregar as contas, categorias e metas. Tente novamente.');
             } finally {
                 carregando = false;
                 loading.style.display = 'none';

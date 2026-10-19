@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Administração — CashLand</title>
     <link rel="stylesheet" href="/template.css">
+    <script src="/menu-superior.js" defer></script>
 </head>
 
 <body>
@@ -32,11 +33,15 @@
             </div>
 
             <div id="div-nav">
-                <nav>
+                <button id="botao-opcoes" type="button" aria-expanded="false" aria-controls="lista-opcoes">
+                    Opções <span aria-hidden="true">▾</span>
+                </button>
+                <nav id="lista-opcoes" aria-label="Opções de navegação" hidden>
                     <a href="/tela-admin/listar-usuarios">Gerir usuários</a>
                     <a href="/tela-admin/listar-categoria">Gerir categorias</a>
                     <a href="/tela-admin/listar-contas">Gerir contas financeiras</a>
                     <a href="/tela-admin/listar-transacoes">Gerir transações</a>
+                    <a href="/tela-admin/listar-metas">Gerir metas</a>
                 </nav>
             </div>
             <div id="div-nome-usuario">

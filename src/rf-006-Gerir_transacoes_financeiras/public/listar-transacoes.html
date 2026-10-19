@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Minhas transações — CashLand</title>
     <link rel="stylesheet" href="/template.css">
+    <script src="/menu-superior.js" defer></script>
     <style>
         #seletor-listagem {
             display: flex;
@@ -59,7 +60,7 @@
         .selecao-conta { display: flex; align-items: center; gap: 8px; }
         .selecao-conta select { flex: 1; }
         .selecao-conta button { flex-shrink: 0; }
-        #tabela-registros { min-width: 1570px; }
+        #tabela-registros { min-width: 1400px; }
     </style>
 </head>
 
@@ -190,11 +191,15 @@
             </div>
 
             <div id="div-nav">
-                <nav>
+                <button id="botao-opcoes" type="button" aria-expanded="false" aria-controls="lista-opcoes">
+                    Opções <span aria-hidden="true">▾</span>
+                </button>
+                <nav id="lista-opcoes" aria-label="Opções de navegação" hidden>
                     <a href="/tela-principal/listar-categoria">Gerir categorias</a>
                     <a href="/tela-principal/listar-contas">Gerir contas financeiras</a>
                     <a href="/tela-principal/criar-transacao">Adicionar transação</a>
                     <a href="/tela-principal/listar-transacoes">Gerir transações</a>
+                    <a href="/tela-principal/listar-metas">Gerir metas</a>
                 </nav>
             </div>
             <div id="div-resumo-usuario">
@@ -251,7 +256,9 @@
     </div>
 
     <script src="/protecao.js"></script>
+    <script src="/menu-tabela.js"></script>
     <script>
+        let menuTabela;
         let retornarLogin = false;
         let sessaoPronta = false;
         let carregando = false;
@@ -338,9 +345,9 @@
             document.getElementById('tabela-registros').setAttribute('aria-label', transacoes ? 'Transações' : 'Recorrências');
             const colunas = transacoes
                 ? [['ID', 65], ['Nome', 180], ['Tipo', 110], ['Conta de origem', 170], ['Conta de destino', 170],
-                    ['Valor', 130], ['Vencimento', 120], ['Status', 170], ['Recorrência', 110], ['Parcela', 80], ['Opções', 170]]
+                    ['Valor', 130], ['Vencimento', 120], ['Status', 170], ['Recorrência', 110], ['Parcela', 80]]
                 : [['ID', 65], ['Nome', 180], ['Conta', 170], ['Modalidade', 120], ['Frequência', 110],
-                    ['Valor', 250], ['Quantidade', 100], ['Início', 120], ['Situação', 100], ['Opções', 170]];
+                    ['Valor', 250], ['Quantidade', 100], ['Início', 120], ['Situação', 100]];
             const cabecalho = document.getElementById('cabecalho-tabela');
             cabecalho.replaceChildren();
             colunas.forEach(([titulo, largura]) => {
@@ -540,6 +547,7 @@
         }
 
         function mostrarMensagemTabela(mensagem) {
+            menuTabela.fechar();
             const corpo = document.getElementById('corpo-tabela');
             corpo.replaceChildren();
             const linha = document.createElement('tr');
@@ -552,6 +560,7 @@
         }
 
         function renderizarTabela(registros) {
+            menuTabela.fechar();
             const corpo = document.getElementById('corpo-tabela');
             corpo.replaceChildren();
             if (!registros.length) {
@@ -577,8 +586,6 @@
                 });
                 const transacao = modo === 'Transacoes';
                 const id = transacao ? registro.id_transacao : registro.id_recorrencia;
-                const opcoes = document.createElement('td');
-                opcoes.className = 'td-opcoes';
                 const acoes = document.createElement('div');
                 acoes.className = 'acoes-tabela';
                 const botaoVer = document.createElement('button');
@@ -594,11 +601,10 @@
                     botaoExcluir.type = 'button';
                     botaoExcluir.className = 'botao-excluir';
                     botaoExcluir.textContent = 'Excluir';
-                    botaoExcluir.addEventListener('click', () => confirmarDelete(registro, transacao, botaoExcluir));
+                    botaoExcluir.addEventListener('click', () => confirmarDelete(registro, transacao, linha));
                     acoes.appendChild(botaoExcluir);
                 }
-                opcoes.appendChild(acoes);
-                linha.appendChild(opcoes);
+                menuTabela.registrar(linha, acoes);
                 corpo.appendChild(linha);
             });
         }
@@ -869,6 +875,8 @@
         });
 
         async function iniciar() {
+            menuTabela = criarMenuTabela(document.getElementById('corpo-tabela'),
+                () => !sessaoPronta || carregando || carregandoOpcoes || excluindo);
             loading.style.display = 'flex';
             try {
                 const usuario = await protegerPagina();

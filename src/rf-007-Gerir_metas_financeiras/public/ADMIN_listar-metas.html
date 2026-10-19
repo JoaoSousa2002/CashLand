@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciar metas financeiras — CashLand</title>
+    <link rel="stylesheet" href="/template.css">
+    <script src="/menu-superior.js" defer></script>
+    <style>
+        #div-form-tabela #form-listar-metas { flex-basis: 100%; }
+        #form-listar-metas .input-dados > label { flex: none; }
+        #form-listar-metas > .input-dados { flex: 1 1 240px; }
+        #filtros-overlay .loading-box { width: 560px; flex-direction: column; justify-content: flex-start; }
+        #filtros-overlay .loading-box > * { flex-shrink: 0; }
+        #form-filtros { display: flex; flex-direction: column; gap: 12px; }
+        #lista-contas { display: flex; flex-direction: column; gap: 8px; }
+        .selecao-conta { display: flex; align-items: center; gap: 8px; }
+        .selecao-conta select { flex: 1; }
+        .selecao-conta button { flex-shrink: 0; }
+        #tabela-registros { min-width: 1190px; }
+        #loading-overlay { z-index: 10000; }
+        #resultado-overlay { z-index: 10001; }
+    </style>
+</head>
+
+<body>
+    <div class="loading-overlay" id="loading-overlay" role="status">
+        <div class="loading-box">
+            <p>Carregando...</p>
+            <div class="spinning-wheel" aria-hidden="true"></div>
+        </div>
+    </div>
+    <div class="loading-overlay" id="resultado-overlay" role="dialog" aria-modal="true" aria-labelledby="resultado-titulo">
+        <div class="loading-box dialogo-conteudo">
+            <h2 id="resultado-titulo"></h2>
+            <p id="resultado-mensagem" style="white-space: pre-line;"></p>
+            <button class="botao-dialogo" id="fechar-resultado" type="button" onclick="FechaResultado_overlay()">Continuar</button>
+        </div>
+    </div>
+    <div class="loading-overlay" id="filtros-overlay" role="dialog" aria-modal="true" aria-labelledby="titulo-filtros">
+        <div class="loading-box">
+            <div class="acoes-formulario">
+                <h2 id="titulo-filtros">Filtros de metas</h2>
+                <button type="button" id="botao-fechar-filtros" aria-label="Fechar filtros">X</button>
+            </div>
+            <form id="form-filtros" novalidate>
+                    <div class="input-dados">
+                        <label for="id_usuario">ID do usuário (opcional):</label>
+                        <input id="id_usuario" name="id_usuario" aria-describedby="erro-id_usuario" type="number" min="1" max="2147483647" step="1" placeholder="Todos os usuários">
+                        <div id="erro-id_usuario" aria-live="polite"></div>
+                    </div>
+                <div class="input-dados">
+                    <label for="id_contas">Contas financeiras:</label>
+                    <div id="lista-contas">
+                        <select id="id_contas" name="id_contas" disabled aria-describedby="erro-id_contas">
+                            <option value="">Carregando contas...</option>
+                        </select>
+                    </div>
+                    <button type="button" id="botao-adicionar-conta" disabled>Adicionar conta</button>
+                    <div id="erro-id_contas" aria-live="polite"></div>
+                </div>
+                <div class="input-dados">
+                    <label for="status">Status:</label>
+                    <select id="status" name="status" aria-describedby="erro-status">
+                        <option value="">Todos</option>
+                        <option value="Em progresso">Em progresso</option>
+                        <option value="Finalizado">Finalizado</option>
+                    </select>
+                    <div id="erro-status" aria-live="polite"></div>
+                </div>
+                <div id="erro-opcoes" aria-live="polite"></div>
+                <button type="button" id="botao-recarregar" hidden>Recarregar contas</button>
+                <div class="acoes-formulario">
+                    <input type="button" id="botao-limpar-filtros" value="Limpar filtros">
+                    <input type="submit" id="botao-aplicar-filtros" value="Aplicar filtros">
+                </div>
+            </form>
+        </div>
+    </div>
+    <div class="loading-overlay" id="exclusao-overlay" role="dialog" aria-modal="true" aria-labelledby="titulo-exclusao" aria-describedby="mensagem-exclusao">
+        <div class="loading-box dialogo-conteudo">
+            <div class="confirmacao-exclusao">
+                <h5 id="titulo-exclusao"></h5>
+                <p id="mensagem-exclusao">Essa ação não poderá ser desfeita.</p>
+            </div>
+                    <div class="input-dados">
+                        <label for="id_meta">ID da meta:</label>
+                        <input id="id_meta" name="id_meta" disabled aria-describedby="erro-id_meta" type="text" readonly data-bloqueado="true">
+                        <div id="erro-id_meta" aria-live="polite"></div>
+                    </div>
+                    <div class="input-dados">
+                        <label for="exclusao-id_usuario">ID do usuário proprietário:</label>
+                        <input id="exclusao-id_usuario" name="id_usuario" disabled aria-describedby="erro-exclusao-id_usuario" type="text" readonly data-bloqueado="true">
+                        <div id="erro-exclusao-id_usuario" data-erro="id_usuario" aria-live="polite"></div>
+                    </div>
+            <div class="acoes-formulario">
+                <input class="botao-dialogo" type="button" id="botao-confirmar-exclusao" value="Continuar">
+                <input class="botao-dialogo" type="button" id="botao-cancelar-exclusao" value="Cancelar">
+            </div>
+        </div>
+    </div>
+    <div id="container" hidden>
+        <div id="div-superior">
+
+            <div id="div-nome-sistema">
+                <a href="/tela-admin">
+                    <h1>CashLand</h1>
+                </a>
+            </div>
+
+            <div id="div-nav">
+                <button id="botao-opcoes" type="button" aria-expanded="false" aria-controls="lista-opcoes">
+                    Opções <span aria-hidden="true">▾</span>
+                </button>
+                <nav id="lista-opcoes" aria-label="Opções de navegação" hidden>
+                    <a href="/tela-admin/listar-usuarios">Gerir usuários</a>
+                    <a href="/tela-admin/listar-categoria">Gerir categorias</a>
+                    <a href="/tela-admin/listar-contas">Gerir contas financeiras</a>
+                    <a href="/tela-admin/listar-transacoes">Gerir transações</a>
+                    <a href="/tela-admin/listar-metas">Gerir metas</a>
+                </nav>
+            </div>
+            <div id="div-nome-usuario">
+                <h3><span id="nome-usuario"></span></h3>
+            </div>
+            <div id="div-usuario">
+                <a onclick="redirecionaTela()">
+                    <img src="/User_icon_black.png" alt="icone usuario">
+                </a>
+            </div>
+            <div id="form-logout">
+                <form id="meuForm-Logout">
+                    <input type="submit" value="Sair">
+                </form>
+            </div>
+
+        </div>
+
+        <main id="container-conteudo" class="pagina-listagem">
+            <div id="div-form-tabela">
+                <h2>Gerenciar metas financeiras</h2>
+                <form id="form-listar-metas" novalidate>
+                    <div class="input-dados">
+                        <label for="pesquisa">Nome ou ID da meta:</label>
+                        <input type="text" id="pesquisa" name="pesquisa" placeholder="Pesquisar por nome ou ID..." aria-describedby="erro-pesquisa">
+                        <div id="erro-pesquisa" aria-live="polite"></div>
+                    </div>
+                    <input type="submit" id="botao-pesquisar" value="Pesquisar" disabled>
+                    <button type="button" id="botao-filtrar" disabled>Filtrar</button>
+                </form>
+            </div>
+            <div id="div-tabela" tabindex="0" role="region" aria-label="Resultados da consulta">
+                <table class="tabela-listagem" id="tabela-registros" aria-label="Metas financeiras">
+                    <thead>
+                        <tr id="cabecalho-tabela">
+                            <th scope="col" style="width: 90px;">ID da meta</th>
+                            <th scope="col" style="width: 100px;">ID do usuário</th>
+                            <th scope="col" style="width: 180px;">Nome</th>
+                            <th scope="col" style="width: 180px;">Conta bancária</th>
+                            <th scope="col" style="width: 140px;">Valor atual</th>
+                            <th scope="col" style="width: 140px;">Valor objetivo</th>
+                            <th scope="col" style="width: 120px;">Data limite</th>
+                            <th scope="col" style="width: 140px;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="corpo-tabela" aria-live="polite"></tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <script src="/protecao.js"></script>
+    <script src="/menu-tabela.js"></script>
+    <script>
+        let menuTabela;
+        let sessaoPronta = false;
+        let retornarLogin = false;
+        let retornarListagem = false;
+        let atualizarAposExclusao = false;
+        let carregando = false;
+        let enviando = false;
+        let carregandoOpcoes = false;
+        const loading = document.getElementById('loading-overlay');
+        const resultado_overlay = document.getElementById('resultado-overlay');
+        const conteudo = document.getElementById('container');
+
+        function MostrarErro(id, mensagem) {
+            const elemento = document.getElementById(id);
+            if (!elemento) return;
+            elemento.replaceChildren();
+            if (mensagem) {
+                const texto = document.createElement('h5');
+                texto.style.color = 'var(--erro)';
+                texto.textContent = mensagem;
+                elemento.appendChild(texto);
+            }
+        }
+
+        function limparErros(escopo = document) {
+            escopo.querySelectorAll('[id^="erro-"]').forEach(elemento => {
+                if (elemento.id !== 'erro-opcoes') MostrarErro(elemento.id, '');
+            });
+            escopo.querySelectorAll('[aria-invalid]').forEach(elemento => elemento.removeAttribute('aria-invalid'));
+        }
+
+        function mostrarErrosValidacao(erros, escopo = document) {
+            const mensagens = {};
+            const gerais = [];
+            erros.forEach(erro => {
+                const campo = String(erro.campo).split('.')[0];
+                const elemento = escopo.querySelector(`#erro-${campo}`) || escopo.querySelector(`[data-erro="${campo}"]`);
+                if (!elemento) {
+                    gerais.push(erro.mensagem);
+                    return;
+                }
+                if (!mensagens[elemento.id]) mensagens[elemento.id] = [];
+                mensagens[elemento.id].push(erro.mensagem);
+                const controle = escopo.querySelector(`[name="${campo}"]`);
+                if (controle) controle.setAttribute('aria-invalid', 'true');
+                const filtros = elemento.closest('#filtros-overlay');
+                if (filtros) abrirFiltros(false);
+            });
+            Object.entries(mensagens).forEach(([id, textos]) => MostrarErro(id, textos.join(' ')));
+            if (gerais.length) MostrarResultado_Overlay(0, gerais.join(' '));
+        }
+
+        function MostrarResultado_Overlay(tipo, mensagem) {
+            document.getElementById('resultado-titulo').textContent = tipo === 1 ? 'Sucesso' : 'Não foi possível concluir';
+            const texto = document.getElementById('resultado-mensagem');
+            texto.textContent = mensagem;
+            texto.style.color = tipo === 1 ? 'var(--sucesso)' : 'var(--erro)';
+            resultado_overlay.style.display = 'flex';
+            conteudo.inert = true;
+            document.getElementById('fechar-resultado').focus();
+        }
+
+        function FechaResultado_overlay() {
+            resultado_overlay.style.display = 'none';
+            conteudo.inert = false;
+            if (retornarLogin) window.location.href = '/login';
+            else if (retornarListagem) window.location.href = '/tela-admin/listar-metas';
+            else if (atualizarAposExclusao) {
+                atualizarAposExclusao = false;
+                listarRegistros();
+            }
+        }
+
+        function mensagemResposta(resposta, dados) {
+            if (resposta.status === 401) {
+                retornarLogin = true;
+                sessaoPronta = false;
+            }
+            return dados?.mensagem || dados?.erro || `Não foi possível concluir a operação (HTTP ${resposta.status}).`;
+        }
+
+        function formatarValor(valor) {
+            return valor == null ? '---' : Number(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        }
+
+        function formatarData(valor) {
+            if (!valor) return '---';
+            const [ano, mes, dia] = String(valor).slice(0, 10).split('-');
+            return `${dia}/${mes}/${ano}`;
+        }
+
+        async function redirecionaTela() {
+            const usuario = await protegerPagina('Admin');
+            if (!usuario) return;
+            if (usuario.tipo === 'Comum') window.location.href = '/tela-principal/editar-usuario';
+            else if (usuario.tipo === 'Admin') window.location.href = `/tela-admin/editar-usuarios?id=${usuario.id_usuario}`;
+        }
+
+        document.getElementById('meuForm-Logout').addEventListener('submit', async evento => {
+            evento.preventDefault();
+            if (carregando || enviando || carregandoOpcoes) return;
+            enviando = true;
+            atualizarCampos();
+            try {
+                const resposta = await fetch('/logout', { method: 'POST', credentials: 'include' });
+                const dados = await resposta.json();
+                if (resposta.status === 200) {
+                    localStorage.removeItem('tipo');
+                    window.location.href = '/login';
+                } else MostrarResultado_Overlay(0, mensagemResposta(resposta, dados));
+            } catch {
+                MostrarResultado_Overlay(0, 'Não foi possível sair. Tente novamente.');
+            } finally {
+                enviando = false;
+                atualizarCampos();
+            }
+        });
+        resultado_overlay.addEventListener('keydown', evento => {
+            if (evento.key === 'Escape') FechaResultado_overlay();
+            if (evento.key === 'Tab') {
+                evento.preventDefault();
+                document.getElementById('fechar-resultado').focus();
+            }
+        });
+        const form = document.getElementById('form-listar-metas');
+        const formFiltros = document.getElementById('form-filtros');
+        const pesquisa = document.getElementById('pesquisa');
+        const filtros_overlay = document.getElementById('filtros-overlay');
+        const exclusao_overlay = document.getElementById('exclusao-overlay');
+        let filtrosAplicados = {};
+        let contas = [];
+        let contasProntas = false;
+        let usuarioOpcoes = '';
+        let exclusaoPendente = null;
+        let botaoExclusao = null;
+
+        function atualizarCampos() {
+            const ocupado = carregando || carregandoOpcoes || enviando;
+            loading.style.display = ocupado ? 'flex' : 'none';
+            form.querySelectorAll('input, button').forEach(campo => campo.disabled = !sessaoPronta || ocupado);
+            formFiltros.inert = ocupado;
+            document.getElementById('botao-aplicar-filtros').disabled = !sessaoPronta || ocupado;
+            document.getElementById('botao-confirmar-exclusao').disabled = !sessaoPronta || ocupado;
+            document.getElementById('botao-cancelar-exclusao').disabled = enviando;
+            document.querySelectorAll('.acoes-tabela button').forEach(botao => botao.disabled = !sessaoPronta || ocupado);
+        }
+
+        function contasSelecionadas() {
+            return Array.from(document.querySelectorAll('#lista-contas select')).map(select => select.value).filter(valor => valor !== '');
+        }
+
+        function atualizarSelecaoContas() {
+            const selects = Array.from(document.querySelectorAll('#lista-contas select'));
+            const selecionadas = contasSelecionadas();
+            selects.forEach(select => {
+                select.disabled = !contasProntas || contas.length === 0;
+                Array.from(select.options).forEach(opcao => {
+                    opcao.disabled = opcao.value !== '' && opcao.value !== select.value && selecionadas.includes(opcao.value);
+                });
+            });
+            document.getElementById('botao-adicionar-conta').disabled = !contasProntas || selecionadas.length >= contas.length
+                || selects.some(select => select.value === '');
+        }
+
+        function renderizarSelecaoContas(selecionadas = []) {
+            const lista = document.getElementById('lista-contas');
+            lista.replaceChildren();
+            const valores = selecionadas.filter((valor, indice) => (valor === '' && indice > 0)
+                || contas.some(conta => String(conta.id_conta) === valor));
+            if (!valores.length) valores.push('');
+            valores.forEach((valor, indice) => {
+                const linha = document.createElement('div');
+                linha.className = 'selecao-conta';
+                const select = document.createElement('select');
+                select.id = indice === 0 ? 'id_contas' : `id_contas-${indice}`;
+                select.name = 'id_contas';
+                select.setAttribute('aria-label', `Conta financeira ${indice + 1}`);
+                select.setAttribute('aria-describedby', 'erro-id_contas');
+                const opcao = document.createElement('option');
+                opcao.value = '';
+                opcao.textContent = !contasProntas ? 'Não foi possível carregar as contas' : !contas.length ? 'Nenhuma conta encontrada'
+                    : indice === 0 ? 'Todas as contas' : 'Selecione outra conta';
+                select.appendChild(opcao);
+                contas.forEach(conta => {
+                    const opcao = document.createElement('option');
+                    opcao.value = conta.id_conta;
+                    opcao.textContent = `${conta.nome_conta} (#${conta.id_conta})`;
+                    select.appendChild(opcao);
+                });
+                select.value = valor;
+                if (select.selectedIndex === -1) select.value = '';
+                linha.appendChild(select);
+                if (valores.length > 1) {
+                    const remover = document.createElement('button');
+                    remover.type = 'button';
+                    remover.textContent = 'Remover';
+                    remover.setAttribute('aria-label', `Remover conta ${indice + 1}`);
+                    remover.addEventListener('click', () => {
+                        const restantes = Array.from(lista.querySelectorAll('select')).map(campo => campo.value);
+                        restantes.splice(indice, 1);
+                        renderizarSelecaoContas(restantes.filter(valor => valor !== ''));
+                        MostrarErro('erro-id_contas', '');
+                        document.getElementById('id_contas').focus();
+                    });
+                    linha.appendChild(remover);
+                }
+                lista.appendChild(linha);
+            });
+            atualizarSelecaoContas();
+        }
+
+        function coletarFiltros() {
+            const filtros = {};
+            const selecionadas = contasSelecionadas();
+            if (selecionadas.length) filtros.id_contas = selecionadas;
+            ['status', 'id_usuario'].forEach(id => {
+                const valor = document.getElementById(id).value.trim();
+                if (valor) filtros[id] = valor;
+            });
+            return filtros;
+        }
+
+        function preencherFiltros() {
+            formFiltros.reset();
+            ['status', 'id_usuario'].forEach(id => document.getElementById(id).value = filtrosAplicados[id] || '');
+            renderizarSelecaoContas(filtrosAplicados.id_contas || []);
+        }
+
+        async function abrirFiltros(restaurar = true) {
+            if (!sessaoPronta) return;
+            if (restaurar) {
+                preencherFiltros();
+                limparErros(formFiltros);
+            }
+            filtros_overlay.style.display = 'flex';
+            document.getElementById('botao-fechar-filtros').focus();
+            if (restaurar && usuarioOpcoes !== document.getElementById('id_usuario').value.trim()) await carregarOpcoesFiltros(filtrosAplicados.id_contas || []);
+        }
+
+        function fecharFiltros() {
+            if (carregandoOpcoes) return;
+            filtros_overlay.style.display = 'none';
+            document.getElementById('botao-filtrar').focus();
+        }
+
+        function montarParametros() {
+            const parametros = new URLSearchParams();
+            if (pesquisa.value.trim()) parametros.set('pesquisa', pesquisa.value.trim());
+            (filtrosAplicados.id_contas || []).forEach(id => parametros.append('id_contas', id));
+            ['status', 'id_usuario'].forEach(id => {
+                if (filtrosAplicados[id]) parametros.set(id, filtrosAplicados[id]);
+            });
+            return parametros;
+        }
+
+        function nomeConta(id) {
+            const conta = contas.find(item => String(item.id_conta) === String(id));
+            return conta ? `${conta.nome_conta} (#${id})` : id == null ? '---' : `#${id}`;
+        }
+
+        function mostrarMensagemTabela(mensagem) {
+            menuTabela.fechar();
+            const corpo = document.getElementById('corpo-tabela');
+            corpo.replaceChildren();
+            const linha = document.createElement('tr');
+            linha.id = 'linha-vazia';
+            const coluna = document.createElement('td');
+            coluna.colSpan = document.getElementById('cabecalho-tabela').children.length;
+            coluna.textContent = mensagem;
+            linha.appendChild(coluna);
+            corpo.appendChild(linha);
+        }
+
+        function renderizarTabela(registros) {
+            menuTabela.fechar();
+            const corpo = document.getElementById('corpo-tabela');
+            corpo.replaceChildren();
+            if (!registros.length) {
+                mostrarMensagemTabela('Nenhuma meta encontrada.');
+                return;
+            }
+            registros.forEach(registro => {
+                const valores = [registro.id_meta, registro.contas_bancarias.id_usuario, registro.nome, nomeConta(registro.id_conta),
+                    formatarValor(registro.valor_atual), formatarValor(registro.valor_meta),
+                    registro.data_meta ? formatarData(registro.data_meta) : 'Sem prazo', registro.status];
+                const linha = document.createElement('tr');
+                valores.forEach(valor => {
+                    const coluna = document.createElement('td');
+                    coluna.textContent = valor ?? '---';
+                    coluna.title = coluna.textContent;
+                    linha.appendChild(coluna);
+                });
+                const acoes = document.createElement('div');
+                acoes.className = 'acoes-tabela';
+                const botaoVer = document.createElement('button');
+                botaoVer.type = 'button';
+                botaoVer.textContent = 'Ver';
+                botaoVer.addEventListener('click', () => {
+                    const parametros = new URLSearchParams({ id_meta: registro.id_meta });
+                    parametros.set('id_usuario', registro.contas_bancarias.id_usuario);
+                    window.location.href = `/tela-admin/editar-meta?${parametros}`;
+                });
+                const botaoExcluir = document.createElement('button');
+                botaoExcluir.type = 'button';
+                botaoExcluir.className = 'botao-excluir';
+                botaoExcluir.textContent = 'Excluir';
+                botaoExcluir.addEventListener('click', () => confirmarDelete(registro, linha));
+                acoes.append(botaoVer, botaoExcluir);
+                menuTabela.registrar(linha, acoes);
+                corpo.appendChild(linha);
+            });
+        }
+
+        async function listarRegistros() {
+            if (!sessaoPronta || carregando || carregandoOpcoes || enviando) return;
+            carregando = true;
+            limparErros(form);
+            limparErros(formFiltros);
+            atualizarCampos();
+            mostrarMensagemTabela('Carregando...');
+            try {
+                const parametros = montarParametros();
+                const resposta = await fetch(parametros.size ? `/admin/listar-metas?${parametros}` : '/admin/listar-metas', { method: 'GET', credentials: 'include' });
+                const dados = await resposta.json();
+                if (resposta.status === 200) {
+                    if (!Array.isArray(dados.metas)) throw new Error('Resposta inesperada.');
+                    renderizarTabela(dados.metas);
+                } else if (resposta.status === 404 && dados.mensagem === 'Nenhuma meta encontrada') {
+                    mostrarMensagemTabela(dados.mensagem);
+                } else {
+                    mostrarMensagemTabela('Não foi possível concluir a consulta.');
+                    if (Array.isArray(dados.erros)) mostrarErrosValidacao(dados.erros);
+                    else MostrarResultado_Overlay(0, mensagemResposta(resposta, dados));
+                }
+            } catch {
+                mostrarMensagemTabela('Não foi possível carregar as metas.');
+                MostrarResultado_Overlay(0, 'Não foi possível carregar as metas. Tente novamente.');
+            } finally {
+                carregando = false;
+                atualizarCampos();
+            }
+        }
+
+        async function carregarOpcoesFiltros(selecionadas = contasSelecionadas()) {
+            if (!sessaoPronta || carregandoOpcoes) return;
+            carregandoOpcoes = true;
+            contasProntas = false;
+            const usuario = document.getElementById('id_usuario').value.trim();
+            atualizarCampos();
+            MostrarErro('erro-opcoes', '');
+            try {
+                const parametros = new URLSearchParams();
+                if (usuario) parametros.set('id_usuario', usuario);
+                const resposta = await fetch(parametros.size ? `/admin/listar-contas?${parametros}` : '/admin/listar-contas', { method: 'GET', credentials: 'include' });
+                const dados = await resposta.json();
+                if (resposta.status !== 200) {
+                    if (Array.isArray(dados.erros)) mostrarErrosValidacao(dados.erros, formFiltros);
+                    else if (resposta.status === 401) MostrarResultado_Overlay(0, mensagemResposta(resposta, dados));
+                    else MostrarErro('erro-opcoes', mensagemResposta(resposta, dados));
+                    return;
+                }
+                if (!Array.isArray(dados)) throw new Error(dados.mensagem || 'Não foi possível carregar as contas.');
+                contas = dados;
+                contasProntas = true;
+            } catch (erro) {
+                MostrarErro('erro-opcoes', erro instanceof TypeError ? 'Não foi possível carregar as contas. Tente novamente.' : erro.message);
+            } finally {
+                if (!contasProntas) contas = [];
+                usuarioOpcoes = usuario;
+                renderizarSelecaoContas(selecionadas);
+                carregandoOpcoes = false;
+                document.getElementById('botao-recarregar').hidden = contasProntas;
+                atualizarCampos();
+            }
+        }
+
+        function confirmarDelete(registro, botao) {
+            if (!sessaoPronta || carregando || carregandoOpcoes || enviando) return;
+            exclusaoPendente = { id_meta: registro.id_meta , id_usuario: registro.contas_bancarias.id_usuario };
+            botaoExclusao = botao;
+            limparErros(exclusao_overlay);
+            document.getElementById('id_meta').value = registro.id_meta;
+            document.getElementById('exclusao-id_usuario').value = registro.contas_bancarias.id_usuario;
+            document.getElementById('titulo-exclusao').textContent = `Tem certeza que deseja excluir a meta “${registro.nome}”?`;
+            exclusao_overlay.style.display = 'flex';
+            document.getElementById('botao-cancelar-exclusao').focus();
+        }
+
+        function cancelarExclusao() {
+            if (enviando) return;
+            exclusaoPendente = null;
+            exclusao_overlay.style.display = 'none';
+            botaoExclusao?.focus();
+        }
+
+        async function excluirRegistro() {
+            if (!sessaoPronta || enviando || !exclusaoPendente) return;
+            enviando = true;
+            limparErros(exclusao_overlay);
+            atualizarCampos();
+            try {
+                const resposta = await fetch(`/admin/deletar-meta/${encodeURIComponent(exclusaoPendente.id_meta)}/${encodeURIComponent(exclusaoPendente.id_usuario)}`, { method: 'DELETE', credentials: 'include' });
+                const dados = await resposta.json();
+                if (resposta.status === 200) {
+                    exclusaoPendente = null;
+                    exclusao_overlay.style.display = 'none';
+                    atualizarAposExclusao = true;
+                    MostrarResultado_Overlay(1, dados.mensagem);
+                } else if (Array.isArray(dados.erros)) mostrarErrosValidacao(dados.erros, exclusao_overlay);
+                else MostrarResultado_Overlay(0, mensagemResposta(resposta, dados));
+            } catch {
+                MostrarResultado_Overlay(0, 'Não foi possível concluir a exclusão. Tente novamente.');
+            } finally {
+                enviando = false;
+                atualizarCampos();
+            }
+        }
+
+        form.addEventListener('submit', async evento => {
+            evento.preventDefault();
+            await listarRegistros();
+        });
+        pesquisa.addEventListener('input', () => MostrarErro('erro-pesquisa', ''));
+        document.getElementById('botao-filtrar').addEventListener('click', () => abrirFiltros());
+        document.getElementById('botao-fechar-filtros').addEventListener('click', fecharFiltros);
+        document.getElementById('botao-recarregar').addEventListener('click', () => carregarOpcoesFiltros());
+        document.getElementById('botao-adicionar-conta').addEventListener('click', () => {
+            renderizarSelecaoContas([...contasSelecionadas(), '']);
+            document.querySelector('#lista-contas .selecao-conta:last-child select').focus();
+        });
+        document.getElementById('lista-contas').addEventListener('change', evento => {
+            if (evento.target.id === 'id_contas' && evento.target.value === '') {
+                renderizarSelecaoContas();
+                document.getElementById('id_contas').focus();
+            } else atualizarSelecaoContas();
+            MostrarErro('erro-id_contas', '');
+        });
+        document.getElementById('botao-limpar-filtros').addEventListener('click', async () => {
+            if (carregandoOpcoes) return;
+            filtrosAplicados = {};
+            preencherFiltros();
+            limparErros(formFiltros);
+            if (usuarioOpcoes !== document.getElementById('id_usuario').value.trim()) await carregarOpcoesFiltros([]);
+        });
+        formFiltros.addEventListener('submit', async evento => {
+            evento.preventDefault();
+            if (carregandoOpcoes || carregando || enviando) return;
+            // Confere as contas do usuário antes de aplicar, inclusive ao enviar com Enter.
+            if (usuarioOpcoes !== document.getElementById('id_usuario').value.trim()) await carregarOpcoesFiltros();
+            filtrosAplicados = coletarFiltros();
+            fecharFiltros();
+            await listarRegistros();
+        });
+        formFiltros.addEventListener('input', evento => MostrarErro(`erro-${evento.target.id}`, ''));
+        document.getElementById('id_usuario').addEventListener('change', () => carregarOpcoesFiltros());
+        document.getElementById('botao-confirmar-exclusao').addEventListener('click', excluirRegistro);
+        document.getElementById('botao-cancelar-exclusao').addEventListener('click', cancelarExclusao);
+        [filtros_overlay, exclusao_overlay].forEach(overlay => overlay.addEventListener('keydown', evento => {
+            if (evento.key === 'Escape') {
+                if (overlay === filtros_overlay) fecharFiltros();
+                else cancelarExclusao();
+            }
+            if (evento.key === 'Tab') {
+                const campos = Array.from(overlay.querySelectorAll('button, input, select')).filter(campo => !campo.disabled && campo.getClientRects().length);
+                const primeiro = campos[0];
+                const ultimo = campos[campos.length - 1];
+                if (evento.shiftKey && document.activeElement === primeiro) {
+                    evento.preventDefault(); ultimo.focus();
+                } else if (!evento.shiftKey && document.activeElement === ultimo) {
+                    evento.preventDefault(); primeiro.focus();
+                }
+            }
+        }));
+
+        async function iniciar() {
+            menuTabela = criarMenuTabela(document.getElementById('corpo-tabela'),
+                () => !sessaoPronta || carregando || carregandoOpcoes || enviando);
+            loading.style.display = 'flex';
+            try {
+                const usuario = await protegerPagina('Admin');
+                if (!usuario) return;
+                sessaoPronta = true;
+                conteudo.hidden = false;
+                document.getElementById('nome-usuario').textContent = usuario.nome.slice(0, 8);
+                
+                await carregarOpcoesFiltros();
+                await listarRegistros();
+            } finally {
+                atualizarCampos();
+            }
+        }
+        iniciar();
+    </script>
+</body>
+</html>

@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Criar meta — CashLand</title>
+    <link rel="stylesheet" href="/template.css">
+    <script src="/menu-superior.js" defer></script>
+    <style>
+        #meuForm select:disabled,
+        #meuForm textarea:disabled { background-color: #eee; color: #555; }
+    </style>
+</head>
+
+<body>
+    <div class="loading-overlay" id="loading-overlay" role="status">
+        <div class="loading-box">
+            <p>Carregando...</p>
+            <div class="spinning-wheel" aria-hidden="true"></div>
+        </div>
+    </div>
+    <div class="loading-overlay" id="resultado-overlay" role="dialog" aria-modal="true" aria-labelledby="resultado-titulo">
+        <div class="loading-box dialogo-conteudo">
+            <h2 id="resultado-titulo"></h2>
+            <p id="resultado-mensagem" style="white-space: pre-line;"></p>
+            <button class="botao-dialogo" id="fechar-resultado" type="button" onclick="FechaResultado_overlay()">Continuar</button>
+        </div>
+    </div>
+    <div id="container" hidden>
+        <div id="div-superior">
+
+            <div id="div-nome-sistema">
+                <a href="/tela-principal">
+                    <h1>CashLand</h1>
+                </a>
+            </div>
+
+            <div id="div-nav">
+                <button id="botao-opcoes" type="button" aria-expanded="false" aria-controls="lista-opcoes">
+                    Opções <span aria-hidden="true">▾</span>
+                </button>
+                <nav id="lista-opcoes" aria-label="Opções de navegação" hidden>
+                    <a href="/tela-principal/listar-categoria">Gerir categorias</a>
+                    <a href="/tela-principal/listar-contas">Gerir contas financeiras</a>
+                    <a href="/tela-principal/criar-transacao">Adicionar transação</a>
+                    <a href="/tela-principal/listar-transacoes">Gerir transações</a>
+                    <a href="/tela-principal/listar-metas">Gerir metas</a>
+                </nav>
+            </div>
+            <div id="div-resumo-usuario">
+                <div id="div-saldo-usuario">
+                    <button id="botao-saldo-usuario" type="button" aria-expanded="false" aria-controls="lista-contas-saldo">
+                        <small>Saldo atual <span aria-hidden="true">▾</span></small>
+                        <strong id="saldo-usuario" aria-live="polite">Carregando...</strong>
+                        <small id="nome-conta-saldo">Selecionar conta</small>
+                    </button>
+                    <div id="lista-contas-saldo" hidden>
+                        <label for="conta-saldo-usuario">Conta financeira</label>
+                        <select id="conta-saldo-usuario" size="3" disabled></select>
+                    </div>
+                </div>
+                <div id="div-nome-usuario">
+                    <h3><span id="nome-usuario"></span></h3>
+                </div>
+            </div>
+            <div id="div-usuario">
+                <a onclick="redirecionaTela()">
+                    <img src="/User_icon_black.png" alt="icone usuario">
+                </a>
+            </div>
+            <div id="form-logout">
+                <form id="meuForm-Logout">
+                    <input type="submit" value="Sair">
+                </form>
+            </div>
+
+        </div>
+
+        <main id="container-conteudo">
+            <div class="cartao">
+                <div id="id-Titulo">
+                    <h2>Criar meta</h2>
+                    <button id="botao-Voltar" type="button" onclick="location.href='/tela-principal/listar-metas'">Voltar</button>
+                </div>
+                <form id="meuForm" novalidate>
+                    <div class="input-dados">
+                        <label for="id_conta">Conta bancária:</label>
+                        <select id="id_conta" name="id_conta" disabled aria-describedby="erro-id_conta" required><option value="">Carregando contas...</option></select>
+                        <div id="erro-id_conta" aria-live="polite"></div>
+                    </div>
+                    <div class="input-dados">
+                        <label for="nome">Nome:</label>
+                        <input id="nome" name="nome" disabled aria-describedby="erro-nome" type="text" required placeholder="Ex.: Reserva de emergência">
+                        <div id="erro-nome" aria-live="polite"></div>
+                    </div>
+                    <div class="input-dados">
+                        <label for="descricao">Descrição (opcional):</label>
+                        <textarea id="descricao" name="descricao" disabled aria-describedby="erro-descricao" rows="3"></textarea>
+                        <div id="erro-descricao" aria-live="polite"></div>
+                    </div>
+                    <div class="input-dados">
+                        <label for="valor_meta">Valor objetivo (R$):</label>
+                        <input id="valor_meta" name="valor_meta" disabled aria-describedby="erro-valor_meta" type="number" min="0.01" step="0.01" required>
+                        <div id="erro-valor_meta" aria-live="polite"></div>
+                    </div>
+                    <div class="input-dados">
+                        <label for="data_meta">Data limite (opcional):</label>
+                        <input id="data_meta" name="data_meta" disabled aria-describedby="erro-data_meta" type="date">
+                        <div id="erro-data_meta" aria-live="polite"></div>
+                    </div>
+                    <p id="aviso-contas" class="texto-auxiliar" hidden>Nenhuma conta encontrada.</p>
+                    <button type="button" id="botao-Carregar" hidden>Recarregar dados</button>
+                    <button type="submit" id="botao-Enviar" disabled>Criar meta</button>
+                </form>
+            </div>
+        </main>
+    </div>
+
+    <script src="/protecao.js"></script>
+    <script>
+        let sessaoPronta = false;
+        let retornarLogin = false;
+        let retornarListagem = false;
+        let atualizarAposExclusao = false;
+        let carregando = false;
+        let enviando = false;
+        let carregandoOpcoes = false;
+        const loading = document.getElementById('loading-overlay');
+        const resultado_overlay = document.getElementById('resultado-overlay');
+        const conteudo = document.getElementById('container');
+
+        function MostrarErro(id, mensagem) {
+            const elemento = document.getElementById(id);
+            if (!elemento) return;
+            elemento.replaceChildren();
+            if (mensagem) {
+                const texto = document.createElement('h5');
+                texto.style.color = 'var(--erro)';
+                texto.textContent = mensagem;
+                elemento.appendChild(texto);
+            }
+        }
+
+        function limparErros(escopo = document) {
+            escopo.querySelectorAll('[id^="erro-"]').forEach(elemento => {
+                if (elemento.id !== 'erro-opcoes') MostrarErro(elemento.id, '');
+            });
+            escopo.querySelectorAll('[aria-invalid]').forEach(elemento => elemento.removeAttribute('aria-invalid'));
+        }
+
+        function mostrarErrosValidacao(erros, escopo = document) {
+            const mensagens = {};
+            const gerais = [];
+            erros.forEach(erro => {
+                const campo = String(erro.campo).split('.')[0];
+                const elemento = escopo.querySelector(`#erro-${campo}`) || escopo.querySelector(`[data-erro="${campo}"]`);
+                if (!elemento) {
+                    gerais.push(erro.mensagem);
+                    return;
+                }
+                if (!mensagens[elemento.id]) mensagens[elemento.id] = [];
+                mensagens[elemento.id].push(erro.mensagem);
+                const controle = escopo.querySelector(`[name="${campo}"]`);
+                if (controle) controle.setAttribute('aria-invalid', 'true');
+                const filtros = elemento.closest('#filtros-overlay');
+                if (filtros) abrirFiltros(false);
+            });
+            Object.entries(mensagens).forEach(([id, textos]) => MostrarErro(id, textos.join(' ')));
+            if (gerais.length) MostrarResultado_Overlay(0, gerais.join(' '));
+        }
+
+        function MostrarResultado_Overlay(tipo, mensagem) {
+            document.getElementById('resultado-titulo').textContent = tipo === 1 ? 'Sucesso' : 'Não foi possível concluir';
+            const texto = document.getElementById('resultado-mensagem');
+            texto.textContent = mensagem;
+            texto.style.color = tipo === 1 ? 'var(--sucesso)' : 'var(--erro)';
+            resultado_overlay.style.display = 'flex';
+            conteudo.inert = true;
+            document.getElementById('fechar-resultado').focus();
+        }
+
+        function FechaResultado_overlay() {
+            resultado_overlay.style.display = 'none';
+            conteudo.inert = false;
+            if (retornarLogin) window.location.href = '/login';
+            else if (retornarListagem) window.location.href = '/tela-principal/listar-metas';
+            else if (atualizarAposExclusao) {
+                atualizarAposExclusao = false;
+                listarRegistros();
+            }
+        }
+
+        function mensagemResposta(resposta, dados) {
+            if (resposta.status === 401) {
+                retornarLogin = true;
+                sessaoPronta = false;
+            }
+            return dados?.mensagem || dados?.erro || `Não foi possível concluir a operação (HTTP ${resposta.status}).`;
+        }
+
+        function formatarValor(valor) {
+            return valor == null ? '---' : Number(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        }
+
+        function formatarData(valor) {
+            if (!valor) return '---';
+            const [ano, mes, dia] = String(valor).slice(0, 10).split('-');
+            return `${dia}/${mes}/${ano}`;
+        }
+
+        async function redirecionaTela() {
+            const usuario = await protegerPagina();
+            if (!usuario) return;
+            if (usuario.tipo === 'Comum') window.location.href = '/tela-principal/editar-usuario';
+            else if (usuario.tipo === 'Admin') window.location.href = `/tela-admin/editar-usuarios?id=${usuario.id_usuario}`;
+        }
+
+        document.getElementById('meuForm-Logout').addEventListener('submit', async evento => {
+            evento.preventDefault();
+            if (carregando || enviando || carregandoOpcoes) return;
+            enviando = true;
+            atualizarCampos();
+            try {
+                const resposta = await fetch('/logout', { method: 'POST', credentials: 'include' });
+                const dados = await resposta.json();
+                if (resposta.status === 200) {
+                    localStorage.removeItem('tipo');
+                    window.location.href = '/login';
+                } else MostrarResultado_Overlay(0, mensagemResposta(resposta, dados));
+            } catch {
+                MostrarResultado_Overlay(0, 'Não foi possível sair. Tente novamente.');
+            } finally {
+                enviando = false;
+                atualizarCampos();
+            }
+        });
+        resultado_overlay.addEventListener('keydown', evento => {
+            if (evento.key === 'Escape') FechaResultado_overlay();
+            if (evento.key === 'Tab') {
+                evento.preventDefault();
+                document.getElementById('fechar-resultado').focus();
+            }
+        });
+        const form = document.getElementById('meuForm');
+        const salvar = document.getElementById('botao-Enviar');
+        const recarregar = document.getElementById('botao-Carregar');
+        const camposEditaveis = ['id_conta', 'nome', 'descricao', 'valor_meta', 'data_meta'];
+        let listasProntas = false;
+        let registroPronto = true;
+        let registro = null;
+        let valoresIniciais = {};
+        
+
+        function atualizarCampos() {
+            const ocupado = carregando || enviando;
+            const pronto = sessaoPronta && registroPronto && listasProntas;
+            form.querySelectorAll('input, select, textarea').forEach(campo => {
+                campo.disabled = !pronto || ocupado || !camposEditaveis.includes(campo.id);
+            });
+            salvar.disabled = !pronto || ocupado || retornarListagem;
+            recarregar.disabled = ocupado || !sessaoPronta;
+            loading.style.display = ocupado ? 'flex' : 'none';
+            form.inert = ocupado;
+        }
+
+        async function carregarContas() {
+            listasProntas = false;
+            const resposta = await fetch('/usuario/listar-contas' + '', { method: 'GET', credentials: 'include' });
+            const dados = await resposta.json();
+            if (resposta.status !== 200) {
+                if (Array.isArray(dados.erros)) mostrarErrosValidacao(dados.erros, form);
+                else MostrarResultado_Overlay(0, mensagemResposta(resposta, dados));
+                return false;
+            }
+            if (!Array.isArray(dados)) throw new Error('Não foi possível carregar as contas.');
+            const select = document.getElementById('id_conta');
+            const selecionada = select.value;
+            select.replaceChildren();
+            select.add(new Option(dados.length ? 'Selecione uma conta' : 'Nenhuma conta encontrada', ''));
+            dados.forEach(conta => select.add(new Option(`${conta.nome_conta} (#${conta.id_conta})`, conta.id_conta)));
+            // Preserva a associação atual se a listagem auxiliar não a incluir.
+            if (registro?.id_conta != null && !dados.some(conta => String(conta.id_conta) === String(registro.id_conta))) {
+                select.add(new Option(`Conta associada (#${registro.id_conta})`, registro.id_conta));
+            }
+            select.value = selecionada;
+            if (select.selectedIndex === -1) select.value = '';
+            listasProntas = dados.length > 0 || registro?.id_conta != null;
+            document.getElementById('aviso-contas').hidden = listasProntas;
+            return true;
+        }
+
+        
+
+        async function carregarDados() {
+            if (!sessaoPronta || carregando || enviando) return;
+            carregando = true;
+            recarregar.hidden = true;
+            limparErros(form);
+            atualizarCampos();
+            try {
+                
+                if (!await carregarContas()) return;
+                
+            } catch (erro) {
+                MostrarResultado_Overlay(0, erro instanceof TypeError ? 'Não foi possível carregar os dados. Tente novamente.' : erro.message);
+            } finally {
+                carregando = false;
+                recarregar.hidden = registroPronto && listasProntas;
+                atualizarCampos();
+            }
+        }
+
+        function montarPayload() {
+            const payload = {};
+            let valido = true;
+            camposEditaveis.forEach(id => {
+                const campo = document.getElementById(id);
+                const valor = campo.value.trim();
+                if (id === 'id_conta' || id === 'nome' || id === 'valor_meta') {
+                    if (!valor) {
+                        MostrarErro(`erro-${id}`, 'Preencha este campo.');
+                        valido = false;
+                        return;
+                    }
+                }
+                if (id === 'valor_meta') {
+                    // Valida o texto antes da conversão para não perder casas decimais.
+                    if (!/^[+-]?(?:\d+(?:\.\d{0,2})?|\.\d{1,2})$/.test(valor)) {
+                        MostrarErro('erro-valor_meta', 'Informe o valor objetivo com no máximo duas casas decimais, sem notação exponencial.');
+                        valido = false;
+                        return;
+                    }
+                    const numero = Number(valor);
+                    if (!Number.isFinite(numero)) {
+                        MostrarErro('erro-valor_meta', 'O valor objetivo deve ser um número finito.');
+                        valido = false;
+                        return;
+                    }
+                    payload.valor_meta = numero;
+                } else if (id === 'id_conta') payload.id_conta = Number(valor);
+                else if (id === 'data_meta') payload.data_meta = valor || null;
+                else payload[id] = valor;
+            });
+            return valido ? payload : null;
+        }
+
+        form.addEventListener('submit', async evento => {
+            evento.preventDefault();
+            if (!sessaoPronta || !registroPronto || !listasProntas || carregando || enviando || retornarListagem) return;
+            limparErros(form);
+            const payload = montarPayload();
+            if (!payload) return;
+            enviando = true;
+            atualizarCampos();
+            try {
+                const resposta = await fetch('/usuario/criar-meta', {
+                    method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const dados = await resposta.json();
+                if (resposta.status === 201) {
+                    retornarListagem = true;
+                    MostrarResultado_Overlay(1, dados.mensagem);
+                } else if (Array.isArray(dados.erros)) mostrarErrosValidacao(dados.erros, form);
+                else MostrarResultado_Overlay(0, mensagemResposta(resposta, dados));
+            } catch {
+                MostrarResultado_Overlay(0, 'Não foi possível salvar a meta. Tente novamente.');
+            } finally {
+                enviando = false;
+                atualizarCampos();
+            }
+        });
+        form.addEventListener('input', evento => {
+            MostrarErro(`erro-${evento.target.id}`, '');
+            evento.target.removeAttribute('aria-invalid');
+        });
+        recarregar.addEventListener('click', carregarDados);
+
+        async function iniciar() {
+            loading.style.display = 'flex';
+            try {
+                const usuario = await protegerPagina();
+                if (!usuario) return;
+                sessaoPronta = true;
+                conteudo.hidden = false;
+                document.getElementById('nome-usuario').textContent = usuario.nome.slice(0, 8);
+                atualizarSaldoUsuario(usuario.id_usuario);
+                
+                await carregarDados();
+            } finally {
+                atualizarCampos();
+            }
+        }
+        iniciar();
+    </script>
+</body>
+</html>

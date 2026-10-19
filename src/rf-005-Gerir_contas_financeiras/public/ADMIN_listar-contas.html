@@ -6,6 +6,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Contas financeiras — Admin — CashLand</title>
     <link rel="stylesheet" href="/template.css">
+    <script src="/menu-superior.js" defer></script>
+    <style>
+        .tabela-listagem { min-width: 830px; }
+    </style>
 </head>
 
 <body>
@@ -43,11 +47,15 @@
             </div>
 
             <div id="div-nav">
-                <nav>
+                <button id="botao-opcoes" type="button" aria-expanded="false" aria-controls="lista-opcoes">
+                    Opções <span aria-hidden="true">▾</span>
+                </button>
+                <nav id="lista-opcoes" aria-label="Opções de navegação" hidden>
                     <a href="/tela-admin/listar-usuarios">Gerir usuários</a>
                     <a href="/tela-admin/listar-categoria">Gerir categorias</a>
                     <a href="/tela-admin/listar-contas">Gerir contas financeiras</a>
                     <a href="/tela-admin/listar-transacoes">Gerir transações</a>
+                    <a href="/tela-admin/listar-metas">Gerir metas</a>
                 </nav>
             </div>
             <div id="div-nome-usuario">
@@ -93,7 +101,6 @@
                             <th scope="col" style="width: 100px;">Status</th>
                             <th scope="col" style="width: 90px;">ID usuário</th>
                             <th scope="col">Usuário</th>
-                            <th scope="col" id="th-opcoes" style="width: 170px;">Opções</th>
                         </tr>
                     </thead>
                     <tbody id="corpo-tabela"></tbody>
@@ -103,7 +110,9 @@
     </div>
 
     <script src="/protecao.js"></script>
+    <script src="/menu-tabela.js"></script>
     <script>
+        let menuTabela;
         let retornarLogin = false;
         let sessaoPronta = false;
         let carregando = false;
@@ -169,13 +178,14 @@
         }
 
         function renderizarTabela(contas) {
+            menuTabela.fechar();
             const corpo = document.getElementById('corpo-tabela');
             corpo.replaceChildren();
             if (contas.length === 0) {
                 const linha = document.createElement('tr');
                 linha.id = 'linha-vazia';
                 const coluna = document.createElement('td');
-                coluna.colSpan = 9;
+                coluna.colSpan = 8;
                 coluna.textContent = 'Nenhuma conta encontrada.';
                 linha.appendChild(coluna);
                 corpo.appendChild(linha);
@@ -196,8 +206,6 @@
                     coluna.title = coluna.textContent;
                     linha.appendChild(coluna);
                 });
-                const opcoes = document.createElement('td');
-                opcoes.className = 'td-opcoes';
                 const acoes = document.createElement('div');
                 acoes.className = 'acoes-tabela';
                 const editar = document.createElement('button');
@@ -213,8 +221,7 @@
                 excluir.className = 'botao-excluir';
                 excluir.addEventListener('click', () => confirmarDelete(conta));
                 acoes.appendChild(excluir);
-                opcoes.appendChild(acoes);
-                linha.appendChild(opcoes);
+                menuTabela.registrar(linha, acoes);
                 corpo.appendChild(linha);
             });
         }
@@ -373,6 +380,8 @@
         });
 
         async function iniciar() {
+            menuTabela = criarMenuTabela(document.getElementById('corpo-tabela'),
+                () => !sessaoPronta || carregando || excluindo);
             loading.style.display = 'flex';
             try {
                 const usuario = await protegerPagina('Admin');

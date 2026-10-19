@@ -107,4 +107,26 @@ router.get('/tela-admin/editar-transacao', (req, res) => {
     res.sendFile(path.join(__dirname, '../rf-006-Gerir_transacoes_financeiras/public/ADMIN_editar-transacao.html'));
 });
 
+// RF007 - Gerir Metas Financeiras ==========================================================================
+
+router.get('/tela-principal/criar-meta', (req, res) => {
+    res.sendFile(path.join(__dirname, '../rf-007-Gerir_metas_financeiras/public/criar-meta.html'));
+});
+
+router.get('/tela-principal/listar-metas', (req, res) => {
+    res.sendFile(path.join(__dirname, '../rf-007-Gerir_metas_financeiras/public/listar-metas.html'));
+});
+
+router.get('/tela-principal/editar-meta', (req, res) => {
+    res.sendFile(path.join(__dirname, '../rf-007-Gerir_metas_financeiras/public/editar-meta.html'));
+});
+
+router.get('/tela-admin/listar-metas', (req, res) => {
+    res.sendFile(path.join(__dirname, '../rf-007-Gerir_metas_financeiras/public/ADMIN_listar-metas.html'));
+});
+
+router.get('/tela-admin/editar-meta', (req, res) => {
+    res.sendFile(path.join(__dirname, '../rf-007-Gerir_metas_financeiras/public/ADMIN_editar-meta.html'));
+});
+
 export default router;
