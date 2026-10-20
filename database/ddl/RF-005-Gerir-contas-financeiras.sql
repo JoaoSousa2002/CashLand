@@ -43,6 +43,7 @@ create table public.contas_bancarias (
   )
 ) TABLESPACE pg_default;
 
+
 create unique INDEX IF not exists uq_conta_padrao_usuario on public.contas_bancarias using btree (id_usuario) TABLESPACE pg_default
 where
   ((nome_conta)::text = 'padrão'::text);

@@ -36,6 +36,63 @@ create table public.usuarios (
   )
 ) TABLESPACE pg_default;
 
+-- FUNÇÕES
+
+CREATE OR REPLACE FUNCTION public.criar_categoria_padrao_usuario()
+ RETURNS trigger
+ LANGUAGE plpgsql
+AS $function$
+BEGIN
+
+    INSERT INTO categorias (
+        id_usuario,
+        nome,
+        descricao
+    )
+    VALUES (
+        NEW.id_usuario,
+        'Sem categoria',
+        'Categoria padrão'
+    );
+
+    RETURN NEW;
+
+END;
+$function$
+
+CREATE OR REPLACE FUNCTION public.criar_conta_padrao()
+ RETURNS trigger
+ LANGUAGE plpgsql
+AS $function$BEGIN
+
+    INSERT INTO contas_bancarias (
+        id_usuario,
+        tipo_conta,
+        codigo_conta,
+        nome_instituicao,
+        nome_conta,
+        status_conta
+    )
+    VALUES (
+        NEW.id_usuario,
+        'Corrente',
+        NULL,
+        NULL,
+        'padrão',
+        'Ativo'
+    );
+
+    RETURN NEW;
+
+END;$function$
+
+-- TRIGGERS
+
+create trigger trg_criar_conta_padrao
+after INSERT on usuarios for EACH row
+execute FUNCTION criar_conta_padrao ();
+
 create trigger trigger_criar_categoria_padrao
 after INSERT on usuarios for EACH row
 execute FUNCTION criar_categoria_padrao_usuario ();
+

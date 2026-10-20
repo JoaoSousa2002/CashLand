@@ -25,6 +25,116 @@ create table public.metas (
   )
 ) TABLESPACE pg_default;
 
+-- FUNÇÕES
+
+CREATE OR REPLACE FUNCTION public.atualizar_data_atualizacao_meta()
+ RETURNS trigger
+ LANGUAGE plpgsql
+AS $function$
+BEGIN
+
+    NEW.data_atualizacao := now();
+
+    RETURN NEW;
+
+END;
+$function$
+
+CREATE OR REPLACE FUNCTION public.atualizar_status_meta()
+ RETURNS trigger
+ LANGUAGE plpgsql
+AS $function$
+BEGIN
+
+    IF COALESCE(NEW.valor_atual, 0) >= NEW.valor_meta THEN
+
+        NEW.status := 'Finalizado';
+
+    ELSE
+
+        NEW.status := 'Em progresso';
+
+    END IF;
+
+    RETURN NEW;
+
+END;
+$function$
+
+CREATE OR REPLACE FUNCTION public.atualizar_valor_meta()
+ RETURNS trigger
+ LANGUAGE plpgsql
+AS $function$
+DECLARE
+    v_ids_metas INTEGER[];
+    v_id_meta INTEGER;
+    v_valor_atual NUMERIC;
+BEGIN
+
+    -- Identifica as metas afetadas.
+    IF TG_OP = 'INSERT' THEN
+
+        v_ids_metas := ARRAY[NEW.id_meta];
+
+    ELSIF TG_OP = 'DELETE' THEN
+
+        v_ids_metas := ARRAY[OLD.id_meta];
+
+    ELSE
+
+        -- Recalcula a meta anterior e a nova, se houver troca.
+        v_ids_metas := ARRAY[OLD.id_meta, NEW.id_meta];
+
+    END IF;
+
+    -- Bloqueia as metas em ordem para coordenar
+    -- atualizações simultâneas.
+    FOR v_id_meta IN
+        SELECT id_meta
+        FROM public.metas
+        WHERE id_meta = ANY(v_ids_metas)
+        ORDER BY id_meta
+        FOR NO KEY UPDATE
+    LOOP
+
+        -- Considera somente transações pagas.
+        SELECT COALESCE(
+            SUM(
+                CASE
+                    WHEN tipo_transacao = 'Entrada' THEN
+                        valor_transacao
+
+                    WHEN tipo_transacao = 'Saida' THEN
+                        -valor_transacao
+
+                    ELSE 0
+                END
+            ),
+            0
+        )
+        INTO v_valor_atual
+        FROM public.transacoes
+        WHERE id_meta = v_id_meta
+          AND status_transacao = 'Pago';
+
+        UPDATE public.metas
+        SET valor_atual = v_valor_atual
+        WHERE id_meta = v_id_meta;
+
+    END LOOP;
+
+    IF TG_OP = 'DELETE' THEN
+        RETURN OLD;
+    END IF;
+
+    RETURN NEW;
+
+END;
+$function$
+
+
+-- TRIGGERS
+
 create trigger trigger_atualizar_data_atualizacao_meta BEFORE INSERT
 or
 update on metas for EACH row
@@ -34,3 +144,13 @@ create trigger trigger_atualizar_status_meta BEFORE INSERT
 or
 update on metas for EACH row
 execute FUNCTION atualizar_status_meta ();
+
+create trigger trigger_atualizar_valor_meta
+after INSERT
+or DELETE
+or
+update OF id_meta,
+valor_transacao,
+tipo_transacao,
+status_transacao on transacoes for EACH row
+execute FUNCTION atualizar_valor_meta ();
