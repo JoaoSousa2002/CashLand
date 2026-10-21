@@ -46,6 +46,7 @@ const swaggerSpec = JSON.parse(
 
 //Rota da API SWAGGER UI
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+    customfavIcon: '/CashLand%20emerald%20C%20icon.png',
     swaggerOptions: {
         defaultModelsExpandDepth: -1
     }
