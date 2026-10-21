@@ -351,6 +351,7 @@
                     ['Valor', 130], ['Vencimento', 120], ['Status', 170], ['Recorrência', 110], ['Parcela', 80]]
                 : [['ID', 65], ['Usuário', 120], ['Nome', 180], ['Conta', 170], ['Modalidade', 120], ['Frequência', 110],
                     ['Valor', 250], ['Quantidade', 100], ['Início', 120], ['Situação', 100]];
+            colunas.unshift(['Opções', 84]);
             const cabecalho = document.getElementById('cabecalho-tabela');
             cabecalho.replaceChildren();
             colunas.forEach(([titulo, largura]) => {
@@ -358,6 +359,7 @@
                 coluna.scope = 'col';
                 coluna.style.width = `${largura}px`;
                 coluna.textContent = titulo;
+                if (titulo === 'Opções') coluna.className = 'th-opcoes';
                 cabecalho.appendChild(coluna);
             });
         }

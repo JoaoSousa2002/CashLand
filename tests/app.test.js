@@ -1,3 +1,4 @@
+import './helpers/ambiente-local.js';
 import test, { before, after, mock } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -34,7 +35,17 @@ test('páginas, redirecionamento, arquivos estáticos e Swagger preservados', as
     await http('get', '/api-docs/').expect(200).expect('Content-Type', /html/);
     await http('get', '/template.css').expect(200).expect('Content-Type', /css/);
     await http('get', '/protecao.js').expect(200);
+    await http('get', '/menu-tabela.js').expect(200).expect('Content-Type', /javascript/);
     await http('get', '/rota-inexistente').expect(404).expect('Content-Type', /html/);
+});
+
+test('Swagger UI carrega a especificação em docs/api/swagger.json', async () => {
+    const especificacao = JSON.parse(readFileSync(new URL('../docs/api/swagger.json', import.meta.url)));
+    assert.equal(especificacao.openapi, '3.0.0');
+    assert.ok(especificacao.paths['/usuario/listar-metas']);
+    const resposta = await cliente()('get', '/api-docs/swagger-ui-init.js').expect(200);
+    assert.ok(resposta.text.includes(JSON.stringify(especificacao.info.title)));
+    assert.ok(resposta.text.includes('"/usuario/listar-metas"'));
 });
 
 test('todas as rotas protegidas preservam método, URL e resposta sem sessão', async () => {
@@ -141,20 +152,27 @@ const limites = [
     ['LOGIN', 'post', '/login', 10, 900, 400, 'Muitas tentativas de login realizadas. Tente novamente em 15 minutos.'],
     ['CONFIRMAR_SENHA', 'post', '/confirmar-senha', 5, 900, 401, 'Muitas tentativas de confirmar senha realizadas. Tente novamente em 15 minutos.'],
     ['SOLICITAR_CODIGO', 'post', '/solicitar-codigo', 5, 900, 400, 'Muitas tentativas de envio de codigo realizadas. Tente novamente em 15 minutos.'],
-    ['VERIFICAR_CODIGO', 'post', '/confirmar-cadastro', 5, 900, 400, 'Muitas tentativas de verificar codigo realizadas. Tente novamente em 15 minutos.'],
-    // A janela atual é de 5 minutos; a mensagem configurada ainda informa 10 minutos.
-    ['GENERICO_SIMPLES', 'get', '/usuario', 60, 300, 401, 'Muitas solicitações para essa ação realizadas. Tente novamente em 10 minutos.'],
-    ['GENERICO_CRITICO', 'patch', '/usuario/desativar-usuario', 5, 900, 401, 'Muitas solicitações para essa ação realizadas. Tente novamente em 15 minutos.']
+    ['VERIFICAR_CODIGO', 'post', '/confirmar-cadastro', 10, 900, 400, 'Muitas tentativas de verificar codigo realizadas. Tente novamente em 15 minutos.'],
+    ['GENERICO_SIMPLES', 'get', '/usuario', 60, 300, 401, 'Muitas solicitações para essa ação realizadas. Tente novamente em 5 minutos.'],
+    ['GENERICO_CRITICO', 'post', '/logout', 5, 900, 200, 'Muitas solicitações para essa ação realizadas. Tente novamente em 15 minutos.'],
+    ['CRIACAO', 'post', '/usuario/criar-meta', 30, 900, 401, 'Muitas tentativas de criação de registros realizadas. Tente novamente em 15 minutos.'],
+    ['EDICAO_COMUM', 'patch', '/usuario/desativar-usuario', 30, 900, 401, 'Muitas tentativas de edição de registros realizadas. Tente novamente em 15 minutos.'],
+    ['EDICAO_ADMIN', 'patch', '/admin/editar-meta', 60, 900, 401, 'Muitas tentativas de edição de registros realizadas. Tente novamente em 15 minutos.'],
+    ['LISTAGEM_COMUM', 'get', '/usuario/listar-metas', 120, 600, 401, 'Muitas solicitações de listagem realizadas. Tente novamente em 10 minutos.'],
+    ['LISTAGEM_ADMIN', 'get', '/admin/listar-metas', 240, 600, 401, 'Muitas solicitações de listagem realizadas. Tente novamente em 10 minutos.'],
+    ['EXCLUSAO_COMUM', 'delete', '/usuario/deletar-meta/:id_meta', 15, 900, 401, 'Muitas tentativas de exclusão de registros realizadas. Tente novamente em 15 minutos.'],
+    ['EXCLUSAO_ADMIN', 'delete', '/admin/deletar-meta/:id_meta/:id_usuario', 60, 900, 401, 'Muitas tentativas de exclusão de registros realizadas. Tente novamente em 15 minutos.']
 ];
 for (const [nome, metodo, caminho, maximo, janelaSegundos, statusInicial, mensagem] of limites) {
     test(`rate limit ${nome}: configuração atual, headers, log e auditoria`, async t => {
         const eventos = observarLogs(t);
         const http = cliente();
         const inicio = Date.now();
+        const url = caminho.replace(/:id_\w+/g, '1');
         for (let i = 0; i < maximo; i += 1) {
-            await http(metodo, caminho).send({}).expect(statusInicial);
+            await http(metodo, url).send({}).expect(statusInicial);
         }
-        const bloqueio = await http(metodo, caminho).send({}).expect(429, { mensagem });
+        const bloqueio = await http(metodo, url).send({}).expect(429, { mensagem });
         assert.equal(Number(bloqueio.headers['x-ratelimit-limit']), maximo);
         assert.equal(Number(bloqueio.headers['x-ratelimit-remaining']), 0);
         const espera = Number(bloqueio.headers['retry-after']);

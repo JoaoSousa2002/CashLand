@@ -1515,15 +1515,25 @@ class TestesRF07(TestesHTTP):
         self.assertEqual(filtros, {"pesquisa": "Reserva", "id_contas": [10, 11], "status": "Em progresso"})
 
     def test_criar_meta_trim_opcionais_e_auditoria(self):
-        casos = [self.dados_meta(), self.dados_meta(nome="  Reserva  ", descricao="  Detalhes  ", data_meta="2028-02-29"),
-                 self.dados_meta(descricao=None, data_meta=None)]
+        casos = [self.dados_meta(), self.dados_meta(nome="  Viagem  ", descricao="  Detalhes  ", data_meta="2028-02-29"),
+                 self.dados_meta(nome="Estudos", descricao=None, data_meta=None)]
         resultado = self.executar([self.chamada("POST", "/usuario/criar-meta", body) for body in casos])
         self.assertEqual([r["status"] for r in resultado["respostas"]], [201] * len(casos))
         inseridas = resultado["banco"]["metas"][3:]
-        self.assertEqual(inseridas, [casos[0], {**casos[1], "nome": "Reserva", "descricao": "Detalhes"}, casos[2]])
+        self.assertEqual(inseridas, [casos[0], {**casos[1], "nome": "Viagem", "descricao": "Detalhes"}, casos[2]])
         self.assertTrue(all("id_usuario" not in m and "valor_atual" not in m and "status" not in m for m in inseridas))
         self.assertEqual([e["rota"] for e in resultado["eventos"]], ["USER_CRIAR_META"] * len(casos))
         self.assertEqual([e["resultado"] for e in resultado["eventos"]], ["SUCESSO"] * len(casos))
+
+    def test_nome_repetido_em_outra_conta_propria_nao_cria_nova_meta(self):
+        primeira = self.dados_meta(nome="Reserva nova", id_conta=10)
+        repetida = self.dados_meta(nome="  Reserva nova  ", id_conta=11)
+        resultado = self.executar([self.chamada("POST", "/usuario/criar-meta", dados)
+                                  for dados in (primeira, repetida)])
+        self.assertEqual([r["status"] for r in resultado["respostas"]], [201, 409])
+        self.assertEqual(resultado["respostas"][1]["body"], {"mensagem": "Já existe uma meta com esse nome"})
+        self.assertEqual(resultado["banco"]["metas"], self.banco()["metas"] + [primeira])
+        self.assertEqual([e["resultado"] for e in resultado["eventos"]], ["SUCESSO", "FALHA"])
 
     def test_joi_campos_obrigatorios_e_rejeicao_de_invalidos(self):
         casos = [("POST", "/usuario/criar-meta", {}, {"id_conta", "nome", "valor_meta"}),

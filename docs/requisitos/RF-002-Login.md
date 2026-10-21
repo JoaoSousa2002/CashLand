@@ -380,7 +380,7 @@ Credenciais → validação Joi → consulta no Supabase → comparação bcrypt
 
 ## 📚 7. DOCUMENTAÇÃO API (SWAGGER/OPENAPI) (3%)
 
-A especificação OpenAPI está em `docs/api/API-SWAGGER.json`, versão OpenAPI 3.0.0, e é publicada em `/api-docs`. Para esta RF, o Swagger documenta login, consulta da sessão, confirmação de senha, logout, solicitação e confirmação de recuperação de senha, incluindo corpos JSON, respostas e códigos HTTP. A autenticação das operações protegidas é baseada no cookie `token` emitido pelo login.
+A especificação OpenAPI está em `docs/api/swagger.json`, versão OpenAPI 3.0.0, e é publicada em `/api-docs`. Para esta RF, o Swagger documenta login, consulta da sessão, confirmação de senha, logout, solicitação e confirmação de recuperação de senha, incluindo corpos JSON, respostas e códigos HTTP. A autenticação das operações protegidas é baseada no cookie `token` emitido pelo login.
 
 **Cobertura esperada nesta RF:** autenticação, sessão, recuperação e encerramento de sessão estão descritos no arquivo Swagger sem necessidade de duplicar uma tabela de rotas neste documento.
 

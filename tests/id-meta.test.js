@@ -1,3 +1,4 @@
+import './helpers/ambiente-local.js';
 import test, { before, after, mock } from 'node:test';
 import assert from 'node:assert/strict';
 import request from 'supertest';
@@ -127,11 +128,14 @@ for (const [metodo,rota,body] of [
 });
 
 // As rotas administrativas são exercitadas em testar_rotas.py --testes-admin-metas.
-test('telas e script da RF-007 continuam indisponíveis', async () => {
+test('telas de metas estão disponíveis para usuário e administrador', async () => {
     for (const raiz of ['tela-principal', 'tela-admin']) {
-        for (const pagina of ['listar-metas', 'editar-meta', 'criar-meta']) {
-            await request(app).get(`/${raiz}/${pagina}`).expect(404);
+        for (const pagina of ['listar-metas', 'editar-meta']) {
+            await request(app).get(`/${raiz}/${pagina}`).expect(200).expect('Content-Type', /html/);
         }
     }
+    await request(app).get('/tela-principal/criar-meta').expect(200).expect('Content-Type', /html/);
+    // A criação administrativa e o antigo script separado não são publicados.
+    await request(app).get('/tela-admin/criar-meta').expect(404);
     await request(app).get('/metas.js').expect(404);
 });

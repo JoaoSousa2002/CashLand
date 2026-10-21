@@ -11,8 +11,6 @@
 
 - **URL:** https://cashland-cdf0.onrender.com/
 - **Plataforma:** Render.
-- **Acesso do professor — usuário comum:** email `prof.edilberto.silva@gmail.com`; senha `12345678910`.
-- **Acesso do professor — administrador:** email `prof1.edilberto.silva@gmail.com`; senha `12345678910`.
 
 ### b) Link do Banco de Dados Online
 

@@ -399,7 +399,7 @@ Cadastro: formulário → Joi → normalização/duplicidade → código/HMAC �
 
 ## 📚 7. DOCUMENTAÇÃO API (SWAGGER/OPENAPI) (3%)
 
-O arquivo `docs/api/API-SWAGGER.json` documenta as operações de cadastro, consulta e atualização do próprio usuário e as operações administrativas de usuários. A especificação descreve corpos e parâmetros, respostas HTTP, autenticação por cookie de sessão e modelos usados pela API. O Swagger UI é publicado em `/api-docs`.
+O arquivo `docs/api/swagger.json` documenta as operações de cadastro, consulta e atualização do próprio usuário e as operações administrativas de usuários. A especificação descreve corpos e parâmetros, respostas HTTP, autenticação por cookie de sessão e modelos usados pela API. O Swagger UI é publicado em `/api-docs`.
 
 A documentação desta RF mantém a explicação funcional e arquitetural sem reproduzir tabela de rotas.
 

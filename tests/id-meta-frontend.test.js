@@ -63,14 +63,14 @@ test('PAGAR mantém payload mínimo mesmo com alteração não salva da meta',as
     assert.equal(t.requisicoes[0].opcoes.credentials,'include');
 });
 for(const admin of [false,true]) {
-    test(`tela ${admin?'admin':'usuário'}: carrega edição e preserva id_meta sem a RF-007`,async()=>{
+    test(`tela ${admin?'admin':'usuário'}: carrega edição e preserva o vínculo pelo ID da meta`,async()=>{
         const t=tela(`${admin?'ADMIN_':''}editar-transacao.html`);
         t.executar(`modo='transacao'; chaveId='id_transacao'; idRegistro=30; ${admin?'idUsuario=456;':''}
             sessaoPronta=true;`);
         const rotas=[];
         t.contexto.fetch=async url=>{
             rotas.push(url);
-            assert.ok(!url.includes('meta'), 'Não deve consultar as rotas removidas');
+            assert.ok(!url.includes('meta'), 'O campo numérico não precisa listar metas para preservar o vínculo');
             return {status:200,json:async()=>url.includes('listar-transacoes')
                 ? [{id_transacao:30,id_meta:20,tipo_transacao:'Entrada',status_transacao:'Pendente',id_usuario:456}]
                 : []};

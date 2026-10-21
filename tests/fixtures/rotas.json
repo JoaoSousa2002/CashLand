@@ -82,7 +82,7 @@
   {
     "method": "post",
     "path": "/confirmar-senha",
-    "middlewares": "auditar('CONFIRMAR_SENHA', req => req.usuario?.id_usuario, false), limitadorSenha, autenticar, validar(schemaSenha)"
+    "middlewares": "auditar('CONFIRMAR_SENHA', req => req.usuario?.id_usuario, false), limitadorVerificarSenha, autenticar, validar(schemaSenha)"
   },
   {
     "method": "post",
@@ -92,7 +92,7 @@
   {
     "method": "post",
     "path": "/solicitar-codigo",
-    "middlewares": "auditar('SOLICITAR_CODIGO_CADASTRO', undefined, false), limitadorSolicitarCodigo, validar(schemaNome, schemaEmail, schemaSenha)"
+    "middlewares": "auditar('SOLICITAR_CODIGO_CADASTRO', undefined, false), limitadorCodigo, validar(schemaNome, schemaEmail, schemaSenha)"
   },
   {
     "method": "post",
@@ -102,12 +102,12 @@
   {
     "method": "post",
     "path": "/solicitar-reset-senha",
-    "middlewares": "auditar('SOLICITAR_RECUPERACAO_SENHA', undefined, false), limitadorSolicitarCodigo, validar(schemaEmail)"
+    "middlewares": "auditar('SOLICITAR_RECUPERACAO_SENHA', undefined, false), limitadorCodigo, validar(schemaEmail)"
   },
   {
     "method": "post",
     "path": "/confirmar-reset-senha",
-    "middlewares": "auditar('REDEFINIR_SENHA', undefined, true), limitadorGenericoCritico, validar(schemaEmail, schemaCodigo, schemaNovaSenha)"
+    "middlewares": "auditar('REDEFINIR_SENHA', undefined, true), limitadorVerificarCodigo, validar(schemaEmail, schemaCodigo, schemaNovaSenha)"
   },
   {
     "method": "get",
@@ -117,37 +117,37 @@
   {
     "method": "patch",
     "path": "/usuario/desativar-usuario",
-    "middlewares": "auditar('DESATIVAR_USUARIO', req => req.usuario?.id_usuario, true), limitadorGenericoCritico, autenticar"
+    "middlewares": "auditar('DESATIVAR_USUARIO', req => req.usuario?.id_usuario, true), limitadorEdicaoComum, autenticar"
   },
   {
     "method": "patch",
     "path": "/usuario/atualizar-dados",
-    "middlewares": "auditar('ATUALIZAR_USUARIO', req => req.usuario?.id_usuario, true), limitadorGenericoCritico, autenticar, validar(schemaNome)"
+    "middlewares": "auditar('ATUALIZAR_USUARIO', req => req.usuario?.id_usuario, true), limitadorEdicaoComum, autenticar, validar(schemaNome)"
   },
   {
     "method": "post",
     "path": "/usuario/criar-categoria",
-    "middlewares": "auditar('CRIAR_CATEGORIA', req => req.usuario?.id_usuario, false), limitadorGenericoSimples, autenticar, validar(schemaNome, schemaDescricaoCategoria)"
+    "middlewares": "auditar('CRIAR_CATEGORIA', req => req.usuario?.id_usuario, false), limitadorCriacao, autenticar, validar(schemaNome, schemaDescricaoCategoria)"
   },
   {
     "method": "get",
     "path": "/usuario/listar-categoria",
-    "middlewares": "auditar('USER_LISTAR_CATEGORIA', req => req.usuario?.id_usuario, false), limitadorGenericoSimples, autenticar"
+    "middlewares": "auditar('USER_LISTAR_CATEGORIA', req => req.usuario?.id_usuario, false), limitadorListagemComum, autenticar"
   },
   {
     "method": "patch",
     "path": "/usuario/editar-categoria",
-    "middlewares": "auditar('USER_EDITAR_CATEGORIA', req => req.usuario?.id_usuario, true), limitadorGenericoSimples, autenticar, validar(schemaIdCategoriaObrigatorio, schemaNome, schemaDescricaoCategoria)"
+    "middlewares": "auditar('USER_EDITAR_CATEGORIA', req => req.usuario?.id_usuario, true), limitadorEdicaoComum, autenticar, validar(schemaIdCategoriaObrigatorio, schemaNome, schemaDescricaoCategoria)"
   },
   {
     "method": "delete",
     "path": "/usuario/deletar-categoria/:id_categoria",
-    "middlewares": "auditar('USER_DELETAR_CATEGORIA', req => req.usuario?.id_usuario, true), limitadorGenericoCritico, autenticar, validar(schemaIdCategoriaObrigatorio)"
+    "middlewares": "auditar('USER_DELETAR_CATEGORIA', req => req.usuario?.id_usuario, true), limitadorExclusaoComum, autenticar, validar(schemaIdCategoriaObrigatorio)"
   },
   {
     "method": "get",
     "path": "/admin/listar-usuarios",
-    "middlewares": "auditar('LISTAR_USUARIOS', undefined, false), limitadorGenericoSimples, autenticar, somenteAdmin"
+    "middlewares": "auditar('LISTAR_USUARIOS', undefined, false), limitadorListagemAdmin, autenticar, somenteAdmin"
   },
   {
     "method": "get",
@@ -157,47 +157,47 @@
   {
     "method": "patch",
     "path": "/admin/editar-usuario",
-    "middlewares": "auditar('ATUALIZAR_USUARIO', req => req.body?.id_usuario, false), limitadorGenericoSimples, autenticar, somenteAdmin, validar(schemaIdUsuarioObrigatorio, schemaNome, schemaEmail)"
+    "middlewares": "auditar('ATUALIZAR_USUARIO', req => req.body?.id_usuario, false), limitadorEdicaoAdmin, autenticar, somenteAdmin, validar(schemaIdUsuarioObrigatorio, schemaNome, schemaEmail)"
   },
   {
     "method": "patch",
     "path": "/admin/resetar-senha",
-    "middlewares": "auditar('SOLICITAR_RESET_ADMIN', req => req.body?.id_usuario, true), limitadorGenericoCritico, autenticar, somenteAdmin, validar(schemaIdUsuarioObrigatorio)"
+    "middlewares": "auditar('SOLICITAR_RESET_ADMIN', req => req.body?.id_usuario, true), limitadorEdicaoAdmin, autenticar, somenteAdmin, validar(schemaIdUsuarioObrigatorio)"
   },
   {
     "method": "patch",
     "path": "/admin/reativar-usuario",
-    "middlewares": "auditar('REATIVAR_USUARIO', req => req.body?.id_usuario, true), limitadorGenericoCritico, autenticar, somenteAdmin, validar(schemaIdUsuarioObrigatorio)"
+    "middlewares": "auditar('REATIVAR_USUARIO', req => req.body?.id_usuario, true), limitadorEdicaoAdmin, autenticar, somenteAdmin, validar(schemaIdUsuarioObrigatorio)"
   },
   {
     "method": "patch",
     "path": "/admin/desativar-usuario",
-    "middlewares": "auditar('DESATIVAR_USUARIO', req => req.body?.id_usuario, true), limitadorGenericoCritico, autenticar, somenteAdmin, validar(schemaIdUsuarioObrigatorio)"
+    "middlewares": "auditar('DESATIVAR_USUARIO', req => req.body?.id_usuario, true), limitadorEdicaoAdmin, autenticar, somenteAdmin, validar(schemaIdUsuarioObrigatorio)"
   },
   {
     "method": "delete",
     "path": "/admin/deletar-usuario/:id_usuario",
-    "middlewares": "auditar('EXCLUIR_USUARIO', req => req.params.id_usuario, true), limitadorGenericoCritico, autenticar, somenteAdmin, validar(schemaIdUsuarioObrigatorio)"
+    "middlewares": "auditar('EXCLUIR_USUARIO', req => req.params.id_usuario, true), limitadorExclusaoAdmin, autenticar, somenteAdmin, validar(schemaIdUsuarioObrigatorio)"
   },
   {
     "method": "get",
     "path": "/admin/listar-categoria",
-    "middlewares": "auditar('ADMIN_LISTAR_CATEGORIA', req => req.usuario?.id_usuario, false), limitadorGenericoSimples, autenticar, somenteAdmin, validar(schemaIdUsuarioOpcional, schemaIdCategoriaOpcional)"
+    "middlewares": "auditar('ADMIN_LISTAR_CATEGORIA', req => req.usuario?.id_usuario, false), limitadorListagemAdmin, autenticar, somenteAdmin, validar(schemaIdUsuarioOpcional, schemaIdCategoriaOpcional)"
   },
   {
     "method": "patch",
     "path": "/admin/editar-categoria",
-    "middlewares": "auditar('ADMIN_EDITAR_CATEGORIA', req => req.usuario?.id_usuario, false), limitadorGenericoSimples, autenticar, somenteAdmin, validar(schemaIdCategoriaObrigatorio, schemaNome, schemaDescricaoCategoria)"
+    "middlewares": "auditar('ADMIN_EDITAR_CATEGORIA', req => req.usuario?.id_usuario, false), limitadorEdicaoAdmin, autenticar, somenteAdmin, validar(schemaIdCategoriaObrigatorio, schemaNome, schemaDescricaoCategoria)"
   },
   {
     "method": "delete",
     "path": "/admin/deletar-categoria/:id_categoria/:id_usuario",
-    "middlewares": "auditar('ADMIN_DELETAR_CATEGORIA', req => req.usuario?.id_usuario, true), limitadorGenericoCritico, autenticar, somenteAdmin, validar(schemaIdCategoriaObrigatorio, schemaIdUsuarioObrigatorio)"
+    "middlewares": "auditar('ADMIN_DELETAR_CATEGORIA', req => req.usuario?.id_usuario, true), limitadorExclusaoAdmin, autenticar, somenteAdmin, validar(schemaIdCategoriaObrigatorio, schemaIdUsuarioObrigatorio)"
   },
   {
     "method": "post",
     "path": "/usuario/criar-conta",
-    "middlewares": "auditar('CRIAR_CONTA_FINANCEIRA', req => req.usuario?.id_usuario, false), limitadorGenericoSimples, autenticar, validar(schemaCriarConta )"
+    "middlewares": "auditar('CRIAR_CONTA_FINANCEIRA', req => req.usuario?.id_usuario, false), limitadorCriacao, autenticar, validar(schemaCriarConta )"
   },
   {
     "method": "get",
@@ -207,22 +207,22 @@
   {
     "method": "get",
     "path": "/usuario/listar-contas",
-    "middlewares": "auditar('USER_LISTAR_CONTAS', req => req.usuario?.id_usuario, false), limitadorGenericoSimples, autenticar"
+    "middlewares": "auditar('USER_LISTAR_CONTAS', req => req.usuario?.id_usuario, false), limitadorListagemComum, autenticar"
   },
   {
     "method": "patch",
     "path": "/usuario/editar-conta",
-    "middlewares": "auditar('USER_EDITAR_CONTA', req => req.usuario?.id_usuario, true), limitadorGenericoSimples, autenticar, validar(schemaCriarConta, schemaIdContaObrigatorio)"
+    "middlewares": "auditar('USER_EDITAR_CONTA', req => req.usuario?.id_usuario, true), limitadorEdicaoComum, autenticar, validar(schemaCriarConta, schemaIdContaObrigatorio)"
   },
   {
     "method": "patch",
     "path": "/usuario/inativar-conta",
-    "middlewares": "auditar('USER_INATIVAR_CONTA', req => req.usuario?.id_usuario, true), limitadorGenericoCritico, autenticar, validar(schemaIdContaObrigatorio)"
+    "middlewares": "auditar('USER_INATIVAR_CONTA', req => req.usuario?.id_usuario, true), limitadorEdicaoComum, autenticar, validar(schemaIdContaObrigatorio)"
   },
   {
     "method": "patch",
     "path": "/usuario/reativar-conta",
-    "middlewares": "auditar('USER_REATIVAR_CONTA', req => req.usuario?.id_usuario, true), limitadorGenericoCritico, autenticar, validar(schemaIdContaObrigatorio)"
+    "middlewares": "auditar('USER_REATIVAR_CONTA', req => req.usuario?.id_usuario, true), limitadorEdicaoComum, autenticar, validar(schemaIdContaObrigatorio)"
   },
   {
     "method": "get",
@@ -252,97 +252,97 @@
   {
     "method": "post",
     "path": "/usuario/criar-recorrencia",
-    "middlewares": "auditar('USER_CRIAR_RECORRENCIA', req => req.usuario?.id_usuario, true), limitadorGenericoSimples, autenticar, validar(schemaCriarRecorrencia)"
+    "middlewares": "auditar('USER_CRIAR_RECORRENCIA', req => req.usuario?.id_usuario, true), limitadorCriacao, autenticar, validar(schemaCriarRecorrencia)"
   },
   {
     "method": "patch",
     "path": "/usuario/editar-recorrencia",
-    "middlewares": "auditar('USER_EDITAR_RECORRENCIA', req => req.usuario?.id_usuario, true), limitadorGenericoSimples, autenticar, validar(schemaEditarRecorrencia)"
+    "middlewares": "auditar('USER_EDITAR_RECORRENCIA', req => req.usuario?.id_usuario, true), limitadorEdicaoComum, autenticar, validar(schemaEditarRecorrencia)"
   },
   {
     "method": "post",
     "path": "/usuario/criar-transacao",
-    "middlewares": "auditar('USER_CRIAR_TRANSACAO', req => req.usuario?.id_usuario, true), limitadorGenericoSimples, autenticar, validar(schemaCriarTransacao)"
+    "middlewares": "auditar('USER_CRIAR_TRANSACAO', req => req.usuario?.id_usuario, true), limitadorCriacao, autenticar, validar(schemaCriarTransacao)"
   },
   {
     "method": "patch",
     "path": "/usuario/editar-transacao",
-    "middlewares": "auditar('USER_EDITAR_TRANSACAO', req => req.usuario?.id_usuario, true), limitadorGenericoSimples, autenticar, validar(schemaEditarTransacao)"
+    "middlewares": "auditar('USER_EDITAR_TRANSACAO', req => req.usuario?.id_usuario, true), limitadorEdicaoComum, autenticar, validar(schemaEditarTransacao)"
   },
   {
     "method": "get",
     "path": "/usuario/listar-transacoes",
-    "middlewares": "auditar('USER_LISTAR_TRANSACOES', req => req.usuario?.id_usuario, false), limitadorGenericoSimples, autenticar, validar(schemaListarTransacoes)"
+    "middlewares": "auditar('USER_LISTAR_TRANSACOES', req => req.usuario?.id_usuario, false), limitadorListagemComum, autenticar, validar(schemaListarTransacoes)"
   },
   {
     "method": "get",
     "path": "/usuario/listar-recorrencias",
-    "middlewares": "auditar('USER_LISTAR_RECORRENCIAS', req => req.usuario?.id_usuario, false), limitadorGenericoSimples, autenticar, validar(schemaListarRecorrencias)"
+    "middlewares": "auditar('USER_LISTAR_RECORRENCIAS', req => req.usuario?.id_usuario, false), limitadorListagemComum, autenticar, validar(schemaListarRecorrencias)"
   },
   {
     "method": "delete",
     "path": "/usuario/excluir-transacao/:id_transacao",
-    "middlewares": "auditar('USER_EXCLUIR_TRANSACAO', req => req.usuario?.id_usuario, true), limitadorGenericoCritico, autenticar, validar(schemaExcluirTransacao)"
+    "middlewares": "auditar('USER_EXCLUIR_TRANSACAO', req => req.usuario?.id_usuario, true), limitadorExclusaoComum, autenticar, validar(schemaExcluirTransacao)"
   },
   {
     "method": "delete",
     "path": "/usuario/excluir-recorrencia/:id_recorrencia",
-    "middlewares": "auditar('USER_EXCLUIR_RECORRENCIA', req => req.usuario?.id_usuario, true), limitadorGenericoCritico, autenticar, validar(schemaExcluirRecorrencia)"
+    "middlewares": "auditar('USER_EXCLUIR_RECORRENCIA', req => req.usuario?.id_usuario, true), limitadorExclusaoComum, autenticar, validar(schemaExcluirRecorrencia)"
   },
   {
     "method": "get",
     "path": "/admin/listar-contas",
-    "middlewares": "auditar('ADMIN_LISTAR_CONTAS', req => req.usuario?.id_usuario, false), limitadorGenericoSimples, autenticar,somenteAdmin, validar(schemaPesquisa,schemaIdUsuarioOpcional)"
+    "middlewares": "auditar('ADMIN_LISTAR_CONTAS', req => req.usuario?.id_usuario, false), limitadorListagemAdmin, autenticar,somenteAdmin, validar(schemaPesquisa,schemaIdUsuarioOpcional)"
   },
   {
     "method": "patch",
     "path": "/admin/editar-conta",
-    "middlewares": "auditar('ADMIN_EDITAR_CONTA', req => req.usuario?.id_usuario, true), limitadorGenericoCritico, autenticar, somenteAdmin, validar(schemaCriarConta,schemaIdContaObrigatorio, schemaIdUsuarioObrigatorio)"
+    "middlewares": "auditar('ADMIN_EDITAR_CONTA', req => req.usuario?.id_usuario, true), limitadorEdicaoAdmin, autenticar, somenteAdmin, validar(schemaCriarConta,schemaIdContaObrigatorio, schemaIdUsuarioObrigatorio)"
   },
   {
     "method": "patch",
     "path": "/admin/inativar-conta",
-    "middlewares": "auditar('ADMIN_INATIVAR_CONTA', req => req.usuario?.id_usuario, true), limitadorGenericoCritico, autenticar, somenteAdmin, validar(schemaIdContaObrigatorio, schemaIdUsuarioObrigatorio)"
+    "middlewares": "auditar('ADMIN_INATIVAR_CONTA', req => req.usuario?.id_usuario, true), limitadorEdicaoAdmin, autenticar, somenteAdmin, validar(schemaIdContaObrigatorio, schemaIdUsuarioObrigatorio)"
   },
   {
     "method": "patch",
     "path": "/admin/reativar-conta",
-    "middlewares": "auditar('ADMIN_REATIVAR_CONTA', req => req.usuario?.id_usuario, true), limitadorGenericoCritico, autenticar, somenteAdmin, validar(schemaIdContaObrigatorio, schemaIdUsuarioObrigatorio)"
+    "middlewares": "auditar('ADMIN_REATIVAR_CONTA', req => req.usuario?.id_usuario, true), limitadorEdicaoAdmin, autenticar, somenteAdmin, validar(schemaIdContaObrigatorio, schemaIdUsuarioObrigatorio)"
   },
   {
     "method": "delete",
     "path": "/admin/deletar-conta/:id_conta/:id_usuario",
-    "middlewares": "auditar('ADMIN_DELETAR_CONTA', req => req.usuario?.id_usuario, true), limitadorGenericoCritico, autenticar, somenteAdmin, validar(schemaIdContaObrigatorio, schemaIdUsuarioObrigatorio)"
+    "middlewares": "auditar('ADMIN_DELETAR_CONTA', req => req.usuario?.id_usuario, true), limitadorExclusaoAdmin, autenticar, somenteAdmin, validar(schemaIdContaObrigatorio, schemaIdUsuarioObrigatorio)"
   },
   {
     "method": "patch",
     "path": "/admin/editar-recorrencia",
-    "middlewares": "auditar('ADMIN_EDITAR_RECORRENCIA', req => req.usuario?.id_usuario, true), limitadorGenericoCritico, autenticar, somenteAdmin, validar(schemaADMIN_editarRecorrencia)"
+    "middlewares": "auditar('ADMIN_EDITAR_RECORRENCIA', req => req.usuario?.id_usuario, true), limitadorEdicaoAdmin, autenticar, somenteAdmin, validar(schemaADMIN_editarRecorrencia)"
   },
   {
     "method": "patch",
     "path": "/admin/editar-transacao",
-    "middlewares": "auditar('ADMIN_EDITAR_TRANSACAO', req => req.usuario?.id_usuario, true), limitadorGenericoCritico, autenticar, somenteAdmin, validar(schemaADMIN_editarTransacao)"
+    "middlewares": "auditar('ADMIN_EDITAR_TRANSACAO', req => req.usuario?.id_usuario, true), limitadorEdicaoAdmin, autenticar, somenteAdmin, validar(schemaADMIN_editarTransacao)"
   },
   {
     "method": "get",
     "path": "/admin/listar-recorrencias",
-    "middlewares": "auditar('ADMIN_LISTAR_RECORRENCIAS', req => req.usuario?.id_usuario, false), limitadorGenericoSimples, autenticar, somenteAdmin, validar(schemaADMIN_listarRecorrencias)"
+    "middlewares": "auditar('ADMIN_LISTAR_RECORRENCIAS', req => req.usuario?.id_usuario, false), limitadorListagemAdmin, autenticar, somenteAdmin, validar(schemaADMIN_listarRecorrencias)"
   },
   {
     "method": "get",
     "path": "/admin/listar-transacoes",
-    "middlewares": "auditar('ADMIN_LISTAR_TRANSACOES', req => req.usuario?.id_usuario, false), limitadorGenericoSimples, autenticar, somenteAdmin, validar(schemaADMIN_listarTransacoes)"
+    "middlewares": "auditar('ADMIN_LISTAR_TRANSACOES', req => req.usuario?.id_usuario, false), limitadorListagemAdmin, autenticar, somenteAdmin, validar(schemaADMIN_listarTransacoes)"
   },
   {
     "method": "delete",
     "path": "/admin/excluir-recorrencia/:id_recorrencia/:id_usuario",
-    "middlewares": "auditar('ADMIN_EXCLUIR_RECORRENCIA', req => req.usuario?.id_usuario, true), limitadorGenericoCritico, autenticar, somenteAdmin, validar(schemaADMIN_excluirRecorrencia)"
+    "middlewares": "auditar('ADMIN_EXCLUIR_RECORRENCIA', req => req.usuario?.id_usuario, true), limitadorExclusaoAdmin, autenticar, somenteAdmin, validar(schemaADMIN_excluirRecorrencia)"
   },
   {
     "method": "delete",
     "path": "/admin/excluir-transacao/:id_transacao/:id_usuario",
-    "middlewares": "auditar('ADMIN_EXCLUIR_TRANSACAO', req => req.usuario?.id_usuario, true), limitadorGenericoCritico, autenticar, somenteAdmin, validar(schemaADMIN_excluirTransacao)"
+    "middlewares": "auditar('ADMIN_EXCLUIR_TRANSACAO', req => req.usuario?.id_usuario, true), limitadorExclusaoAdmin, autenticar, somenteAdmin, validar(schemaADMIN_excluirTransacao)"
   },
   {
     "method": "get",
@@ -368,5 +368,65 @@
     "method": "get",
     "path": "/tela-admin/editar-transacao",
     "middlewares": ""
+  },
+  {
+    "method": "get",
+    "path": "/tela-principal/criar-meta",
+    "middlewares": ""
+  },
+  {
+    "method": "get",
+    "path": "/tela-principal/listar-metas",
+    "middlewares": ""
+  },
+  {
+    "method": "get",
+    "path": "/tela-principal/editar-meta",
+    "middlewares": ""
+  },
+  {
+    "method": "get",
+    "path": "/tela-admin/listar-metas",
+    "middlewares": ""
+  },
+  {
+    "method": "get",
+    "path": "/tela-admin/editar-meta",
+    "middlewares": ""
+  },
+  {
+    "method": "get",
+    "path": "/admin/listar-metas",
+    "middlewares": "auditar('ADMIN_LISTAR_METAS', req => req.usuario?.id_usuario), limitadorListagemAdmin, autenticar, somenteAdmin, validar(schemaADMIN_listarMetas)"
+  },
+  {
+    "method": "patch",
+    "path": "/admin/editar-meta",
+    "middlewares": "auditar('ADMIN_EDITAR_META', req => req.usuario?.id_usuario, true), limitadorEdicaoAdmin, autenticar, somenteAdmin, validar(schemaADMIN_editarMeta)"
+  },
+  {
+    "method": "delete",
+    "path": "/admin/deletar-meta/:id_meta/:id_usuario",
+    "middlewares": "auditar('ADMIN_DELETAR_META', req => req.usuario?.id_usuario, true), limitadorExclusaoAdmin, autenticar, somenteAdmin, validar(schemaADMIN_excluirMeta)"
+  },
+  {
+    "method": "post",
+    "path": "/usuario/criar-meta",
+    "middlewares": "auditar('USER_CRIAR_META', req => req.usuario?.id_usuario, true), limitadorCriacao, autenticar, validar(schemaCriarMeta)"
+  },
+  {
+    "method": "get",
+    "path": "/usuario/listar-metas",
+    "middlewares": "auditar('USER_LISTAR_METAS', req => req.usuario?.id_usuario), limitadorListagemComum, autenticar, validar(schemaListarMetas)"
+  },
+  {
+    "method": "patch",
+    "path": "/usuario/editar-meta",
+    "middlewares": "auditar('USER_EDITAR_META', req => req.usuario?.id_usuario, true), limitadorEdicaoComum, autenticar, validar(schemaEditarMeta)"
+  },
+  {
+    "method": "delete",
+    "path": "/usuario/deletar-meta/:id_meta",
+    "middlewares": "auditar('USER_DELETAR_META', req => req.usuario?.id_usuario, true), limitadorExclusaoComum, autenticar, validar(schemaExcluirMeta)"
   }
 ]

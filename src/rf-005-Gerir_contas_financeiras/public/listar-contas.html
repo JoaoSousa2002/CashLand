@@ -95,6 +95,7 @@
                 <table class="tabela-listagem">
                     <thead>
                         <tr>
+                            <th scope="col" class="th-opcoes">Opções</th>
                             <th scope="col" style="width: 70px;">ID</th>
                             <th scope="col">Nome</th>
                             <th scope="col">Código</th>
@@ -169,7 +170,7 @@
                 const linha = document.createElement('tr');
                 linha.id = 'linha-vazia';
                 const coluna = document.createElement('td');
-                coluna.colSpan = 6;
+                coluna.colSpan = 7;
                 coluna.textContent = 'Nenhuma conta encontrada.';
                 linha.appendChild(coluna);
                 corpo.appendChild(linha);

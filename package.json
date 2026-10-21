@@ -18,9 +18,11 @@
   "scripts": {
     "start": "node src/server.js",
     "test": "node --test tests/*.test.js",
+    "test:frontend": "node --test tests/browser/*.test.js",
     "test:rf06": "python3 tests/testar_rotas.py --testes-rf06",
+    "test:rf07": "python3 tests/testar_rotas.py --testes-rf07",
     "test:idor": "CASHLAND_E2E=1 node --test tests/idor.test.js",
-    "test:supabase": "node tests/integracao/codigos-supabase.js --executar"
+    "test:local": "npm test && npm run test:rf06 && npm run test:rf07 && npm run test:frontend"
   },
   "devDependencies": {
     "esbuild": "^0.28.2",

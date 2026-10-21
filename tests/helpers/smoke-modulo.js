@@ -1,3 +1,4 @@
+import './ambiente-local.js';
 import assert from 'node:assert/strict';
 import Express from 'express';
 import cookieParser from 'cookie-parser';

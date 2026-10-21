@@ -92,6 +92,7 @@
                 <table class="tabela-listagem">
                     <thead>
                         <tr>
+                            <th scope="col" class="th-opcoes">Opções</th>
                             <th scope="col" style="width: 70px;">id</th>
                             <th scope="col" style="width: 220px;">nome</th>
                             <th scope="col">descrição</th>
@@ -235,7 +236,7 @@
             menuTabela.fechar();
             if (!categorias || categorias.length === 0) {
                 document.getElementById('corpo-tabela').innerHTML =
-                    `<tr id="linha-vazia"><td colspan="4">Nenhuma categoria encontrada.</td></tr>`;
+                    `<tr id="linha-vazia"><td colspan="5">Nenhuma categoria encontrada.</td></tr>`;
                 return;
             }
             document.getElementById('corpo-tabela').innerHTML = categorias.map(c =>

@@ -67,6 +67,7 @@ supabase.from = tabela => {
     const registro = { tabela, operacao: 'select', filtros: [] };
     consultas.push(registro);
     let unico = false;
+    let limite = Infinity;
     let executado;
     const builder = {
         select(campos) { registro.campos = campos; return builder; },
@@ -75,6 +76,7 @@ supabase.from = tabela => {
         delete() { registro.operacao = 'delete'; return builder; },
         single() { unico = true; return builder; },
         maybeSingle() { unico = true; return builder; },
+        limit(quantidade) { limite = quantidade; return builder; },
         or(filtro) { registro.filtros.push(['or', filtro]); return builder; },
         match(filtros) {
             for (const [campo, valor] of Object.entries(filtros)) registro.filtros.push(['eq', campo, valor]);
@@ -97,6 +99,7 @@ supabase.from = tabela => {
                         if (op === 'or') return separarFiltros(campo).some(filtro => avaliarFiltro(consultada, filtro));
                         const atual = campo.split('.').reduce((objeto, chave) => objeto?.[chave], consultada);
                         if (op === 'eq') return String(atual) === String(valor);
+                        if (op === 'neq') return String(atual) !== String(valor);
                         if (op === 'in') return valor.map(String).includes(String(atual));
                         if (op === 'gte') return atual >= valor;
                         if (op === 'lte') return atual <= valor;
@@ -114,16 +117,19 @@ supabase.from = tabela => {
                 } else if (registro.operacao === 'delete') {
                     banco[tabela] = banco[tabela].filter(linha => !linhas.includes(linha));
                 }
-                let resultado = juntaConta ? linhas.map(comConta) : linhas;
+                let resultado = (juntaConta ? linhas.map(comConta) : linhas).slice(0, limite);
                 if (juntaConta && !registro.campos.startsWith('*')) {
-                    resultado = resultado.map(linha => ({ contas_bancarias: linha.contas_bancarias }));
+                    resultado = resultado.map(linha => ({
+                        ...(registro.campos.includes('id_meta') ? { id_meta: linha.id_meta } : {}),
+                        contas_bancarias: linha.contas_bancarias
+                    }));
                 }
                 return { data: structuredClone(unico ? resultado[0] ?? null : resultado), error: null };
             });
             return executado.then(resolve, reject);
         }
     };
-    for (const op of ['eq', 'in', 'gte', 'lte', 'lt', 'ilike']) {
+    for (const op of ['eq', 'neq', 'in', 'gte', 'lte', 'lt', 'ilike']) {
         builder[op] = (campo, valor) => { registro.filtros.push([op, campo, valor]); return builder; };
     }
     return builder;

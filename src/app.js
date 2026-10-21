@@ -41,7 +41,7 @@ app.use(cors({ origin: origemAutorizada, credentials: true }));
 app.use(Express.json())
 app.use(cookieParser());
 const swaggerSpec = JSON.parse(
-    readFileSync(new URL('../docs/api/API-SWAGGER.json', import.meta.url))
+    readFileSync(new URL('../docs/api/swagger.json', import.meta.url))
 );
 
 //Rota da API SWAGGER UI

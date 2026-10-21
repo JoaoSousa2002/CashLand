@@ -1,9 +1,11 @@
 // Mantém os botões e handlers de cada linha; somente muda onde são apresentados.
+let fecharMenuTabelaAtivo = null;
+
 function criarMenuTabela(corpo, bloqueado = () => false) {
     const acoesPorLinha = new WeakMap();
     const menu = document.createElement('div');
     menu.className = 'menu-tabela';
-    menu.id = 'menu-acoes-tabela';
+    menu.id = `menu-acoes-tabela-${document.querySelectorAll('.menu-tabela').length + 1}`;
     menu.setAttribute('role', 'menu');
     menu.setAttribute('aria-label', 'Ações do registro');
     menu.hidden = true;
@@ -21,18 +23,43 @@ function criarMenuTabela(corpo, bloqueado = () => false) {
         menu.replaceChildren();
         if (linha) {
             linha.classList.remove('linha-menu-ativa');
-            linha.setAttribute('aria-expanded', 'false');
+            acoesPorLinha.get(linha).botao.setAttribute('aria-expanded', 'false');
         }
         linhaAtiva = null;
-        if (devolverFoco && linha?.isConnected) linha.focus({ preventScroll: true });
+        if (fecharMenuTabelaAtivo === fechar) fecharMenuTabelaAtivo = null;
+        if (devolverFoco && linha?.isConnected) acoesPorLinha.get(linha).botao.focus({ preventScroll: true });
     }
 
     function registrar(linha, acoes) {
-        acoesPorLinha.set(linha, acoes);
-        linha.tabIndex = 0;
-        linha.setAttribute('aria-haspopup', 'menu');
-        linha.setAttribute('aria-controls', menu.id);
-        linha.setAttribute('aria-expanded', 'false');
+        if (linhaAtiva === linha) fechar();
+        let botao = acoesPorLinha.get(linha)?.botao;
+        if (!botao) {
+            const id = linha.cells[0]?.textContent.trim() || '';
+            const coluna = document.createElement('td');
+            coluna.className = 'td-opcoes';
+            botao = document.createElement('button');
+            botao.type = 'button';
+            botao.className = 'botao-opcoes-tabela';
+            botao.textContent = '⋮';
+            botao.setAttribute('aria-label', `Abrir opções do registro ${id}`.trim());
+            botao.setAttribute('aria-haspopup', 'menu');
+            botao.setAttribute('aria-controls', menu.id);
+            botao.setAttribute('aria-expanded', 'false');
+            botao.addEventListener('click', evento => {
+                evento.stopPropagation();
+                if (linhaAtiva === linha) fechar();
+                else abrir(linha);
+            });
+            botao.addEventListener('keydown', evento => {
+                // A ativação nativa por Enter/Espaço não deve acionar a linha.
+                if (evento.key === 'Enter' || evento.key === ' ') evento.stopPropagation();
+            });
+            coluna.appendChild(botao);
+            linha.prepend(coluna);
+        }
+        acoesPorLinha.set(linha, { acoes, botao });
+        // Permite manter o retorno de foco usado pelas confirmações existentes.
+        linha.tabIndex = -1;
         acoes.querySelectorAll('button').forEach(botao => {
             botao.type = 'button';
             botao.setAttribute('role', 'menuitem');
@@ -43,20 +70,38 @@ function criarMenuTabela(corpo, bloqueado = () => false) {
     function abrir(linha, x, y) {
         fechar();
         if (indisponivel() || !corpo.contains(linha)) return;
-        const acoes = acoesPorLinha.get(linha);
-        if (!acoes) return;
+        const registro = acoesPorLinha.get(linha);
+        if (!registro) return;
+        const { acoes, botao } = registro;
+        fecharMenuTabelaAtivo?.();
+        fecharMenuTabelaAtivo = fechar;
         linhaAtiva = linha;
         linha.classList.add('linha-menu-ativa');
-        linha.setAttribute('aria-expanded', 'true');
+        botao.setAttribute('aria-expanded', 'true');
         menu.appendChild(acoes);
         menu.hidden = false;
         const margem = 8;
+        const viewport = window.visualViewport;
+        const esquerda = (viewport?.offsetLeft || 0) + margem;
+        const topo = (viewport?.offsetTop || 0) + margem;
+        const largura = viewport?.width || document.documentElement.clientWidth;
+        const altura = viewport?.height || document.documentElement.clientHeight;
+        menu.style.maxWidth = `${Math.max(0, largura - margem * 2)}px`;
+        menu.style.maxHeight = `${Math.max(0, altura - margem * 2)}px`;
         const limites = menu.getBoundingClientRect();
-        menu.style.left = `${Math.max(margem, Math.min(x, document.documentElement.clientWidth - limites.width - margem))}px`;
-        menu.style.top = `${Math.max(margem, Math.min(y, document.documentElement.clientHeight - limites.height - margem))}px`;
+        const direita = esquerda + largura - margem * 2;
+        const base = topo + altura - margem * 2;
+        if (x === undefined || y === undefined) {
+            const ancora = botao.getBoundingClientRect();
+            x = ancora.left;
+            y = ancora.bottom + 4;
+            if (y + limites.height > base) y = ancora.top - limites.height - 4;
+        }
+        menu.style.left = `${Math.max(esquerda, Math.min(x, direita - limites.width))}px`;
+        menu.style.top = `${Math.max(topo, Math.min(y, base - limites.height))}px`;
         const primeiro = menu.querySelector('button:not(:disabled)');
         if (primeiro) primeiro.focus({ preventScroll: true });
-        else linha.focus({ preventScroll: true });
+        else botao.focus({ preventScroll: true });
     }
 
     corpo.addEventListener('contextmenu', evento => {
@@ -70,8 +115,7 @@ function criarMenuTabela(corpo, bloqueado = () => false) {
         const linha = evento.target.closest('tr');
         if (!acoesPorLinha.has(linha)) return;
         evento.preventDefault();
-        const limites = linha.getBoundingClientRect();
-        abrir(linha, Math.max(8, limites.left) + 16, limites.top + Math.min(limites.height, 32));
+        abrir(linha);
     });
 
     // Fecha antes do handler original, que pode abrir a confirmação de exclusão.
@@ -105,18 +149,22 @@ function criarMenuTabela(corpo, bloqueado = () => false) {
             fechar(true);
         }
     });
-    document.addEventListener('pointerdown', evento => {
-        if (!menu.contains(evento.target)) fechar();
-    });
-    document.addEventListener('click', evento => {
-        if (!menu.contains(evento.target)) fechar();
-    });
+    function fecharAoClicarFora(evento) {
+        const botao = linhaAtiva && acoesPorLinha.get(linhaAtiva).botao;
+        if (!menu.contains(evento.target) && !botao?.contains(evento.target)) fechar();
+    }
+    document.addEventListener('pointerdown', fecharAoClicarFora);
+    document.addEventListener('click', fecharAoClicarFora);
     document.addEventListener('contextmenu', evento => {
         if (!corpo.contains(evento.target)) fechar();
     });
     document.addEventListener('submit', () => fechar(), true);
-    document.addEventListener('scroll', () => fechar(), true);
+    document.addEventListener('scroll', evento => {
+        if (!menu.contains(evento.target)) fechar();
+    }, true);
     window.addEventListener('resize', () => fechar());
+    window.visualViewport?.addEventListener('resize', () => fechar());
+    window.visualViewport?.addEventListener('scroll', () => fechar());
 
     // Uma única observação por tabela, independentemente do número de renderizações.
     new MutationObserver(() => fechar()).observe(corpo, { childList: true });

@@ -389,7 +389,7 @@ Tela → cookie de sessão → `autenticar` → validação Joi → filtro pelo 
 
 ## 📚 7. DOCUMENTAÇÃO API (SWAGGER/OPENAPI) (3%)
 
-O Swagger do projeto está em `docs/api/API-SWAGGER.json` e é servido em `/api-docs`. A especificação documenta as operações de categoria para usuário e administrador, seus parâmetros/corpos, respostas e códigos HTTP, além da autenticação por cookie de sessão nas operações protegidas.
+O Swagger do projeto está em `docs/api/swagger.json` e é servido em `/api-docs`. A especificação documenta as operações de categoria para usuário e administrador, seus parâmetros/corpos, respostas e códigos HTTP, além da autenticação por cookie de sessão nas operações protegidas.
 
 Para a RF-004, o documento Swagger cobre criação, listagem/pesquisa, edição e exclusão de categorias do usuário, bem como consulta, edição e exclusão administrativas. Este documento não replica uma tabela de rotas, conforme o padrão adotado para a entrega.
 

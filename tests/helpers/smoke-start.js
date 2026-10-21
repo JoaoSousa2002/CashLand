@@ -1,3 +1,4 @@
+import './ambiente-local.js';
 import assert from 'node:assert/strict';
 import { once } from 'node:events';
 import app from '../../src/app.js';
