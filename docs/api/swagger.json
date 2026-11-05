@@ -3,7 +3,7 @@
   "info": {
     "title": "CashLand API",
     "version": "1.0.0",
-    "description": "Contrato da implementação atual: 57 operações de API das RF-002 a RF-007. Páginas HTML, arquivos estáticos e /api-docs não são endpoints de negócio e não integram paths. Não existem rotas adicionais de detalhe ou paginação: os filtros das listagens consultam os registros.\n\nAutenticação real: JWT recebido exclusivamente no cookie token. Authorization: Bearer não é lido pelo backend. O login define cookie HttpOnly, SameSite=Strict, duração de duas horas e Secure em produção. Use o login na mesma origem do Swagger UI para que o navegador envie o cookie; o campo Authorize de cookie não consegue definir manualmente um cabeçalho Cookie no navegador. Em curl, use -c e -b. Os endpoints /usuario aceitam sessões Comum e Admin; /admin exige tipo Admin no JWT. O middleware de autenticação valida o JWT, mas não reconsulta status/perfil no banco a cada chamada; verificações adicionais constam em cada operação.\n\nRequisições JSON: quando há Joi, campos desconhecidos são rejeitados, erros são acumulados e os tipos compatíveis são convertidos (exceto valor_meta, estrito). Os schemas descrevem os tipos normalizados; conversões e arredondamentos estão indicados nos campos. PATCH pode exigir campos completos, conforme cada schema. Arrays de query usam a chave repetida, por exemplo id_contas=10&id_contas=11. Null permitido pelo Joi em parâmetros não significa que o texto literal null da URL seja convertido em null; omita o filtro para não aplicá-lo.\n\nRespostas: mensagens e status preservam o código, inclusive grafia, 203 no login, 201 na pesquisa de usuários e 501 na solicitação administrativa de reset. Não há envelope global nem paginação no servidor. Erros tratados retornam JSON; sem middleware global de erros, exceções não tratadas e falhas do parser Express usam HTML (500, JSON malformado 400 e corpo acima de 100 KB 413). Caminhos inexistentes retornam a página HTML 404, não um erro JSON desta API. Rate limits são por IP, compartilhados entre rotas que usam a mesma instância e executados antes da autenticação; 429 inclui Retry-After.\n\nIDs gerados, timestamps, saldo, valor_atual e status de metas são saídas do banco/backend, não campos de criação. Restrições de DDL podem causar 500 mesmo para valores aceitos pelo Joi; os DDLs são referências locais e não houve execução contra o banco publicado. Todos os exemplos são fictícios."
+    "description": "Contrato da implementação atual: 64 operações de API das RF-002 a RF-008. Páginas HTML, arquivos estáticos e /api-docs não são endpoints de negócio e não integram paths. Não existem rotas adicionais de detalhe ou paginação: os filtros das listagens consultam os registros.\n\nAutenticação real: JWT recebido exclusivamente no cookie token. Authorization: Bearer não é lido pelo backend. O login define cookie HttpOnly, SameSite=Strict, duração de duas horas e Secure em produção. Use o login na mesma origem do Swagger UI para que o navegador envie o cookie; o campo Authorize de cookie não consegue definir manualmente um cabeçalho Cookie no navegador. Em curl, use -c e -b. Os endpoints /usuario aceitam sessões Comum e Admin; /admin exige tipo Admin no JWT. O middleware de autenticação valida o JWT, mas não reconsulta status/perfil no banco a cada chamada; verificações adicionais constam em cada operação.\n\nRequisições JSON: quando há Joi, campos desconhecidos são rejeitados, erros são acumulados e os tipos compatíveis são convertidos (exceto valor_meta e valor_orcamento, estritos). Os schemas descrevem os tipos normalizados; conversões e arredondamentos estão indicados nos campos. PATCH pode exigir campos completos, conforme cada schema. Arrays de query usam a chave repetida, por exemplo id_contas=10&id_contas=11. Null permitido pelo Joi em parâmetros não significa que o texto literal null da URL seja convertido em null; omita o filtro para não aplicá-lo.\n\nRespostas: mensagens e status preservam o código, inclusive grafia, 203 no login, 201 na pesquisa de usuários e 501 na solicitação administrativa de reset. Não há envelope global nem paginação no servidor. Erros tratados retornam JSON; sem middleware global de erros, exceções não tratadas e falhas do parser Express usam HTML (500, JSON malformado 400 e corpo acima de 100 KB 413). Caminhos inexistentes retornam a página HTML 404, não um erro JSON desta API. Rate limits são por IP, compartilhados entre rotas que usam a mesma instância e executados antes da autenticação; 429 inclui Retry-After.\n\nIDs gerados, timestamps, saldo, valor_atual e status de metas são saídas do banco/backend, não campos de criação. Restrições de DDL podem causar 500 mesmo para valores aceitos pelo Joi; os DDLs são referências locais e não houve execução contra o banco publicado. Todos os exemplos são fictícios."
   },
   "servers": [
     {
@@ -33,6 +33,9 @@
     },
     {
       "name": "RF-007 — Metas financeiras"
+    },
+    {
+      "name": "RF-008 — Orçamentos"
     }
   ],
   "paths": {
@@ -13101,6 +13104,1562 @@
           }
         ]
       }
+    },
+    "/usuario/criar-orcamento": {
+      "post": {
+        "tags": [
+          "RF-008 — Orçamentos"
+        ],
+        "summary": "Criar orçamento",
+        "operationId": "usuarioCriarOrcamento",
+        "security": [
+          {
+            "CookieAuth": []
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Falha de sessão/credenciais, código de confirmação ou consulta, conforme os exemplos reais da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                },
+                "examples": {
+                  "exemplo1": {
+                    "value": {
+                      "mensagem": "Não autenticado"
+                    }
+                  },
+                  "exemplo2": {
+                    "value": {
+                      "mensagem": "Token inválido ou expirado"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Limite limitadorCriacao excedido: 30 requisições por IP em 15 minutos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                },
+                "examples": {
+                  "exemplo1": {
+                    "value": {
+                      "mensagem": "Muitas tentativas de criação de registros realizadas. Tente novamente em 15 minutos."
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Segundos até o fim da janela atual.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "example": 900
+              },
+              "X-RateLimit-Limit": {
+                "description": "Máximo da instância do limitador.",
+                "schema": {
+                  "type": "integer"
+                },
+                "example": 30
+              },
+              "X-RateLimit-Remaining": {
+                "description": "Requisições restantes (zero ao bloquear).",
+                "schema": {
+                  "type": "integer"
+                },
+                "example": 0
+              },
+              "X-RateLimit-Reset": {
+                "description": "Fim da janela em segundos Unix.",
+                "schema": {
+                  "type": "integer"
+                },
+                "example": 1792498500
+              }
+            }
+          },
+          "400": {
+            "description": "Validação Joi ou regra de período/vínculo inválida. Constraints SQL 23514/23502 e estouro numérico 22003 retornam mensagem. JSON malformado retorna HTML pelo parser Express.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ErroValidacao"
+                    },
+                    {
+                      "$ref": "#/components/schemas/Mensagem"
+                    }
+                  ]
+                },
+                "examples": {
+                  "campoIndevido": {
+                    "value": {
+                      "mensagem": "Dados inválidos.",
+                      "erros": [
+                        {
+                          "campo": "nome",
+                          "mensagem": "Foi enviado um campo não permitido para esta operação."
+                        }
+                      ]
+                    }
+                  },
+                  "integridade": {
+                    "value": {
+                      "mensagem": "Os dados não atendem às regras do orçamento"
+                    }
+                  }
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Orçamento, proprietário ou vínculo inexistente/sem pertencimento, conforme a operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                },
+                "example": {
+                  "mensagem": "Essa conta bancaria não existe ou não pertence ao usuario"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Nome gerado duplicado (UNIQUE, SQL 23505).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                },
+                "example": {
+                  "mensagem": "Já existe um orçamento com esse nome"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Falha ao consultar/gravar no banco. Exceções não tratadas usam HTML pelo Express.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                },
+                "example": {
+                  "mensagem": "Erro ao criar o orçamento, tente novamente mais tarde"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Operação confirmada no banco.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                },
+                "example": {
+                  "mensagem": "Orçamento criado com sucesso"
+                }
+              }
+            }
+          }
+        },
+        "description": "Autenticação por cookie token. Perfis Comum e Admin; proprietário obtido exclusivamente de req.usuario.id_usuario. Cria orçamento de conta, categoria ou ambas. Confere existência e propriedade dos vínculos, sem exigir conta ativa. O banco gera nome único, fim do período, totais e timestamps; o backend define apenas o início. Sem periodo_inicio, usa o período atual em America/Sao_Paulo. Duplicidade pelo nome gerado retorna 409, inclusive em inserções concorrentes. Retorna somente mensagem; consulte a listagem para obter o ID.\n\nLimite por IP: 30 requisições a cada 15 minutos, compartilhado com as rotas que usam limitadorCriacao. A validação Joi rejeita campos desconhecidos na origem validada (corpo JSON).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UsuarioCriarOrcamentoRequisicao"
+              },
+              "example": {
+                "id_conta": 10,
+                "tipo_periodo": "Mensal",
+                "valor_orcamento": 1000
+              }
+            }
+          }
+        }
+      }
+    },
+    "/usuario/listar-orcamentos": {
+      "get": {
+        "tags": [
+          "RF-008 — Orçamentos"
+        ],
+        "summary": "Listar orçamento",
+        "operationId": "usuarioListarOrcamento",
+        "security": [
+          {
+            "CookieAuth": []
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Falha de sessão/credenciais, código de confirmação ou consulta, conforme os exemplos reais da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                },
+                "examples": {
+                  "exemplo1": {
+                    "value": {
+                      "mensagem": "Não autenticado"
+                    }
+                  },
+                  "exemplo2": {
+                    "value": {
+                      "mensagem": "Token inválido ou expirado"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Limite limitadorListagemComum excedido: 120 requisições por IP em 10 minutos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                },
+                "examples": {
+                  "exemplo1": {
+                    "value": {
+                      "mensagem": "Muitas solicitações de listagem realizadas. Tente novamente em 10 minutos."
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Segundos até o fim da janela atual.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "example": 600
+              },
+              "X-RateLimit-Limit": {
+                "description": "Máximo da instância do limitador.",
+                "schema": {
+                  "type": "integer"
+                },
+                "example": 120
+              },
+              "X-RateLimit-Remaining": {
+                "description": "Requisições restantes (zero ao bloquear).",
+                "schema": {
+                  "type": "integer"
+                },
+                "example": 0
+              },
+              "X-RateLimit-Reset": {
+                "description": "Fim da janela em segundos Unix.",
+                "schema": {
+                  "type": "integer"
+                },
+                "example": 1792498500
+              }
+            }
+          },
+          "400": {
+            "description": "Filtro inválido no Joi: identificador, nome vazio, tipo de período, data inexistente ou intervalo invertido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ErroValidacao"
+                    },
+                    {
+                      "$ref": "#/components/schemas/Mensagem"
+                    }
+                  ]
+                },
+                "examples": {
+                  "identificadorInvalido": {
+                    "value": {
+                      "mensagem": "Dados inválidos.",
+                      "erros": [
+                        {
+                          "campo": "id_orcamento",
+                          "mensagem": "O orçamento deve ser um número."
+                        }
+                      ]
+                    }
+                  }
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Falha ao consultar no banco.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                },
+                "example": {
+                  "mensagem": "Erro ao listar os orçamentos, tente novamente mais tarde"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Orçamentos encontrados ou lista vazia.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Orcamento"
+                  }
+                },
+                "examples": {
+                  "encontrados": {
+                    "value": [
+                      {
+                        "id_orcamento": 100,
+                        "id_usuario": 1,
+                        "id_conta": 10,
+                        "id_categoria": 30,
+                        "nome": "Orçamento Conta#10+Categoria#30 [11/2026]",
+                        "descricao": null,
+                        "valor_orcamento": 1000,
+                        "valor_atual": 120.5,
+                        "tipo_periodo": "Mensal",
+                        "periodo_inicio": "2026-11-01",
+                        "periodo_fim": "2026-11-30",
+                        "data_criacao": "2026-11-04T12:00:00Z",
+                        "data_atualizacao": "2026-11-04T12:00:00Z"
+                      }
+                    ]
+                  },
+                  "vazia": {
+                    "value": []
+                  }
+                }
+              }
+            }
+          }
+        },
+        "description": "Autenticação por cookie token. Perfis Comum e Admin; proprietário obtido exclusivamente de req.usuario.id_usuario. Filtros combinados com AND; nome usa busca parcial ILIKE sem distinção de maiúsculas. Os limites de consulta incluem orçamentos sobrepostos: periodo_fim do orçamento >= periodo_inicio consultado e periodo_inicio do orçamento <= periodo_fim consultado. É permitido informar um só limite. Retorna array diretamente; sem correspondências, inclusive IDs/vínculos alheios nas rotas comuns, retorna 200 com []. Não há paginação.\n\nLimite por IP: 120 requisições a cada 10 minutos, compartilhado com as rotas que usam limitadorListagemComum. A validação Joi rejeita campos desconhecidos na origem validada (query).",
+        "parameters": [
+          {
+            "name": "id_orcamento",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            }
+          },
+          {
+            "name": "nome",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Texto não vazio após trim. Busca parcial ILIKE."
+            }
+          },
+          {
+            "name": "id_conta",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            }
+          },
+          {
+            "name": "id_categoria",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            }
+          },
+          {
+            "name": "tipo_periodo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "Semanal",
+                "Mensal",
+                "Anual"
+              ]
+            }
+          },
+          {
+            "name": "periodo_inicio",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "pattern": "^(?!0000)\\d{4}-\\d{2}-\\d{2}$",
+              "description": "Data existente no calendário, AAAA-MM-DD, ano entre 0001 e 9999."
+            }
+          },
+          {
+            "name": "periodo_fim",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "pattern": "^(?!0000)\\d{4}-\\d{2}-\\d{2}$",
+              "description": "Data existente no calendário, AAAA-MM-DD, ano entre 0001 e 9999."
+            }
+          }
+        ]
+      }
+    },
+    "/usuario/editar-orcamento": {
+      "patch": {
+        "tags": [
+          "RF-008 — Orçamentos"
+        ],
+        "summary": "Editar orçamento",
+        "operationId": "usuarioEditarOrcamento",
+        "security": [
+          {
+            "CookieAuth": []
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Falha de sessão/credenciais, código de confirmação ou consulta, conforme os exemplos reais da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                },
+                "examples": {
+                  "exemplo1": {
+                    "value": {
+                      "mensagem": "Não autenticado"
+                    }
+                  },
+                  "exemplo2": {
+                    "value": {
+                      "mensagem": "Token inválido ou expirado"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Limite limitadorEdicaoComum excedido: 30 requisições por IP em 15 minutos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                },
+                "examples": {
+                  "exemplo1": {
+                    "value": {
+                      "mensagem": "Muitas tentativas de edição de registros realizadas. Tente novamente em 15 minutos."
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Segundos até o fim da janela atual.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "example": 900
+              },
+              "X-RateLimit-Limit": {
+                "description": "Máximo da instância do limitador.",
+                "schema": {
+                  "type": "integer"
+                },
+                "example": 30
+              },
+              "X-RateLimit-Remaining": {
+                "description": "Requisições restantes (zero ao bloquear).",
+                "schema": {
+                  "type": "integer"
+                },
+                "example": 0
+              },
+              "X-RateLimit-Reset": {
+                "description": "Fim da janela em segundos Unix.",
+                "schema": {
+                  "type": "integer"
+                },
+                "example": 1792498500
+              }
+            }
+          },
+          "400": {
+            "description": "Validação Joi ou regra de período/vínculo inválida. Constraints SQL 23514/23502 e estouro numérico 22003 retornam mensagem. JSON malformado retorna HTML pelo parser Express.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ErroValidacao"
+                    },
+                    {
+                      "$ref": "#/components/schemas/Mensagem"
+                    }
+                  ]
+                },
+                "examples": {
+                  "campoIndevido": {
+                    "value": {
+                      "mensagem": "Dados inválidos.",
+                      "erros": [
+                        {
+                          "campo": "nome",
+                          "mensagem": "Foi enviado um campo não permitido para esta operação."
+                        }
+                      ]
+                    }
+                  },
+                  "integridade": {
+                    "value": {
+                      "mensagem": "Os dados não atendem às regras do orçamento"
+                    }
+                  }
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Orçamento, proprietário ou vínculo inexistente/sem pertencimento, conforme a operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                },
+                "example": {
+                  "mensagem": "Esse orçamento não existe ou não pertence ao usuario"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Nome gerado duplicado (UNIQUE, SQL 23505).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                },
+                "example": {
+                  "mensagem": "Já existe um orçamento com esse nome"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Falha ao consultar/gravar no banco. Exceções não tratadas usam HTML pelo Express.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                },
+                "example": {
+                  "mensagem": "Erro ao editar o orçamento, tente novamente mais tarde"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Operação confirmada no banco.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                },
+                "example": {
+                  "mensagem": "Orçamento editado com sucesso"
+                }
+              }
+            }
+          }
+        },
+        "description": "Autenticação por cookie token. Perfis Comum e Admin; proprietário obtido exclusivamente de req.usuario.id_usuario. Verifica existência e propriedade antes de editar; novos vínculos devem pertencer ao mesmo proprietário. Omitir preserva campos, inclusive o limite e períodos antigos. null remove um vínculo desde que outro permaneça. Se tipo_periodo mudar, periodo_inicio é obrigatório e deve corresponder ao início do período atual ou próximo para o novo tipo. Toda data inicial enviada passa por essa validação. O banco recalcula nome, fim e total. Identificadores e campos automáticos nunca são gravados a partir do cliente. Nome duplicado retorna 409.\n\nLimite por IP: 30 requisições a cada 15 minutos, compartilhado com as rotas que usam limitadorEdicaoComum. A validação Joi rejeita campos desconhecidos na origem validada (corpo JSON).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UsuarioEditarOrcamentoRequisicao"
+              },
+              "example": {
+                "id_orcamento": 100,
+                "descricao": null,
+                "valor_orcamento": 1200
+              }
+            }
+          }
+        }
+      }
+    },
+    "/usuario/deletar-orcamento/{id_orcamento}": {
+      "delete": {
+        "tags": [
+          "RF-008 — Orçamentos"
+        ],
+        "summary": "Deletar orçamento",
+        "operationId": "usuarioDeletarOrcamento",
+        "security": [
+          {
+            "CookieAuth": []
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Falha de sessão/credenciais, código de confirmação ou consulta, conforme os exemplos reais da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                },
+                "examples": {
+                  "exemplo1": {
+                    "value": {
+                      "mensagem": "Não autenticado"
+                    }
+                  },
+                  "exemplo2": {
+                    "value": {
+                      "mensagem": "Token inválido ou expirado"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Limite limitadorExclusaoComum excedido: 15 requisições por IP em 15 minutos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                },
+                "examples": {
+                  "exemplo1": {
+                    "value": {
+                      "mensagem": "Muitas tentativas de exclusão de registros realizadas. Tente novamente em 15 minutos."
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Segundos até o fim da janela atual.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "example": 900
+              },
+              "X-RateLimit-Limit": {
+                "description": "Máximo da instância do limitador.",
+                "schema": {
+                  "type": "integer"
+                },
+                "example": 15
+              },
+              "X-RateLimit-Remaining": {
+                "description": "Requisições restantes (zero ao bloquear).",
+                "schema": {
+                  "type": "integer"
+                },
+                "example": 0
+              },
+              "X-RateLimit-Reset": {
+                "description": "Fim da janela em segundos Unix.",
+                "schema": {
+                  "type": "integer"
+                },
+                "example": 1792498500
+              }
+            }
+          },
+          "400": {
+            "description": "Identificadores inválidos no Joi ou body com campos. JSON malformado retorna HTML pelo parser Express.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ErroValidacao"
+                    },
+                    {
+                      "$ref": "#/components/schemas/Mensagem"
+                    }
+                  ]
+                },
+                "examples": {
+                  "identificadorInvalido": {
+                    "value": {
+                      "mensagem": "Dados inválidos.",
+                      "erros": [
+                        {
+                          "campo": "id_orcamento",
+                          "mensagem": "O orçamento deve ser um número."
+                        }
+                      ]
+                    }
+                  },
+                  "bodyIndevido": {
+                    "value": {
+                      "mensagem": "A exclusão do orçamento não recebe campos no body"
+                    }
+                  }
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Orçamento, proprietário ou vínculo inexistente/sem pertencimento, conforme a operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                },
+                "example": {
+                  "mensagem": "Esse orçamento não existe ou não pertence ao usuario"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Falha ao consultar/gravar no banco. Exceções não tratadas usam HTML pelo Express.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                },
+                "example": {
+                  "mensagem": "Erro ao deletar o orçamento, tente novamente mais tarde"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Operação confirmada no banco.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                },
+                "example": {
+                  "mensagem": "Orçamento deletado com sucesso"
+                }
+              }
+            }
+          }
+        },
+        "description": "Autenticação por cookie token. Perfis Comum e Admin; proprietário obtido exclusivamente de req.usuario.id_usuario. Recebe identificadores somente no caminho; body com campos retorna 400. Exclui apenas o orçamento, preservando transações, contas, categorias e saldos. A exclusão restringe ID e proprietário e confirma a linha excluída; ausência ou proprietário divergente retorna 404.\n\nLimite por IP: 15 requisições a cada 15 minutos, compartilhado com as rotas que usam limitadorExclusaoComum. A validação Joi rejeita campos desconhecidos na origem validada (caminho).",
+        "parameters": [
+          {
+            "name": "id_orcamento",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            }
+          }
+        ]
+      }
+    },
+    "/admin/listar-orcamentos": {
+      "get": {
+        "tags": [
+          "RF-008 — Orçamentos"
+        ],
+        "summary": "Listar orçamento",
+        "operationId": "adminListarOrcamento",
+        "security": [
+          {
+            "CookieAuth": []
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Falha de sessão/credenciais, código de confirmação ou consulta, conforme os exemplos reais da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                },
+                "examples": {
+                  "exemplo1": {
+                    "value": {
+                      "mensagem": "Não autenticado"
+                    }
+                  },
+                  "exemplo2": {
+                    "value": {
+                      "mensagem": "Token inválido ou expirado"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Permissão ou regra de proteção do registro negada; observe a diferença entre erro e mensagem.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                },
+                "examples": {
+                  "exemplo1": {
+                    "value": {
+                      "erro": "Acesso restrito a administradores"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Limite limitadorListagemAdmin excedido: 240 requisições por IP em 10 minutos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                },
+                "examples": {
+                  "exemplo1": {
+                    "value": {
+                      "mensagem": "Muitas solicitações de listagem realizadas. Tente novamente em 10 minutos."
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Segundos até o fim da janela atual.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "example": 600
+              },
+              "X-RateLimit-Limit": {
+                "description": "Máximo da instância do limitador.",
+                "schema": {
+                  "type": "integer"
+                },
+                "example": 240
+              },
+              "X-RateLimit-Remaining": {
+                "description": "Requisições restantes (zero ao bloquear).",
+                "schema": {
+                  "type": "integer"
+                },
+                "example": 0
+              },
+              "X-RateLimit-Reset": {
+                "description": "Fim da janela em segundos Unix.",
+                "schema": {
+                  "type": "integer"
+                },
+                "example": 1792498500
+              }
+            }
+          },
+          "400": {
+            "description": "Filtro inválido no Joi: identificador, nome vazio, tipo de período, data inexistente ou intervalo invertido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ErroValidacao"
+                    },
+                    {
+                      "$ref": "#/components/schemas/Mensagem"
+                    }
+                  ]
+                },
+                "examples": {
+                  "identificadorInvalido": {
+                    "value": {
+                      "mensagem": "Dados inválidos.",
+                      "erros": [
+                        {
+                          "campo": "id_orcamento",
+                          "mensagem": "O orçamento deve ser um número."
+                        }
+                      ]
+                    }
+                  }
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Orçamento, proprietário ou vínculo inexistente/sem pertencimento, conforme a operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                },
+                "example": {
+                  "mensagem": "Esse usuario não existe"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Falha ao consultar no banco.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                },
+                "example": {
+                  "mensagem": "Erro ao listar os orçamentos, tente novamente mais tarde"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Orçamentos encontrados ou lista vazia.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Orcamento"
+                  }
+                },
+                "examples": {
+                  "encontrados": {
+                    "value": [
+                      {
+                        "id_orcamento": 100,
+                        "id_usuario": 1,
+                        "id_conta": 10,
+                        "id_categoria": 30,
+                        "nome": "Orçamento Conta#10+Categoria#30 [11/2026]",
+                        "descricao": null,
+                        "valor_orcamento": 1000,
+                        "valor_atual": 120.5,
+                        "tipo_periodo": "Mensal",
+                        "periodo_inicio": "2026-11-01",
+                        "periodo_fim": "2026-11-30",
+                        "data_criacao": "2026-11-04T12:00:00Z",
+                        "data_atualizacao": "2026-11-04T12:00:00Z"
+                      }
+                    ]
+                  },
+                  "vazia": {
+                    "value": []
+                  }
+                }
+              }
+            }
+          }
+        },
+        "description": "Autenticação por cookie token. Exige perfil Admin. Verifica a existência do id_usuario informado, mesmo se inativo. Identifica o proprietário alvo, sem transferir o orçamento. Filtros combinados com AND; nome usa busca parcial ILIKE sem distinção de maiúsculas. Os limites de consulta incluem orçamentos sobrepostos: periodo_fim do orçamento >= periodo_inicio consultado e periodo_inicio do orçamento <= periodo_fim consultado. É permitido informar um só limite. Retorna array diretamente; sem correspondências, inclusive IDs/vínculos alheios nas rotas comuns, retorna 200 com []. Não há paginação.\n\nLimite por IP: 240 requisições a cada 10 minutos, compartilhado com as rotas que usam limitadorListagemAdmin. A validação Joi rejeita campos desconhecidos na origem validada (query).",
+        "parameters": [
+          {
+            "name": "id_usuario",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            }
+          },
+          {
+            "name": "id_orcamento",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            }
+          },
+          {
+            "name": "nome",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Texto não vazio após trim. Busca parcial ILIKE."
+            }
+          },
+          {
+            "name": "id_conta",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            }
+          },
+          {
+            "name": "id_categoria",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            }
+          },
+          {
+            "name": "tipo_periodo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "Semanal",
+                "Mensal",
+                "Anual"
+              ]
+            }
+          },
+          {
+            "name": "periodo_inicio",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "pattern": "^(?!0000)\\d{4}-\\d{2}-\\d{2}$",
+              "description": "Data existente no calendário, AAAA-MM-DD, ano entre 0001 e 9999."
+            }
+          },
+          {
+            "name": "periodo_fim",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "pattern": "^(?!0000)\\d{4}-\\d{2}-\\d{2}$",
+              "description": "Data existente no calendário, AAAA-MM-DD, ano entre 0001 e 9999."
+            }
+          }
+        ]
+      }
+    },
+    "/admin/editar-orcamento": {
+      "patch": {
+        "tags": [
+          "RF-008 — Orçamentos"
+        ],
+        "summary": "Editar orçamento",
+        "operationId": "adminEditarOrcamento",
+        "security": [
+          {
+            "CookieAuth": []
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Falha de sessão/credenciais, código de confirmação ou consulta, conforme os exemplos reais da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                },
+                "examples": {
+                  "exemplo1": {
+                    "value": {
+                      "mensagem": "Não autenticado"
+                    }
+                  },
+                  "exemplo2": {
+                    "value": {
+                      "mensagem": "Token inválido ou expirado"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Permissão ou regra de proteção do registro negada; observe a diferença entre erro e mensagem.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                },
+                "examples": {
+                  "exemplo1": {
+                    "value": {
+                      "erro": "Acesso restrito a administradores"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Limite limitadorEdicaoAdmin excedido: 60 requisições por IP em 15 minutos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                },
+                "examples": {
+                  "exemplo1": {
+                    "value": {
+                      "mensagem": "Muitas tentativas de edição de registros realizadas. Tente novamente em 15 minutos."
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Segundos até o fim da janela atual.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "example": 900
+              },
+              "X-RateLimit-Limit": {
+                "description": "Máximo da instância do limitador.",
+                "schema": {
+                  "type": "integer"
+                },
+                "example": 60
+              },
+              "X-RateLimit-Remaining": {
+                "description": "Requisições restantes (zero ao bloquear).",
+                "schema": {
+                  "type": "integer"
+                },
+                "example": 0
+              },
+              "X-RateLimit-Reset": {
+                "description": "Fim da janela em segundos Unix.",
+                "schema": {
+                  "type": "integer"
+                },
+                "example": 1792498500
+              }
+            }
+          },
+          "400": {
+            "description": "Validação Joi ou regra de período/vínculo inválida. Constraints SQL 23514/23502 e estouro numérico 22003 retornam mensagem. JSON malformado retorna HTML pelo parser Express.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ErroValidacao"
+                    },
+                    {
+                      "$ref": "#/components/schemas/Mensagem"
+                    }
+                  ]
+                },
+                "examples": {
+                  "campoIndevido": {
+                    "value": {
+                      "mensagem": "Dados inválidos.",
+                      "erros": [
+                        {
+                          "campo": "nome",
+                          "mensagem": "Foi enviado um campo não permitido para esta operação."
+                        }
+                      ]
+                    }
+                  },
+                  "integridade": {
+                    "value": {
+                      "mensagem": "Os dados não atendem às regras do orçamento"
+                    }
+                  }
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Orçamento, proprietário ou vínculo inexistente/sem pertencimento, conforme a operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                },
+                "example": {
+                  "mensagem": "Esse orçamento não existe ou não pertence ao usuario"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Nome gerado duplicado (UNIQUE, SQL 23505).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                },
+                "example": {
+                  "mensagem": "Já existe um orçamento com esse nome"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Falha ao consultar/gravar no banco. Exceções não tratadas usam HTML pelo Express.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                },
+                "example": {
+                  "mensagem": "Erro ao editar o orçamento, tente novamente mais tarde"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Operação confirmada no banco.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                },
+                "example": {
+                  "mensagem": "Orçamento editado com sucesso"
+                }
+              }
+            }
+          }
+        },
+        "description": "Autenticação por cookie token. Exige perfil Admin. Verifica a existência do id_usuario informado, mesmo se inativo. Identifica o proprietário alvo, sem transferir o orçamento. Verifica existência e propriedade antes de editar; novos vínculos devem pertencer ao mesmo proprietário. Omitir preserva campos, inclusive o limite e períodos antigos. null remove um vínculo desde que outro permaneça. Se tipo_periodo mudar, periodo_inicio é obrigatório e deve corresponder ao início do período atual ou próximo para o novo tipo. Toda data inicial enviada passa por essa validação. O banco recalcula nome, fim e total. Identificadores e campos automáticos nunca são gravados a partir do cliente. Nome duplicado retorna 409.\n\nLimite por IP: 60 requisições a cada 15 minutos, compartilhado com as rotas que usam limitadorEdicaoAdmin. A validação Joi rejeita campos desconhecidos na origem validada (corpo JSON).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminEditarOrcamentoRequisicao"
+              },
+              "example": {
+                "id_usuario": 1,
+                "id_orcamento": 100,
+                "descricao": null,
+                "valor_orcamento": 1200
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/deletar-orcamento/{id_usuario}/{id_orcamento}": {
+      "delete": {
+        "tags": [
+          "RF-008 — Orçamentos"
+        ],
+        "summary": "Deletar orçamento",
+        "operationId": "adminDeletarOrcamento",
+        "security": [
+          {
+            "CookieAuth": []
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Falha de sessão/credenciais, código de confirmação ou consulta, conforme os exemplos reais da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                },
+                "examples": {
+                  "exemplo1": {
+                    "value": {
+                      "mensagem": "Não autenticado"
+                    }
+                  },
+                  "exemplo2": {
+                    "value": {
+                      "mensagem": "Token inválido ou expirado"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Permissão ou regra de proteção do registro negada; observe a diferença entre erro e mensagem.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                },
+                "examples": {
+                  "exemplo1": {
+                    "value": {
+                      "erro": "Acesso restrito a administradores"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Limite limitadorExclusaoAdmin excedido: 60 requisições por IP em 15 minutos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                },
+                "examples": {
+                  "exemplo1": {
+                    "value": {
+                      "mensagem": "Muitas tentativas de exclusão de registros realizadas. Tente novamente em 15 minutos."
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Segundos até o fim da janela atual.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "example": 900
+              },
+              "X-RateLimit-Limit": {
+                "description": "Máximo da instância do limitador.",
+                "schema": {
+                  "type": "integer"
+                },
+                "example": 60
+              },
+              "X-RateLimit-Remaining": {
+                "description": "Requisições restantes (zero ao bloquear).",
+                "schema": {
+                  "type": "integer"
+                },
+                "example": 0
+              },
+              "X-RateLimit-Reset": {
+                "description": "Fim da janela em segundos Unix.",
+                "schema": {
+                  "type": "integer"
+                },
+                "example": 1792498500
+              }
+            }
+          },
+          "400": {
+            "description": "Identificadores inválidos no Joi ou body com campos. JSON malformado retorna HTML pelo parser Express.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ErroValidacao"
+                    },
+                    {
+                      "$ref": "#/components/schemas/Mensagem"
+                    }
+                  ]
+                },
+                "examples": {
+                  "identificadorInvalido": {
+                    "value": {
+                      "mensagem": "Dados inválidos.",
+                      "erros": [
+                        {
+                          "campo": "id_orcamento",
+                          "mensagem": "O orçamento deve ser um número."
+                        }
+                      ]
+                    }
+                  },
+                  "bodyIndevido": {
+                    "value": {
+                      "mensagem": "A exclusão do orçamento não recebe campos no body"
+                    }
+                  }
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Orçamento, proprietário ou vínculo inexistente/sem pertencimento, conforme a operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                },
+                "example": {
+                  "mensagem": "Esse orçamento não existe ou não pertence ao usuario"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Falha ao consultar/gravar no banco. Exceções não tratadas usam HTML pelo Express.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                },
+                "example": {
+                  "mensagem": "Erro ao deletar o orçamento, tente novamente mais tarde"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Operação confirmada no banco.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                },
+                "example": {
+                  "mensagem": "Orçamento deletado com sucesso"
+                }
+              }
+            }
+          }
+        },
+        "description": "Autenticação por cookie token. Exige perfil Admin. Verifica a existência do id_usuario informado, mesmo se inativo. Identifica o proprietário alvo, sem transferir o orçamento. Recebe identificadores somente no caminho; body com campos retorna 400. Exclui apenas o orçamento, preservando transações, contas, categorias e saldos. A exclusão restringe ID e proprietário e confirma a linha excluída; ausência ou proprietário divergente retorna 404.\n\nLimite por IP: 60 requisições a cada 15 minutos, compartilhado com as rotas que usam limitadorExclusaoAdmin. A validação Joi rejeita campos desconhecidos na origem validada (caminho).",
+        "parameters": [
+          {
+            "name": "id_usuario",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            }
+          },
+          {
+            "name": "id_orcamento",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            }
+          }
+        ]
+      }
     }
   },
   "components": {
@@ -16562,6 +18121,357 @@
           "id_usuario",
           "id_meta"
         ]
+      },
+      "UsuarioCriarOrcamentoRequisicao": {
+        "type": "object",
+        "properties": {
+          "id_conta": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647,
+            "nullable": true
+          },
+          "id_categoria": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647,
+            "nullable": true
+          },
+          "descricao": {
+            "type": "string",
+            "nullable": true,
+            "description": "Opcional; aceita null e texto vazio. Remove espaços nas extremidades."
+          },
+          "valor_orcamento": {
+            "type": "number",
+            "minimum": 0,
+            "exclusiveMinimum": true,
+            "maximum": 9999999999.99,
+            "multipleOf": 0.01,
+            "description": "Número JSON positivo, com até duas casas decimais. Não aceita texto nem arredondamento."
+          },
+          "tipo_periodo": {
+            "type": "string",
+            "enum": [
+              "Semanal",
+              "Mensal",
+              "Anual"
+            ]
+          },
+          "periodo_inicio": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?!0000)\\d{4}-\\d{2}-\\d{2}$",
+            "description": "Início do período atual ou próximo, em America/Sao_Paulo: domingo, primeiro dia do mês ou 1º de janeiro. Na criação, omitir usa o período atual."
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "tipo_periodo",
+          "valor_orcamento"
+        ],
+        "description": "Exige pelo menos um vínculo não nulo, pertencente ao usuário da sessão. Campos automáticos e id_usuario são rejeitados.",
+        "anyOf": [
+          {
+            "required": [
+              "id_conta"
+            ],
+            "properties": {
+              "id_conta": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              }
+            }
+          },
+          {
+            "required": [
+              "id_categoria"
+            ],
+            "properties": {
+              "id_categoria": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              }
+            }
+          }
+        ]
+      },
+      "UsuarioEditarOrcamentoRequisicao": {
+        "type": "object",
+        "properties": {
+          "id_orcamento": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "id_conta": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647,
+            "nullable": true
+          },
+          "id_categoria": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647,
+            "nullable": true
+          },
+          "descricao": {
+            "type": "string",
+            "nullable": true,
+            "description": "Opcional; aceita null e texto vazio. Remove espaços nas extremidades."
+          },
+          "valor_orcamento": {
+            "type": "number",
+            "minimum": 0,
+            "exclusiveMinimum": true,
+            "maximum": 9999999999.99,
+            "multipleOf": 0.01,
+            "description": "Número JSON positivo, com até duas casas decimais. Não aceita texto nem arredondamento."
+          },
+          "tipo_periodo": {
+            "type": "string",
+            "enum": [
+              "Semanal",
+              "Mensal",
+              "Anual"
+            ]
+          },
+          "periodo_inicio": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?!0000)\\d{4}-\\d{2}-\\d{2}$",
+            "description": "Início do período atual ou próximo, em America/Sao_Paulo: domingo, primeiro dia do mês ou 1º de janeiro. Na criação, omitir usa o período atual."
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "id_orcamento"
+        ],
+        "description": "Exige pelo menos um campo de alteração além dos identificadores. Omitir preserva. null remove vínculo desde que outro permaneça. Mudança do tipo exige periodo_inicio atual ou próximo para o novo tipo; outras edições preservam períodos antigos.",
+        "anyOf": [
+          {
+            "required": [
+              "id_conta"
+            ]
+          },
+          {
+            "required": [
+              "id_categoria"
+            ]
+          },
+          {
+            "required": [
+              "descricao"
+            ]
+          },
+          {
+            "required": [
+              "valor_orcamento"
+            ]
+          },
+          {
+            "required": [
+              "tipo_periodo"
+            ]
+          },
+          {
+            "required": [
+              "periodo_inicio"
+            ]
+          }
+        ]
+      },
+      "AdminEditarOrcamentoRequisicao": {
+        "type": "object",
+        "properties": {
+          "id_usuario": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647,
+            "description": "Proprietário alvo. Não transfere a propriedade do orçamento."
+          },
+          "id_orcamento": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "id_conta": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647,
+            "nullable": true
+          },
+          "id_categoria": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647,
+            "nullable": true
+          },
+          "descricao": {
+            "type": "string",
+            "nullable": true,
+            "description": "Opcional; aceita null e texto vazio. Remove espaços nas extremidades."
+          },
+          "valor_orcamento": {
+            "type": "number",
+            "minimum": 0,
+            "exclusiveMinimum": true,
+            "maximum": 9999999999.99,
+            "multipleOf": 0.01,
+            "description": "Número JSON positivo, com até duas casas decimais. Não aceita texto nem arredondamento."
+          },
+          "tipo_periodo": {
+            "type": "string",
+            "enum": [
+              "Semanal",
+              "Mensal",
+              "Anual"
+            ]
+          },
+          "periodo_inicio": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?!0000)\\d{4}-\\d{2}-\\d{2}$",
+            "description": "Início do período atual ou próximo, em America/Sao_Paulo: domingo, primeiro dia do mês ou 1º de janeiro. Na criação, omitir usa o período atual."
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "id_usuario",
+          "id_orcamento"
+        ],
+        "description": "Exige pelo menos um campo de alteração além dos identificadores. Omitir preserva. null remove vínculo desde que outro permaneça. Mudança do tipo exige periodo_inicio atual ou próximo para o novo tipo; outras edições preservam períodos antigos.",
+        "anyOf": [
+          {
+            "required": [
+              "id_conta"
+            ]
+          },
+          {
+            "required": [
+              "id_categoria"
+            ]
+          },
+          {
+            "required": [
+              "descricao"
+            ]
+          },
+          {
+            "required": [
+              "valor_orcamento"
+            ]
+          },
+          {
+            "required": [
+              "tipo_periodo"
+            ]
+          },
+          {
+            "required": [
+              "periodo_inicio"
+            ]
+          }
+        ]
+      },
+      "Orcamento": {
+        "type": "object",
+        "properties": {
+          "id_orcamento": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "id_usuario": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "id_conta": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647,
+            "nullable": true
+          },
+          "id_categoria": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647,
+            "nullable": true
+          },
+          "descricao": {
+            "type": "string",
+            "nullable": true,
+            "description": "Opcional; aceita null e texto vazio. Remove espaços nas extremidades."
+          },
+          "valor_orcamento": {
+            "type": "number",
+            "minimum": 0,
+            "exclusiveMinimum": true,
+            "maximum": 9999999999.99,
+            "multipleOf": 0.01,
+            "description": "Número JSON positivo, com até duas casas decimais. Não aceita texto nem arredondamento."
+          },
+          "tipo_periodo": {
+            "type": "string",
+            "enum": [
+              "Semanal",
+              "Mensal",
+              "Anual"
+            ]
+          },
+          "periodo_inicio": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?!0000)\\d{4}-\\d{2}-\\d{2}$",
+            "description": "Data existente no calendário, AAAA-MM-DD, ano entre 0001 e 9999."
+          },
+          "nome": {
+            "type": "string",
+            "readOnly": true
+          },
+          "valor_atual": {
+            "type": "number",
+            "minimum": 0,
+            "readOnly": true
+          },
+          "periodo_fim": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?!0000)\\d{4}-\\d{2}-\\d{2}$",
+            "description": "Data existente no calendário, AAAA-MM-DD, ano entre 0001 e 9999.",
+            "readOnly": true
+          },
+          "data_criacao": {
+            "type": "string",
+            "format": "date-time",
+            "readOnly": true
+          },
+          "data_atualizacao": {
+            "type": "string",
+            "format": "date-time",
+            "readOnly": true
+          }
+        },
+        "required": [
+          "id_orcamento",
+          "id_usuario",
+          "id_conta",
+          "id_categoria",
+          "descricao",
+          "valor_orcamento",
+          "tipo_periodo",
+          "periodo_inicio",
+          "nome",
+          "valor_atual",
+          "periodo_fim",
+          "data_criacao",
+          "data_atualizacao"
+        ],
+        "description": "Nome, valor_atual, fim do período e timestamps são gerados pelo banco. O valor gasto soma somente saídas pagas no período, da conta e/ou categoria do proprietário."
       }
     }
   }

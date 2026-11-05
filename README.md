@@ -424,15 +424,15 @@ O arquivo [docs/api/swagger.json](docs/api/swagger.json) usa OpenAPI 3.0 e é ca
 pela integração existente em `/api-docs/`. A documentação cobre somente APIs, sem
 incluir as rotas de páginas HTML, arquivos estáticos ou criar rotas de detalhe inexistentes.
 
-| RF/recurso | Operações |
-| --- | ---: |
-| RF-002 — autenticação e recuperação | 6 |
-| RF-003 — cadastro e usuários | 12 |
-| RF-004 — categorias | 7 |
-| RF-005 — contas financeiras | 10 |
-| RF-006 — transações, recorrências e saldo | 15 |
-| RF-007 — metas financeiras | 7 |
-| **Total** | **57** |
+| RF/recurso                                | Operações |
+| ----------------------------------------- | ---------:|
+| RF-002 — autenticação e recuperação       | 6         |
+| RF-003 — cadastro e usuários              | 12        |
+| RF-004 — categorias                       | 7         |
+| RF-005 — contas financeiras               | 10        |
+| RF-006 — transações, recorrências e saldo | 15        |
+| RF-007 — metas financeiras                | 7         |
+| **Total**                                 | **57**    |
 
 Os modelos preservam as respostas reais, inclusive `mensagem` versus `erro`, arrays
 sem envelope e o objeto `{mensagem, metas}`. Não há paginação no servidor. Joi retorna

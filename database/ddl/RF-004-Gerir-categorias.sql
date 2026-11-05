@@ -20,4 +20,41 @@ create table public.categorias (
   )
 ) TABLESPACE pg_default;
 
+-- Funções
 
+CREATE OR REPLACE FUNCTION public.sincronizar_nomes_orcamentos()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'pg_catalog', 'public'
+AS $function$
+BEGIN
+    IF TG_TABLE_NAME = 'contas_bancarias' THEN
+        IF NEW.nome_conta IS NOT DISTINCT FROM OLD.nome_conta THEN
+            RETURN NEW;
+        END IF;
+
+        UPDATE public.orcamentos
+        SET nome = nome
+        WHERE id_conta = NEW.id_conta;
+    ELSIF TG_TABLE_NAME = 'categorias' THEN
+        IF NEW.nome IS NOT DISTINCT FROM OLD.nome THEN
+            RETURN NEW;
+        END IF;
+
+        UPDATE public.orcamentos
+        SET nome = nome
+        WHERE id_categoria = NEW.id_categoria;
+    END IF;
+
+    -- O BEFORE de geração substitui nome pelo valor atualizado dos vínculos.
+    RETURN NEW;
+END;
+$function$
+
+
+-- Triggers
+
+create trigger rf008_categorias_nomes
+after
+update OF nome on categorias for EACH row
+execute FUNCTION sincronizar_nomes_orcamentos ();

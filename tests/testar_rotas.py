@@ -10,6 +10,7 @@ Execução:
     python3 tests/testar_rotas.py
     python3 tests/testar_rotas.py --testes-rf06  # testes locais sem banco real
     python3 tests/testar_rotas.py --testes-rf07  # metas de usuário/admin, sem banco real
+    python3 tests/testar_rotas.py --testes-rf08  # orçamentos, sem banco real
     python3 tests/testar_rotas.py --testes-admin-metas  # somente metas de admin
 
 O programa:
@@ -754,6 +755,93 @@ for rota_usuario in ROTAS_RF07[1:]:
         origem: campos_admin,
     })
 ROTAS.extend(ROTAS_ADMIN_RF07)
+
+
+# RF08: quatro rotas de usuário e três operações administrativas.
+ROTAS_RF08 = [
+    {
+        "nome": "Criar orçamento", "metodo": "POST", "caminho": "/usuario/criar-orcamento",
+        "login": True, "admin": False,
+        "body": [
+            {"nome": "id_conta", "tipo": "int", "obrigatorio": False, "aceita_null": True},
+            {"nome": "id_categoria", "tipo": "int", "obrigatorio": False, "aceita_null": True},
+            {"nome": "descricao", "tipo": "str", "obrigatorio": False, "aceita_null": True},
+            {"nome": "valor_orcamento", "tipo": "float", "obrigatorio": True},
+            {"nome": "tipo_periodo", "tipo": "str", "obrigatorio": True},
+            {"nome": "periodo_inicio", "tipo": "str", "obrigatorio": False},
+        ],
+    },
+    {
+        "nome": "Listar orçamento", "metodo": "GET", "caminho": "/usuario/listar-orcamentos",
+        "login": True, "admin": False,
+        "query": [
+            {"nome": "id_orcamento", "tipo": "int", "obrigatorio": False},
+            {"nome": "nome", "tipo": "str", "obrigatorio": False},
+            {"nome": "id_conta", "tipo": "int", "obrigatorio": False},
+            {"nome": "id_categoria", "tipo": "int", "obrigatorio": False},
+            {"nome": "tipo_periodo", "tipo": "str", "obrigatorio": False},
+            {"nome": "periodo_inicio", "tipo": "str", "obrigatorio": False},
+            {"nome": "periodo_fim", "tipo": "str", "obrigatorio": False},
+        ],
+    },
+    {
+        "nome": "Editar orçamento", "metodo": "PATCH", "caminho": "/usuario/editar-orcamento",
+        "login": True, "admin": False,
+        "body": [
+            {"nome": "id_orcamento", "tipo": "int", "obrigatorio": True},
+            {"nome": "id_conta", "tipo": "int", "obrigatorio": False, "aceita_null": True},
+            {"nome": "id_categoria", "tipo": "int", "obrigatorio": False, "aceita_null": True},
+            {"nome": "descricao", "tipo": "str", "obrigatorio": False, "aceita_null": True},
+            {"nome": "valor_orcamento", "tipo": "float", "obrigatorio": False},
+            {"nome": "tipo_periodo", "tipo": "str", "obrigatorio": False},
+            {"nome": "periodo_inicio", "tipo": "str", "obrigatorio": False},
+        ],
+    },
+    {
+        "nome": "Deletar orçamento", "metodo": "DELETE", "caminho": "/usuario/deletar-orcamento/{id_orcamento}",
+        "login": True, "admin": False,
+        "path_params": [
+            {"nome": "id_orcamento", "tipo": "int", "obrigatorio": True},
+        ],
+    },
+    {
+        "nome": "Listar orçamento como ADMIN", "metodo": "GET", "caminho": "/admin/listar-orcamentos",
+        "login": True, "admin": True,
+        "query": [
+            {"nome": "id_usuario", "tipo": "int", "obrigatorio": False},
+            {"nome": "id_orcamento", "tipo": "int", "obrigatorio": False},
+            {"nome": "nome", "tipo": "str", "obrigatorio": False},
+            {"nome": "id_conta", "tipo": "int", "obrigatorio": False},
+            {"nome": "id_categoria", "tipo": "int", "obrigatorio": False},
+            {"nome": "tipo_periodo", "tipo": "str", "obrigatorio": False},
+            {"nome": "periodo_inicio", "tipo": "str", "obrigatorio": False},
+            {"nome": "periodo_fim", "tipo": "str", "obrigatorio": False},
+        ],
+    },
+    {
+        "nome": "Editar orçamento como ADMIN", "metodo": "PATCH", "caminho": "/admin/editar-orcamento",
+        "login": True, "admin": True,
+        "body": [
+            {"nome": "id_usuario", "tipo": "int", "obrigatorio": True},
+            {"nome": "id_orcamento", "tipo": "int", "obrigatorio": True},
+            {"nome": "id_conta", "tipo": "int", "obrigatorio": False, "aceita_null": True},
+            {"nome": "id_categoria", "tipo": "int", "obrigatorio": False, "aceita_null": True},
+            {"nome": "descricao", "tipo": "str", "obrigatorio": False, "aceita_null": True},
+            {"nome": "valor_orcamento", "tipo": "float", "obrigatorio": False},
+            {"nome": "tipo_periodo", "tipo": "str", "obrigatorio": False},
+            {"nome": "periodo_inicio", "tipo": "str", "obrigatorio": False},
+        ],
+    },
+    {
+        "nome": "Deletar orçamento como ADMIN", "metodo": "DELETE", "caminho": "/admin/deletar-orcamento/{id_usuario}/{id_orcamento}",
+        "login": True, "admin": True,
+        "path_params": [
+            {"nome": "id_usuario", "tipo": "int", "obrigatorio": True},
+            {"nome": "id_orcamento", "tipo": "int", "obrigatorio": True},
+        ],
+    },
+]
+ROTAS.extend(ROTAS_RF08)
 
 
 def converter_valor(valor, tipo):
@@ -1801,6 +1889,205 @@ class TestesAdminRF07(TestesHTTP):
                 self.assertTrue(all(e["resultado"] != "SUCESSO" for e in resultado["eventos"]))
 
 
+class TestesRF08(TestesHTTP):
+    """HTTP real com banco simulado; cálculos SQL ficam em testar_orcamentos_banco.py."""
+
+    def banco(self):
+        return {
+            "usuarios": [{"id_usuario": 1, "status_usuario": "Ativo"}, {"id_usuario": 2, "status_usuario": "Ativo"}],
+            "contas_bancarias": [{"id_conta": 10, "id_usuario": 1}, {"id_conta": 11, "id_usuario": 1}, {"id_conta": 20, "id_usuario": 2}],
+            "categorias": [{"id_categoria": 30, "id_usuario": 1}, {"id_categoria": 31, "id_usuario": 1}, {"id_categoria": 40, "id_usuario": 2}],
+            "orcamentos": [
+                {"id_orcamento": 100, "id_usuario": 1, "id_conta": 10, "id_categoria": 30,
+                 "nome": "Orçamento Conta#10+Categoria#30 [11/2026]", "descricao": "Original", "valor_orcamento": 1000,
+                 "valor_atual": 120, "tipo_periodo": "Mensal", "periodo_inicio": "2026-11-01", "periodo_fim": "2026-11-30"},
+                {"id_orcamento": 101, "id_usuario": 1, "id_conta": 11, "id_categoria": None,
+                 "nome": "Orçamento Conta#11 [2026]", "valor_orcamento": 2000, "valor_atual": 0,
+                 "tipo_periodo": "Anual", "periodo_inicio": "2026-01-01", "periodo_fim": "2026-12-31"},
+                {"id_orcamento": 200, "id_usuario": 2, "id_conta": 20, "id_categoria": 40,
+                 "nome": "Orçamento alheio", "valor_orcamento": 500, "valor_atual": 0,
+                 "tipo_periodo": "Mensal", "periodo_inicio": "2026-11-01", "periodo_fim": "2026-11-30"},
+            ],
+        }
+
+    def inicio_mensal(self):
+        from datetime import datetime
+        from zoneinfo import ZoneInfo
+        return datetime.now(ZoneInfo("America/Sao_Paulo")).date().replace(day=1).isoformat()
+
+    def test_menu_e_swagger_contem_as_sete_rotas_sem_criacao_admin(self):
+        self.assertEqual(len(ROTAS_RF08), 7)
+        raiz = Path(__file__).resolve().parents[1]
+        swagger = json.loads((raiz / "docs/api/swagger.json").read_text())
+        for rota in ROTAS_RF08:
+            self.assertIn(rota["metodo"].lower(), swagger["paths"][rota["caminho"]])
+            self.assertTrue(rota["login"])
+        self.assertNotIn("/admin/criar-orcamento", swagger["paths"])
+        with patch("builtins.input", side_effect=["100", "null", "", "null", "1500.25", "", ""]):
+            dados = pedir_campos(ROTAS_RF08[2]["body"])
+        self.assertEqual(dados, {"id_orcamento": 100, "id_conta": None, "descricao": None, "valor_orcamento": 1500.25})
+        with patch("builtins.input", side_effect=["2", "200"]):
+            self.assertEqual(montar_caminho(ROTAS_RF08[6]), "/admin/deletar-orcamento/2/200")
+
+    def test_sessao_e_perfil_admin_bloqueiam_antes_do_banco(self):
+        chamadas = []
+        for rota in ROTAS_RF08:
+            caminho = rota["caminho"].replace("{id_usuario}", "2").replace("{id_orcamento}", "200")
+            chamadas.append(self.chamada(rota["metodo"], caminho, autenticado=False))
+        for rota in ROTAS_RF08[4:]:
+            caminho = rota["caminho"].replace("{id_usuario}", "2").replace("{id_orcamento}", "200")
+            chamadas.append(self.chamada(rota["metodo"], caminho))
+        resultado = self.executar(chamadas)
+        self.assertEqual([r["status"] for r in resultado["respostas"]], [401] * 7 + [403] * 3)
+        self.assertEqual(resultado["consultas"], [])
+        self.assertTrue(all(e["resultado"] == "NEGADO" for e in resultado["eventos"]))
+
+    def test_criacao_vinculos_opcionais_padrao_e_campos_do_banco(self):
+        casos = [{"id_conta": 10}, {"id_categoria": 30, "id_conta": None}, {"id_conta": 11, "id_categoria": 31, "descricao": "  Detalhes  "}]
+        chamadas = []
+        for dados in casos:
+            chamadas.append(self.chamada("POST", "/usuario/criar-orcamento", {**dados, "tipo_periodo": "Mensal", "valor_orcamento": 100.25}))
+        resultado = self.executar(chamadas)
+        self.assertEqual([r["status"] for r in resultado["respostas"]], [201] * 3)
+        inseridos = resultado["banco"]["orcamentos"][3:]
+        for registro in inseridos:
+            self.assertEqual(registro["id_usuario"], 1)
+            self.assertEqual(registro["periodo_inicio"], self.inicio_mensal())
+            for automatico in ["nome", "valor_atual", "periodo_fim", "data_criacao", "data_atualizacao"]:
+                self.assertNotIn(automatico, registro)
+        self.assertEqual(inseridos[2]["descricao"], "Detalhes")
+        self.assertTrue(all(e["resultado"] == "SUCESSO" for e in resultado["eventos"]))
+
+    def test_joi_rejeita_campos_indevidos_limites_e_datas(self):
+        base = {"id_conta": 10, "tipo_periodo": "Mensal", "valor_orcamento": 100}
+        casos = [{}, {**base, "id_conta": None}, {**base, "id_conta": 0}, {**base, "id_categoria": 2147483648},
+                 {**base, "tipo_periodo": "Diario"}, {**base, "valor_orcamento": 0}, {**base, "valor_orcamento": -1},
+                 {**base, "valor_orcamento": "100"}, {**base, "valor_orcamento": 1.234}, {**base, "valor_orcamento": 10000000000},
+                 {**base, "periodo_inicio": "2026-02-30"}, {**base, "periodo_inicio": "0000-01-01"}]
+        for campo in ["id_usuario", "nome", "valor_atual", "periodo_fim", "data_criacao", "data_atualizacao"]:
+            casos.append({**base, campo: 1})
+        chamadas = [self.chamada("POST", "/usuario/criar-orcamento", dados) for dados in casos]
+        for admin in [False, True]:
+            prefixo = "/usuario"
+            ids = {"id_orcamento": 100}
+            if admin:
+                prefixo = "/admin"
+                ids["id_usuario"] = 1
+            for dados in [ids, {**ids, "valor_orcamento": 1.234}, {**ids, "id_conta": None, "id_categoria": None}, {**ids, "nome": "Proibido"}]:
+                chamadas.append(self.chamada("PATCH", prefixo + "/editar-orcamento", dados, admin=admin))
+            for query in [{"periodo_inicio": "2026-11-30", "periodo_fim": "2026-11-01"}, {"id_orcamento": "abc"}, {"tipo_periodo": "Diario"}, {"nome": " "}]:
+                chamadas.append(self.chamada("GET", prefixo + "/listar-orcamentos", query=query, admin=admin))
+        chamadas.append(self.chamada("DELETE", "/usuario/deletar-orcamento/abc"))
+        chamadas.append(self.chamada("DELETE", "/admin/deletar-orcamento/0/100", admin=True))
+        resultado = self.executar(chamadas)
+        self.assertEqual([r["status"] for r in resultado["respostas"]], [400] * len(chamadas))
+        self.assertEqual(resultado["consultas"], [])
+        self.assertTrue(all(r["body"]["erros"] for r in resultado["respostas"]))
+
+    def test_listagem_filtros_and_sobreposicao_e_ausencia(self):
+        filtros = [{}, {"id_orcamento": 100}, {"nome": "categoria#30"}, {"id_conta": 10}, {"id_categoria": 30},
+                   {"tipo_periodo": "Mensal"}, {"periodo_inicio": "2026-11-30", "periodo_fim": "2026-11-30"},
+                   {"periodo_inicio": "2026-12-01"}, {"periodo_fim": "2026-10-31"},
+                   {"id_conta": 11, "id_categoria": 30}, {"id_orcamento": 200}, {"id_conta": 20}, {"id_categoria": 40},
+                   {"nome": "inexistente"}, {"id_orcamento": 999},
+                   {"id_orcamento": 100, "nome": "Categoria", "id_conta": 10, "id_categoria": 30, "tipo_periodo": "Mensal", "periodo_inicio": "2026-11-15", "periodo_fim": "2026-11-20"}]
+        resultado = self.executar([self.chamada("GET", "/usuario/listar-orcamentos", query=f) for f in filtros])
+        self.assertEqual([r["status"] for r in resultado["respostas"]], [200] * len(filtros))
+        self.assertEqual([[o["id_orcamento"] for o in r["body"]] for r in resultado["respostas"]],
+                         [[100, 101], [100], [100], [100], [100], [100], [100, 101], [101], [101], [], [], [], [], [], [], [100]])
+        for consulta in resultado["consultas"]:
+            self.assertIn(["eq", "id_usuario", 1], consulta["filtros"])
+
+    def test_edicao_preserva_omitidos_remove_vinculo_e_admin_usa_alvo(self):
+        chamadas = [self.chamada("PATCH", "/usuario/editar-orcamento", {"id_orcamento": 100, "descricao": None, "id_conta": None}),
+                    self.chamada("PATCH", "/usuario/editar-orcamento", {"id_orcamento": 101, "valor_orcamento": 500}),
+                    self.chamada("PATCH", "/admin/editar-orcamento", {"id_usuario": 2, "id_orcamento": 200, "id_categoria": None, "descricao": "Admin"}, admin=True)]
+        resultado = self.executar(chamadas)
+        self.assertEqual([r["status"] for r in resultado["respostas"]], [200] * 3)
+        original = self.banco()["orcamentos"]
+        esperado = [{**original[0], "descricao": None, "id_conta": None}, {**original[1], "valor_orcamento": 500}, {**original[2], "id_categoria": None, "descricao": "Admin"}]
+        self.assertEqual(resultado["banco"]["orcamentos"], esperado)
+        for consulta in resultado["consultas"]:
+            if consulta["operacao"] == "update":
+                self.assertNotIn("id_usuario", consulta["valores"])
+                self.assertNotIn("id_orcamento", consulta["valores"])
+                self.assertTrue(any(f[1] == "id_usuario" for f in consulta["filtros"]))
+        self.assertTrue(all(e["resultado"] == "SUCESSO" for e in resultado["eventos"]))
+
+    def test_edicao_verifica_estado_final_e_regras_de_periodo(self):
+        chamadas = []
+        for admin in [False, True]:
+            prefixo = "/usuario"
+            ids = {"id_orcamento": 101}
+            if admin:
+                prefixo = "/admin"
+                ids["id_usuario"] = 1
+            for dados in [{**ids, "id_conta": None}, {**ids, "tipo_periodo": "Semanal"}, {**ids, "periodo_inicio": "2000-01-01"}]:
+                chamadas.append(self.chamada("PATCH", prefixo + "/editar-orcamento", dados, admin=admin))
+        chamadas.append(self.chamada("POST", "/usuario/criar-orcamento", {"id_conta": 10, "tipo_periodo": "Mensal", "valor_orcamento": 100, "periodo_inicio": "2000-01-01"}))
+        resultado = self.executar(chamadas)
+        self.assertEqual([r["status"] for r in resultado["respostas"]], [400] * len(chamadas))
+        self.assertEqual(resultado["banco"], self.banco())
+
+    def test_inexistentes_e_vinculos_alheios_nao_sao_alterados(self):
+        chamadas = []
+        for dados in [{"id_conta": 20}, {"id_categoria": 40}, {"id_conta": 999}, {"id_categoria": 999}]:
+            chamadas.append(self.chamada("POST", "/usuario/criar-orcamento", {**dados, "tipo_periodo": "Mensal", "valor_orcamento": 100}))
+            chamadas.append(self.chamada("PATCH", "/usuario/editar-orcamento", {**dados, "id_orcamento": 100}))
+            chamadas.append(self.chamada("PATCH", "/admin/editar-orcamento", {**dados, "id_usuario": 1, "id_orcamento": 100}, admin=True))
+        for identificador in [200, 999]:
+            chamadas.append(self.chamada("PATCH", "/usuario/editar-orcamento", {"id_orcamento": identificador, "descricao": "Indevido"}))
+            chamadas.append(self.chamada("DELETE", f"/usuario/deletar-orcamento/{identificador}"))
+            chamadas.append(self.chamada("PATCH", "/admin/editar-orcamento", {"id_usuario": 1, "id_orcamento": identificador, "descricao": "Indevido"}, admin=True))
+            chamadas.append(self.chamada("DELETE", f"/admin/deletar-orcamento/1/{identificador}", admin=True))
+        resultado = self.executar(chamadas)
+        self.assertEqual([r["status"] for r in resultado["respostas"]], [404] * len(chamadas))
+        self.assertEqual(resultado["banco"], self.banco())
+        self.assertTrue(all(e["resultado"] != "SUCESSO" for e in resultado["eventos"]))
+
+    def test_administracao_listagem_e_usuario_inexistente(self):
+        chamadas = [self.chamada("GET", "/admin/listar-orcamentos", admin=True),
+                    self.chamada("GET", "/admin/listar-orcamentos", query={"id_usuario": 2, "id_conta": 20}, admin=True),
+                    self.chamada("GET", "/admin/listar-orcamentos", query={"id_usuario": 1, "id_orcamento": 200}, admin=True),
+                    self.chamada("GET", "/admin/listar-orcamentos", query={"id_usuario": 999}, admin=True),
+                    self.chamada("PATCH", "/admin/editar-orcamento", {"id_usuario": 999, "id_orcamento": 100, "descricao": "Indevido"}, admin=True),
+                    self.chamada("DELETE", "/admin/deletar-orcamento/999/100", admin=True)]
+        resultado = self.executar(chamadas)
+        self.assertEqual([r["status"] for r in resultado["respostas"]], [200, 200, 200, 404, 404, 404])
+        self.assertEqual([o["id_orcamento"] for o in resultado["respostas"][0]["body"]], [100, 101, 200])
+        self.assertEqual([o["id_orcamento"] for o in resultado["respostas"][1]["body"]], [200])
+        self.assertEqual(resultado["respostas"][2]["body"], [])
+
+    def test_exclusao_preserva_vinculos_e_rejeita_body(self):
+        chamadas = [self.chamada("DELETE", "/usuario/deletar-orcamento/100", {"id_usuario": 2}),
+                    self.chamada("DELETE", "/admin/deletar-orcamento/2/200", {"id_orcamento": 100}, admin=True),
+                    self.chamada("DELETE", "/usuario/deletar-orcamento/100"),
+                    self.chamada("DELETE", "/admin/deletar-orcamento/2/200", admin=True),
+                    self.chamada("DELETE", "/usuario/deletar-orcamento/100")]
+        resultado = self.executar(chamadas)
+        self.assertEqual([r["status"] for r in resultado["respostas"]], [400, 400, 200, 200, 404])
+        self.assertEqual(resultado["banco"]["orcamentos"], [self.banco()["orcamentos"][1]])
+        for tabela in ["usuarios", "contas_bancarias", "categorias"]:
+            self.assertEqual(resultado["banco"][tabela], self.banco()[tabela])
+
+    def test_falhas_de_consulta_e_gravacao_nao_confirmam_sucesso(self):
+        casos = [("POST", "/usuario/criar-orcamento", {"id_conta": 10, "tipo_periodo": "Mensal", "valor_orcamento": 100}, "contas_bancarias", "select", False),
+                 ("POST", "/usuario/criar-orcamento", {"id_categoria": 30, "tipo_periodo": "Mensal", "valor_orcamento": 100}, "categorias", "select", False),
+                 ("POST", "/usuario/criar-orcamento", {"id_conta": 10, "tipo_periodo": "Mensal", "valor_orcamento": 100}, "orcamentos", "insert", False),
+                 ("GET", "/usuario/listar-orcamentos", None, "orcamentos", "select", False),
+                 ("PATCH", "/usuario/editar-orcamento", {"id_orcamento": 100, "descricao": "Teste"}, "orcamentos", "update", False),
+                 ("DELETE", "/usuario/deletar-orcamento/100", None, "orcamentos", "delete", False),
+                 ("PATCH", "/admin/editar-orcamento", {"id_usuario": 1, "id_orcamento": 100, "descricao": "Teste"}, "usuarios", "select", True),
+                 ("PATCH", "/admin/editar-orcamento", {"id_usuario": 1, "id_orcamento": 100, "descricao": "Teste"}, "orcamentos", "update", True),
+                 ("DELETE", "/admin/deletar-orcamento/1/100", None, "orcamentos", "delete", True)]
+        for metodo, caminho, body, tabela, operacao, admin in casos:
+            with self.subTest(caminho=caminho, tabela=tabela):
+                resultado = self.executar([self.chamada(metodo, caminho, body, admin=admin)], falha={"tabela": tabela, "operacao": operacao})
+                self.assertEqual(resultado["respostas"][0]["status"], 500)
+                self.assertEqual(resultado["banco"], self.banco())
+                self.assertTrue(all(e["resultado"] != "SUCESSO" for e in resultado["eventos"]))
+
+
 if __name__ == "__main__":
     suites = []
     if "--testes-rf06" in sys.argv:
@@ -1809,6 +2096,8 @@ if __name__ == "__main__":
         suites.extend(["TestesRF07", "TestesAdminRF07"])
     elif "--testes-admin-metas" in sys.argv:
         suites.append("TestesAdminRF07")
+    if "--testes-rf08" in sys.argv:
+        suites.append("TestesRF08")
     if suites:
         unittest.main(argv=[sys.argv[0], *suites], verbosity=2)
     else:

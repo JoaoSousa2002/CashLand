@@ -49,3 +49,13 @@ where
   ((nome_conta)::text = 'padrão'::text);
 
 create unique INDEX IF not exists uq_conta_nome_usuario on public.contas_bancarias using btree (id_usuario, lower((nome_conta)::text)) TABLESPACE pg_default;
+
+-- Funções
+
+
+-- Triggers
+
+create trigger rf008_contas_nomes
+after
+update OF nome_conta on contas_bancarias for EACH row
+execute FUNCTION sincronizar_nomes_orcamentos ();

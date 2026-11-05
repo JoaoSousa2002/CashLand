@@ -428,5 +428,40 @@
     "method": "delete",
     "path": "/usuario/deletar-meta/:id_meta",
     "middlewares": "auditar('USER_DELETAR_META', req => req.usuario?.id_usuario, true), limitadorExclusaoComum, autenticar, validar(schemaExcluirMeta)"
+  },
+  {
+    "method": "post",
+    "path": "/usuario/criar-orcamento",
+    "middlewares": "auditar('USER_CRIAR_ORCAMENTO', req => req.usuario?.id_usuario, true), limitadorCriacao, autenticar, validar(schemaCriarOrcamento)"
+  },
+  {
+    "method": "get",
+    "path": "/usuario/listar-orcamentos",
+    "middlewares": "auditar('USER_LISTAR_ORCAMENTOS', req => req.usuario?.id_usuario), limitadorListagemComum, autenticar, validar(schemaListarOrcamentos)"
+  },
+  {
+    "method": "patch",
+    "path": "/usuario/editar-orcamento",
+    "middlewares": "auditar('USER_EDITAR_ORCAMENTO', req => req.usuario?.id_usuario, true), limitadorEdicaoComum, autenticar, validar(schemaEditarOrcamento)"
+  },
+  {
+    "method": "delete",
+    "path": "/usuario/deletar-orcamento/:id_orcamento",
+    "middlewares": "auditar('USER_DELETAR_ORCAMENTO', req => req.usuario?.id_usuario, true), limitadorExclusaoComum, autenticar, validar(schemaDeletarOrcamento)"
+  },
+  {
+    "method": "get",
+    "path": "/admin/listar-orcamentos",
+    "middlewares": "auditar('ADMIN_LISTAR_ORCAMENTOS', req => req.usuario?.id_usuario), limitadorListagemAdmin, autenticar, somenteAdmin, validar(schemaADMIN_listarOrcamentos)"
+  },
+  {
+    "method": "patch",
+    "path": "/admin/editar-orcamento",
+    "middlewares": "auditar('ADMIN_EDITAR_ORCAMENTO', req => req.usuario?.id_usuario, true), limitadorEdicaoAdmin, autenticar, somenteAdmin, validar(schemaADMIN_editarOrcamento)"
+  },
+  {
+    "method": "delete",
+    "path": "/admin/deletar-orcamento/:id_usuario/:id_orcamento",
+    "middlewares": "auditar('ADMIN_DELETAR_ORCAMENTO', req => req.usuario?.id_usuario, true), limitadorExclusaoAdmin, autenticar, somenteAdmin, validar(schemaADMIN_deletarOrcamento)"
   }
 ]

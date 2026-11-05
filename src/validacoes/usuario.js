@@ -1989,3 +1989,620 @@ export const schemaADMIN_excluirMeta = Joi.object({
         })
 
 })
+
+export const schemaCriarOrcamento = Joi.object({
+
+    id_conta: Joi.number()
+        .integer()
+        .positive()
+        .max(2147483647)
+        .allow(null)
+        .optional()
+        .messages({
+            'number.base': 'A conta bancária deve ser um número.',
+            'number.integer': 'O identificador da conta bancária deve ser um número inteiro.',
+            'number.positive': 'O identificador da conta bancária deve ser maior que zero.',
+            'number.max': 'O identificador da conta bancária deve ser no máximo 2147483647.',
+            'number.unsafe': 'O identificador da conta bancária está fora do intervalo numérico permitido.'
+        }),
+
+    id_categoria: Joi.number()
+        .integer()
+        .positive()
+        .max(2147483647)
+        .allow(null)
+        .optional()
+        .messages({
+            'number.base': 'A categoria deve ser um número.',
+            'number.integer': 'O identificador da categoria deve ser um número inteiro.',
+            'number.positive': 'O identificador da categoria deve ser maior que zero.',
+            'number.max': 'O identificador da categoria deve ser no máximo 2147483647.',
+            'number.unsafe': 'O identificador da categoria está fora do intervalo numérico permitido.'
+        }),
+
+    descricao: Joi.string()
+        .trim()
+        .allow(null, '')
+        .optional()
+        .messages({
+            'string.base': 'A descrição deve ser um texto.'
+        }),
+
+    valor_orcamento: Joi.number()
+        .positive()
+        .precision(2)
+        .max(9999999999.99)
+        .strict()
+        .required()
+        .messages({
+            'number.base': 'O limite do orçamento deve ser um número.',
+            'number.positive': 'O limite do orçamento deve ser maior que zero.',
+            'number.precision': 'O limite do orçamento deve ter no máximo duas casas decimais.',
+            'number.max': 'O limite do orçamento deve ser no máximo R$ 9.999.999.999,99.',
+            'number.unsafe': 'O limite do orçamento está fora do intervalo numérico permitido.',
+            'any.required': 'O limite do orçamento é obrigatório.'
+        }),
+
+    tipo_periodo: Joi.string()
+        .valid('Semanal', 'Mensal', 'Anual')
+        .required()
+        .messages({
+            'string.base': 'O tipo de período deve ser um texto.',
+            'string.empty': 'O tipo de período não pode estar vazio.',
+            'any.only': 'O tipo de período deve ser Semanal, Mensal ou Anual.',
+            'any.required': 'O tipo de período é obrigatório.'
+        }),
+
+    periodo_inicio: Joi.string()
+        .pattern(/^(?!0000)\d{4}-\d{2}-\d{2}$/)
+        .custom((value, helpers) => {
+            const data = new Date(`${value}T00:00:00.000Z`);
+
+            if (Number.isNaN(data.getTime()) || data.toISOString().slice(0, 10) !== value) {
+                return helpers.error('any.invalid');
+            }
+
+            return value;
+        })
+        .optional()
+        .messages({
+            'string.base': 'A data inicial deve ser um texto no formato AAAA-MM-DD.',
+            'string.empty': 'A data inicial não pode estar vazia.',
+            'string.pattern.base': 'A data inicial deve estar no formato AAAA-MM-DD, com ano entre 0001 e 9999.',
+            'any.invalid': 'A data inicial deve ser uma data existente no calendário.'
+        })
+})
+    .or('id_conta', 'id_categoria', {
+        isPresent: (value) => value !== undefined && value !== null
+    })
+    .unknown(false)
+    .messages({
+        'object.unknown': 'Foi enviado um campo não permitido para esta operação.',
+        'object.missing': 'Informe uma conta bancária, uma categoria ou ambas.'
+    });
+
+
+export const schemaListarOrcamentos = Joi.object({
+
+    id_orcamento: Joi.number()
+        .integer()
+        .positive()
+        .max(2147483647)
+        .optional()
+        .messages({
+            'number.base': 'O orçamento deve ser um número.',
+            'number.integer': 'O identificador do orçamento deve ser um número inteiro.',
+            'number.positive': 'O identificador do orçamento deve ser maior que zero.',
+            'number.max': 'O identificador do orçamento deve ser no máximo 2147483647.',
+            'number.unsafe': 'O identificador do orçamento está fora do intervalo numérico permitido.'
+        }),
+
+    nome: Joi.string()
+        .trim()
+        .optional()
+        .messages({
+            'string.base': 'O nome do orçamento deve ser um texto.',
+            'string.empty': 'O nome do orçamento não pode estar vazio.'
+        }),
+
+    id_conta: Joi.number()
+        .integer()
+        .positive()
+        .max(2147483647)
+        .optional()
+        .messages({
+            'number.base': 'A conta bancária deve ser um número.',
+            'number.integer': 'O identificador da conta bancária deve ser um número inteiro.',
+            'number.positive': 'O identificador da conta bancária deve ser maior que zero.',
+            'number.max': 'O identificador da conta bancária deve ser no máximo 2147483647.',
+            'number.unsafe': 'O identificador da conta bancária está fora do intervalo numérico permitido.'
+        }),
+
+    id_categoria: Joi.number()
+        .integer()
+        .positive()
+        .max(2147483647)
+        .optional()
+        .messages({
+            'number.base': 'A categoria deve ser um número.',
+            'number.integer': 'O identificador da categoria deve ser um número inteiro.',
+            'number.positive': 'O identificador da categoria deve ser maior que zero.',
+            'number.max': 'O identificador da categoria deve ser no máximo 2147483647.',
+            'number.unsafe': 'O identificador da categoria está fora do intervalo numérico permitido.'
+        }),
+
+    tipo_periodo: Joi.string()
+        .valid('Semanal', 'Mensal', 'Anual')
+        .optional()
+        .messages({
+            'string.base': 'O tipo de período deve ser um texto.',
+            'string.empty': 'O tipo de período não pode estar vazio.',
+            'any.only': 'O tipo de período deve ser Semanal, Mensal ou Anual.'
+        }),
+
+    periodo_inicio: Joi.string()
+        .pattern(/^(?!0000)\d{4}-\d{2}-\d{2}$/)
+        .custom((value, helpers) => {
+            const data = new Date(`${value}T00:00:00.000Z`);
+
+            if (Number.isNaN(data.getTime()) || data.toISOString().slice(0, 10) !== value) {
+                return helpers.error('any.invalid');
+            }
+
+            return value;
+        })
+        .optional()
+        .messages({
+            'string.base': 'A data inicial deve ser um texto no formato AAAA-MM-DD.',
+            'string.empty': 'A data inicial não pode estar vazia.',
+            'string.pattern.base': 'A data inicial deve estar no formato AAAA-MM-DD, com ano entre 0001 e 9999.',
+            'any.invalid': 'A data inicial deve ser uma data existente no calendário.'
+        }),
+
+    periodo_fim: Joi.string()
+        .pattern(/^(?!0000)\d{4}-\d{2}-\d{2}$/)
+        .custom((value, helpers) => {
+            const data = new Date(`${value}T00:00:00.000Z`);
+
+            if (Number.isNaN(data.getTime()) || data.toISOString().slice(0, 10) !== value) {
+                return helpers.error('any.invalid');
+            }
+
+            const inicio = helpers.state.ancestors[0].periodo_inicio;
+
+            if (inicio !== undefined && value < inicio) {
+                return helpers.error('any.custom');
+            }
+
+            return value;
+        })
+        .optional()
+        .messages({
+            'string.base': 'A data final deve ser um texto no formato AAAA-MM-DD.',
+            'string.empty': 'A data final não pode estar vazia.',
+            'string.pattern.base': 'A data final deve estar no formato AAAA-MM-DD, com ano entre 0001 e 9999.',
+            'any.invalid': 'A data final deve ser uma data existente no calendário.',
+            'any.custom': 'A data final deve ser igual ou posterior à data inicial.'
+        })
+})
+    .unknown(false)
+    .messages({
+        'object.unknown': 'Foi enviado um campo não permitido para esta operação.'
+    });
+
+export const schemaEditarOrcamento = Joi.object({
+
+    id_orcamento: Joi.number()
+        .integer()
+        .positive()
+        .max(2147483647)
+        .required()
+        .messages({
+            'number.base': 'O orçamento deve ser um número.',
+            'number.integer': 'O identificador do orçamento deve ser um número inteiro.',
+            'number.positive': 'O identificador do orçamento deve ser maior que zero.',
+            'number.max': 'O identificador do orçamento deve ser no máximo 2147483647.',
+            'number.unsafe': 'O identificador do orçamento está fora do intervalo numérico permitido.',
+            'any.required': 'O orçamento é obrigatório.'
+        }),
+
+    id_conta: Joi.number()
+        .integer()
+        .positive()
+        .max(2147483647)
+        .allow(null)
+        .optional()
+        .messages({
+            'number.base': 'A conta bancária deve ser um número.',
+            'number.integer': 'O identificador da conta bancária deve ser um número inteiro.',
+            'number.positive': 'O identificador da conta bancária deve ser maior que zero.',
+            'number.max': 'O identificador da conta bancária deve ser no máximo 2147483647.',
+            'number.unsafe': 'O identificador da conta bancária está fora do intervalo numérico permitido.'
+        }),
+
+    id_categoria: Joi.number()
+        .integer()
+        .positive()
+        .max(2147483647)
+        .allow(null)
+        .optional()
+        .messages({
+            'number.base': 'A categoria deve ser um número.',
+            'number.integer': 'O identificador da categoria deve ser um número inteiro.',
+            'number.positive': 'O identificador da categoria deve ser maior que zero.',
+            'number.max': 'O identificador da categoria deve ser no máximo 2147483647.',
+            'number.unsafe': 'O identificador da categoria está fora do intervalo numérico permitido.'
+        }),
+
+    descricao: Joi.string()
+        .trim()
+        .allow(null, '')
+        .optional()
+        .messages({
+            'string.base': 'A descrição deve ser um texto.'
+        }),
+
+    valor_orcamento: Joi.number()
+        .positive()
+        .precision(2)
+        .max(9999999999.99)
+        .strict()
+        .optional()
+        .messages({
+            'number.base': 'O limite do orçamento deve ser um número.',
+            'number.positive': 'O limite do orçamento deve ser maior que zero.',
+            'number.precision': 'O limite do orçamento deve ter no máximo duas casas decimais.',
+            'number.max': 'O limite do orçamento deve ser no máximo R$ 9.999.999.999,99.',
+            'number.unsafe': 'O limite do orçamento está fora do intervalo numérico permitido.'
+        }),
+
+    tipo_periodo: Joi.string()
+        .valid('Semanal', 'Mensal', 'Anual')
+        .optional()
+        .messages({
+            'string.base': 'O tipo de período deve ser um texto.',
+            'string.empty': 'O tipo de período não pode estar vazio.',
+            'any.only': 'O tipo de período deve ser Semanal, Mensal ou Anual.'
+        }),
+
+    periodo_inicio: Joi.string()
+        .pattern(/^(?!0000)\d{4}-\d{2}-\d{2}$/)
+        .custom((value, helpers) => {
+            const data = new Date(`${value}T00:00:00.000Z`);
+
+            if (Number.isNaN(data.getTime()) || data.toISOString().slice(0, 10) !== value) {
+                return helpers.error('any.invalid');
+            }
+
+            return value;
+        })
+        .optional()
+        .messages({
+            'string.base': 'A data inicial deve ser um texto no formato AAAA-MM-DD.',
+            'string.empty': 'A data inicial não pode estar vazia.',
+            'string.pattern.base': 'A data inicial deve estar no formato AAAA-MM-DD, com ano entre 0001 e 9999.',
+            'any.invalid': 'A data inicial deve ser uma data existente no calendário.'
+        })
+})
+    .or('id_conta', 'id_categoria', 'descricao', 'valor_orcamento', 'tipo_periodo', 'periodo_inicio')
+    .custom((value, helpers) => {
+        // Um vínculo omitido pode continuar preenchido no banco.
+        if (value.id_conta === null && value.id_categoria === null) {
+            return helpers.error('any.invalid');
+        }
+
+        // O backend verifica o estado final dos vínculos e compara o tipo
+        // de período com o salvo para exigir a data inicial se ele mudar.
+        return value;
+    })
+    .unknown(false)
+    .messages({
+        'object.unknown': 'Foi enviado um campo não permitido para esta operação.',
+        'object.missing': 'Informe pelo menos um campo para alterar além dos identificadores.',
+        'any.invalid': 'O orçamento deve manter uma conta bancária, uma categoria ou ambas.'
+    });
+
+export const schemaDeletarOrcamento = Joi.object({
+
+    id_orcamento: Joi.number()
+        .integer()
+        .positive()
+        .max(2147483647)
+        .required()
+        .messages({
+            'number.base': 'O orçamento deve ser um número.',
+            'number.integer': 'O identificador do orçamento deve ser um número inteiro.',
+            'number.positive': 'O identificador do orçamento deve ser maior que zero.',
+            'number.max': 'O identificador do orçamento deve ser no máximo 2147483647.',
+            'number.unsafe': 'O identificador do orçamento está fora do intervalo numérico permitido.',
+            'any.required': 'O orçamento é obrigatório.'
+        })
+})
+    .unknown(false)
+    .messages({
+        'object.unknown': 'Foi enviado um campo não permitido para esta operação.'
+    });
+
+export const schemaADMIN_listarOrcamentos = Joi.object({
+
+    id_usuario: Joi.number()
+        .integer()
+        .positive()
+        .max(2147483647)
+        .optional()
+        .messages({
+            'number.base': 'O usuário deve ser um número.',
+            'number.integer': 'O identificador do usuário deve ser um número inteiro.',
+            'number.positive': 'O identificador do usuário deve ser maior que zero.',
+            'number.max': 'O identificador do usuário deve ser no máximo 2147483647.',
+            'number.unsafe': 'O identificador do usuário está fora do intervalo numérico permitido.'
+        }),
+
+    id_orcamento: Joi.number()
+        .integer()
+        .positive()
+        .max(2147483647)
+        .optional()
+        .messages({
+            'number.base': 'O orçamento deve ser um número.',
+            'number.integer': 'O identificador do orçamento deve ser um número inteiro.',
+            'number.positive': 'O identificador do orçamento deve ser maior que zero.',
+            'number.max': 'O identificador do orçamento deve ser no máximo 2147483647.',
+            'number.unsafe': 'O identificador do orçamento está fora do intervalo numérico permitido.'
+        }),
+
+    nome: Joi.string()
+        .trim()
+        .optional()
+        .messages({
+            'string.base': 'O nome do orçamento deve ser um texto.',
+            'string.empty': 'O nome do orçamento não pode estar vazio.'
+        }),
+
+    id_conta: Joi.number()
+        .integer()
+        .positive()
+        .max(2147483647)
+        .optional()
+        .messages({
+            'number.base': 'A conta bancária deve ser um número.',
+            'number.integer': 'O identificador da conta bancária deve ser um número inteiro.',
+            'number.positive': 'O identificador da conta bancária deve ser maior que zero.',
+            'number.max': 'O identificador da conta bancária deve ser no máximo 2147483647.',
+            'number.unsafe': 'O identificador da conta bancária está fora do intervalo numérico permitido.'
+        }),
+
+    id_categoria: Joi.number()
+        .integer()
+        .positive()
+        .max(2147483647)
+        .optional()
+        .messages({
+            'number.base': 'A categoria deve ser um número.',
+            'number.integer': 'O identificador da categoria deve ser um número inteiro.',
+            'number.positive': 'O identificador da categoria deve ser maior que zero.',
+            'number.max': 'O identificador da categoria deve ser no máximo 2147483647.',
+            'number.unsafe': 'O identificador da categoria está fora do intervalo numérico permitido.'
+        }),
+
+    tipo_periodo: Joi.string()
+        .valid('Semanal', 'Mensal', 'Anual')
+        .optional()
+        .messages({
+            'string.base': 'O tipo de período deve ser um texto.',
+            'string.empty': 'O tipo de período não pode estar vazio.',
+            'any.only': 'O tipo de período deve ser Semanal, Mensal ou Anual.'
+        }),
+
+    periodo_inicio: Joi.string()
+        .pattern(/^(?!0000)\d{4}-\d{2}-\d{2}$/)
+        .custom((value, helpers) => {
+            const data = new Date(`${value}T00:00:00.000Z`);
+
+            if (Number.isNaN(data.getTime()) || data.toISOString().slice(0, 10) !== value) {
+                return helpers.error('any.invalid');
+            }
+
+            return value;
+        })
+        .optional()
+        .messages({
+            'string.base': 'A data inicial deve ser um texto no formato AAAA-MM-DD.',
+            'string.empty': 'A data inicial não pode estar vazia.',
+            'string.pattern.base': 'A data inicial deve estar no formato AAAA-MM-DD, com ano entre 0001 e 9999.',
+            'any.invalid': 'A data inicial deve ser uma data existente no calendário.'
+        }),
+
+    periodo_fim: Joi.string()
+        .pattern(/^(?!0000)\d{4}-\d{2}-\d{2}$/)
+        .custom((value, helpers) => {
+            const data = new Date(`${value}T00:00:00.000Z`);
+
+            if (Number.isNaN(data.getTime()) || data.toISOString().slice(0, 10) !== value) {
+                return helpers.error('any.invalid');
+            }
+
+            const inicio = helpers.state.ancestors[0].periodo_inicio;
+
+            if (inicio !== undefined && value < inicio) {
+                return helpers.error('any.custom');
+            }
+
+            return value;
+        })
+        .optional()
+        .messages({
+            'string.base': 'A data final deve ser um texto no formato AAAA-MM-DD.',
+            'string.empty': 'A data final não pode estar vazia.',
+            'string.pattern.base': 'A data final deve estar no formato AAAA-MM-DD, com ano entre 0001 e 9999.',
+            'any.invalid': 'A data final deve ser uma data existente no calendário.',
+            'any.custom': 'A data final deve ser igual ou posterior à data inicial.'
+        })
+})
+    .unknown(false)
+    .messages({
+        'object.unknown': 'Foi enviado um campo não permitido para esta operação.'
+    });
+
+
+export const schemaADMIN_editarOrcamento = Joi.object({
+
+    id_usuario: Joi.number()
+        .integer()
+        .positive()
+        .max(2147483647)
+        .required()
+        .messages({
+            'number.base': 'O usuário deve ser um número.',
+            'number.integer': 'O identificador do usuário deve ser um número inteiro.',
+            'number.positive': 'O identificador do usuário deve ser maior que zero.',
+            'number.max': 'O identificador do usuário deve ser no máximo 2147483647.',
+            'number.unsafe': 'O identificador do usuário está fora do intervalo numérico permitido.',
+            'any.required': 'O usuário é obrigatório.'
+        }),
+
+    id_orcamento: Joi.number()
+        .integer()
+        .positive()
+        .max(2147483647)
+        .required()
+        .messages({
+            'number.base': 'O orçamento deve ser um número.',
+            'number.integer': 'O identificador do orçamento deve ser um número inteiro.',
+            'number.positive': 'O identificador do orçamento deve ser maior que zero.',
+            'number.max': 'O identificador do orçamento deve ser no máximo 2147483647.',
+            'number.unsafe': 'O identificador do orçamento está fora do intervalo numérico permitido.',
+            'any.required': 'O orçamento é obrigatório.'
+        }),
+
+    id_conta: Joi.number()
+        .integer()
+        .positive()
+        .max(2147483647)
+        .allow(null)
+        .optional()
+        .messages({
+            'number.base': 'A conta bancária deve ser um número.',
+            'number.integer': 'O identificador da conta bancária deve ser um número inteiro.',
+            'number.positive': 'O identificador da conta bancária deve ser maior que zero.',
+            'number.max': 'O identificador da conta bancária deve ser no máximo 2147483647.',
+            'number.unsafe': 'O identificador da conta bancária está fora do intervalo numérico permitido.'
+        }),
+
+    id_categoria: Joi.number()
+        .integer()
+        .positive()
+        .max(2147483647)
+        .allow(null)
+        .optional()
+        .messages({
+            'number.base': 'A categoria deve ser um número.',
+            'number.integer': 'O identificador da categoria deve ser um número inteiro.',
+            'number.positive': 'O identificador da categoria deve ser maior que zero.',
+            'number.max': 'O identificador da categoria deve ser no máximo 2147483647.',
+            'number.unsafe': 'O identificador da categoria está fora do intervalo numérico permitido.'
+        }),
+
+    descricao: Joi.string()
+        .trim()
+        .allow(null, '')
+        .optional()
+        .messages({
+            'string.base': 'A descrição deve ser um texto.'
+        }),
+
+    valor_orcamento: Joi.number()
+        .positive()
+        .precision(2)
+        .max(9999999999.99)
+        .strict()
+        .optional()
+        .messages({
+            'number.base': 'O limite do orçamento deve ser um número.',
+            'number.positive': 'O limite do orçamento deve ser maior que zero.',
+            'number.precision': 'O limite do orçamento deve ter no máximo duas casas decimais.',
+            'number.max': 'O limite do orçamento deve ser no máximo R$ 9.999.999.999,99.',
+            'number.unsafe': 'O limite do orçamento está fora do intervalo numérico permitido.'
+        }),
+
+    tipo_periodo: Joi.string()
+        .valid('Semanal', 'Mensal', 'Anual')
+        .optional()
+        .messages({
+            'string.base': 'O tipo de período deve ser um texto.',
+            'string.empty': 'O tipo de período não pode estar vazio.',
+            'any.only': 'O tipo de período deve ser Semanal, Mensal ou Anual.'
+        }),
+
+    periodo_inicio: Joi.string()
+        .pattern(/^(?!0000)\d{4}-\d{2}-\d{2}$/)
+        .custom((value, helpers) => {
+            const data = new Date(`${value}T00:00:00.000Z`);
+
+            if (Number.isNaN(data.getTime()) || data.toISOString().slice(0, 10) !== value) {
+                return helpers.error('any.invalid');
+            }
+
+            return value;
+        })
+        .optional()
+        .messages({
+            'string.base': 'A data inicial deve ser um texto no formato AAAA-MM-DD.',
+            'string.empty': 'A data inicial não pode estar vazia.',
+            'string.pattern.base': 'A data inicial deve estar no formato AAAA-MM-DD, com ano entre 0001 e 9999.',
+            'any.invalid': 'A data inicial deve ser uma data existente no calendário.'
+        })
+})
+    .or('id_conta', 'id_categoria', 'descricao', 'valor_orcamento', 'tipo_periodo', 'periodo_inicio')
+    .custom((value, helpers) => {
+        // Um vínculo omitido pode continuar preenchido no banco.
+        if (value.id_conta === null && value.id_categoria === null) {
+            return helpers.error('any.invalid');
+        }
+
+        // O backend verifica o estado final dos vínculos e compara o tipo
+        // de período com o salvo para exigir a data inicial se ele mudar.
+        return value;
+    })
+    .unknown(false)
+    .messages({
+        'object.unknown': 'Foi enviado um campo não permitido para esta operação.',
+        'object.missing': 'Informe pelo menos um campo para alterar além dos identificadores.',
+        'any.invalid': 'O orçamento deve manter uma conta bancária, uma categoria ou ambas.'
+    });
+
+
+export const schemaADMIN_deletarOrcamento = Joi.object({
+
+    id_usuario: Joi.number()
+        .integer()
+        .positive()
+        .max(2147483647)
+        .required()
+        .messages({
+            'number.base': 'O usuário deve ser um número.',
+            'number.integer': 'O identificador do usuário deve ser um número inteiro.',
+            'number.positive': 'O identificador do usuário deve ser maior que zero.',
+            'number.max': 'O identificador do usuário deve ser no máximo 2147483647.',
+            'number.unsafe': 'O identificador do usuário está fora do intervalo numérico permitido.',
+            'any.required': 'O usuário é obrigatório.'
+        }),
+
+    id_orcamento: Joi.number()
+        .integer()
+        .positive()
+        .max(2147483647)
+        .required()
+        .messages({
+            'number.base': 'O orçamento deve ser um número.',
+            'number.integer': 'O identificador do orçamento deve ser um número inteiro.',
+            'number.positive': 'O identificador do orçamento deve ser maior que zero.',
+            'number.max': 'O identificador do orçamento deve ser no máximo 2147483647.',
+            'number.unsafe': 'O identificador do orçamento está fora do intervalo numérico permitido.',
+            'any.required': 'O orçamento é obrigatório.'
+        })
+})
+    .unknown(false)
+    .messages({
+        'object.unknown': 'Foi enviado um campo não permitido para esta operação.'
+    });
