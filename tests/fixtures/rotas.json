@@ -71,6 +71,31 @@
   },
   {
     "method": "get",
+    "path": "/tela-principal/criar-orcamento",
+    "middlewares": ""
+  },
+  {
+    "method": "get",
+    "path": "/tela-principal/listar-orcamentos",
+    "middlewares": ""
+  },
+  {
+    "method": "get",
+    "path": "/tela-principal/editar-orcamento",
+    "middlewares": ""
+  },
+  {
+    "method": "get",
+    "path": "/tela-admin/listar-orcamentos",
+    "middlewares": ""
+  },
+  {
+    "method": "get",
+    "path": "/tela-admin/editar-orcamento",
+    "middlewares": ""
+  },
+  {
+    "method": "get",
     "path": "/me",
     "middlewares": "auditar('CONSULTAR_SESSAO', req => req.query.id_usuario ?? req.usuario?.id_usuario, false), limitadorGenericoSimples, autenticar, validar(schemaIdUsuarioOpcional)"
   },

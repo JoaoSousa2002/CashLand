@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/png" href="/CashLand%20emerald%20C%20icon.png">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editar orçamento — CashLand</title>
+    <link rel="stylesheet" href="/template.css">
+    <script src="/menu-superior.js" defer></script>
+    <style>
+        #form-editar-orcamento select:disabled,
+        #form-editar-orcamento textarea:disabled { background-color: #eee; color: #555; }
+        #loading-overlay { z-index: 10000; }
+        #resultado-overlay { z-index: 10001; }
+    </style>
+</head>
+
+<body>
+    <div class="loading-overlay" id="loading-overlay" role="status">
+        <div class="loading-box">
+            <p>Carregando...</p>
+            <div class="spinning-wheel" aria-hidden="true"></div>
+        </div>
+    </div>
+    <div class="loading-overlay" id="resultado-overlay" role="dialog" aria-modal="true" aria-labelledby="resultado-titulo">
+        <div class="loading-box dialogo-conteudo">
+            <h2 id="resultado-titulo"></h2>
+            <p id="resultado-mensagem" style="white-space: pre-line;"></p>
+            <button class="botao-dialogo" id="fechar-resultado" type="button" onclick="FechaResultado_overlay()">Continuar</button>
+        </div>
+    </div>
+    <div id="container" hidden>
+        <div id="div-superior">
+
+            <div id="div-nome-sistema">
+                <a href="/tela-principal">
+                    <h1>CashLand</h1>
+                </a>
+            </div>
+
+            <div id="div-nav">
+                <button id="botao-opcoes" type="button" aria-expanded="false" aria-controls="lista-opcoes">
+                    Opções <span aria-hidden="true">▾</span>
+                </button>
+                <nav id="lista-opcoes" aria-label="Opções de navegação" hidden>
+                    <a href="/tela-principal/listar-categoria">Gerir categorias</a>
+                    <a href="/tela-principal/listar-contas">Gerir contas financeiras</a>
+                    <a href="/tela-principal/criar-transacao">Adicionar transação</a>
+                    <a href="/tela-principal/listar-transacoes">Gerir transações</a>
+                    <a href="/tela-principal/listar-metas">Gerir metas</a>
+                </nav>
+            </div>
+            <div id="div-resumo-usuario">
+                <div id="div-saldo-usuario">
+                    <button id="botao-saldo-usuario" type="button" aria-expanded="false" aria-controls="lista-contas-saldo">
+                        <small>Saldo atual <span aria-hidden="true">▾</span></small>
+                        <strong id="saldo-usuario" aria-live="polite">Carregando...</strong>
+                        <small id="nome-conta-saldo">Selecionar conta</small>
+                    </button>
+                    <div id="lista-contas-saldo" hidden>
+                        <label for="conta-saldo-usuario">Conta financeira</label>
+                        <select id="conta-saldo-usuario" size="3" disabled></select>
+                    </div>
+                </div>
+                <div id="div-nome-usuario">
+                    <h3><span id="nome-usuario"></span></h3>
+                </div>
+            </div>
+            <div id="div-usuario">
+                <a onclick="redirecionaTela()">
+                    <img src="/User_icon_black.png" alt="icone usuario">
+                </a>
+            </div>
+            <div id="form-logout">
+                <form id="meuForm-Logout">
+                    <input type="submit" value="Sair">
+                </form>
+            </div>
+
+        </div>
+
+        <main id="container-conteudo">
+            <div class="cartao">
+                <div id="id-Titulo">
+                    <h2>Editar orçamento</h2>
+                    <button id="botao-Voltar" type="button" onclick="location.href='/tela-principal/listar-orcamentos'">Voltar</button>
+                </div>
+                <form id="form-editar-orcamento" novalidate>
+                    <div class="input-dados">
+                        <label for="id_orcamento">ID do orçamento:</label>
+                        <input id="id_orcamento" name="id_orcamento" type="text" aria-describedby="erro-id_orcamento" disabled readonly>
+                        <div id="erro-id_orcamento" data-erro="id_orcamento" aria-live="polite"></div>
+                    </div>
+                    <div class="input-dados">
+                        <label for="id_usuario">ID do usuário proprietário:</label>
+                        <input id="id_usuario" name="id_usuario" type="text" aria-describedby="erro-id_usuario" disabled readonly>
+                        <div id="erro-id_usuario" data-erro="id_usuario" aria-live="polite"></div>
+                    </div>
+                    <div class="input-dados">
+                        <label for="nome">Nome do orçamento:</label>
+                        <input id="nome" name="nome" type="text" aria-describedby="erro-nome" disabled readonly>
+                        <div id="erro-nome" data-erro="nome" aria-live="polite"></div>
+                    </div>
+                    <div class="input-dados">
+                        <label for="valor_atual">Valor gasto:</label>
+                        <input id="valor_atual" name="valor_atual" type="text" aria-describedby="erro-valor_atual" disabled readonly>
+                        <div id="erro-valor_atual" data-erro="valor_atual" aria-live="polite"></div>
+                    </div>
+                    <div class="input-dados">
+                        <label for="periodo_fim">Fim do período atual:</label>
+                        <input id="periodo_fim" name="periodo_fim" type="text" aria-describedby="erro-periodo_fim" disabled readonly>
+                        <div id="erro-periodo_fim" data-erro="periodo_fim" aria-live="polite"></div>
+                    </div>
+                    <div class="input-dados">
+                        <label for="data_criacao">Data de criação:</label>
+                        <input id="data_criacao" name="data_criacao" type="text" aria-describedby="erro-data_criacao" disabled readonly>
+                        <div id="erro-data_criacao" data-erro="data_criacao" aria-live="polite"></div>
+                    </div>
+                    <div class="input-dados">
+                        <label for="data_atualizacao">Última atualização:</label>
+                        <input id="data_atualizacao" name="data_atualizacao" type="text" aria-describedby="erro-data_atualizacao" disabled readonly>
+                        <div id="erro-data_atualizacao" data-erro="data_atualizacao" aria-live="polite"></div>
+                    </div>
+                    <div class="input-dados">
+                        <label for="id_conta">Conta bancária (opcional):</label>
+                        <select id="id_conta" name="id_conta" aria-describedby="erro-id_conta" disabled><option value="">Carregando contas...</option></select>
+                        <div id="erro-id_conta" data-erro="id_conta" aria-live="polite"></div>
+                    </div>
+                    <div class="input-dados">
+                        <label for="id_categoria">Categoria (opcional):</label>
+                        <select id="id_categoria" name="id_categoria" aria-describedby="erro-id_categoria" disabled><option value="">Carregando categorias...</option></select>
+                        <div id="erro-id_categoria" data-erro="id_categoria" aria-live="polite"></div>
+                    </div>
+                    <p class="texto-auxiliar">Selecione uma conta, uma categoria ou ambas.</p>
+                    <div class="input-dados">
+                        <label for="descricao">Descrição (opcional):</label>
+                        <textarea id="descricao" name="descricao" aria-describedby="erro-descricao" rows="3" disabled></textarea>
+                        <div id="erro-descricao" data-erro="descricao" aria-live="polite"></div>
+                    </div>
+                    <div class="input-dados">
+                        <label for="valor_orcamento">Limite do orçamento (R$):</label>
+                        <input id="valor_orcamento" name="valor_orcamento" type="number" aria-describedby="erro-valor_orcamento" min="0.01" max="9999999999.99" step="0.01" required disabled>
+                        <div id="erro-valor_orcamento" data-erro="valor_orcamento" aria-live="polite"></div>
+                    </div>
+                    <div class="input-dados">
+                        <label for="tipo_periodo">Tipo de período:</label>
+                        <select id="tipo_periodo" name="tipo_periodo" aria-describedby="erro-tipo_periodo" required disabled><option value="">Selecione o período</option><option value="Semanal">Semanal</option><option value="Mensal">Mensal</option><option value="Anual">Anual</option></select>
+                        <div id="erro-tipo_periodo" data-erro="tipo_periodo" aria-live="polite"></div>
+                    </div>
+                    <div class="input-dados">
+                        <label for="periodo_inicio">Início do período:</label>
+                        <select id="periodo_inicio" name="periodo_inicio" aria-describedby="erro-periodo_inicio" disabled><option value="">Selecione primeiro o tipo de período</option></select>
+                        <div id="erro-periodo_inicio" data-erro="periodo_inicio" aria-live="polite"></div>
+                    </div>
+                    <p class="texto-auxiliar">Escolha o período atual ou o próximo. A semana começa no domingo. O nome, a data final e o valor gasto são preenchidos automaticamente.</p>
+                    <p class="texto-auxiliar">Para manter um período antigo, não altere o tipo nem o início.</p>
+                    <p id="aviso-vinculos" class="texto-auxiliar" hidden>Nenhuma conta ou categoria disponível.</p>
+                    <button type="button" id="botao-Carregar" hidden>Recarregar dados</button>
+                    <button type="submit" id="botao-Enviar" disabled>Salvar alterações</button>
+                </form>
+            </div>
+        </main>
+    </div>
+
+    <script src="/protecao.js"></script>
+    <script>
+        let sessaoPronta = false;
+        let retornarLogin = false;
+        let retornarPrincipal = false;
+        let retornarListagem = false;
+        let carregando = false;
+        let enviando = false;
+        const loading = document.getElementById('loading-overlay');
+        const resultado_overlay = document.getElementById('resultado-overlay');
+        const conteudo = document.getElementById('container');
+        let focoResultado = null;
+
+        function MostrarErro(id, mensagem) {
+            const elemento = document.getElementById(id);
+            if (!elemento) {
+                return;
+            }
+            elemento.replaceChildren();
+            if (mensagem) {
+                const texto = document.createElement('h5');
+                texto.textContent = mensagem;
+                elemento.appendChild(texto);
+            }
+        }
+
+        function limparErros(escopo) {
+            for (const elemento of escopo.querySelectorAll('[id^="erro-"]')) {
+                MostrarErro(elemento.id, '');
+            }
+            for (const campo of escopo.querySelectorAll('[aria-invalid]')) {
+                campo.removeAttribute('aria-invalid');
+            }
+        }
+
+        function mostrarErrosValidacao(erros, escopo) {
+            const gerais = [];
+            for (const erro of erros) {
+                const campo = String(erro.campo).split('.')[0];
+                let elemento = null;
+                let controle = null;
+                // Procura pelo nome, sem inserir textos da API em HTML ou seletores.
+                for (const item of escopo.querySelectorAll('[data-erro]')) {
+                    if (item.dataset.erro === campo) {
+                        elemento = item;
+                    }
+                }
+                for (const item of escopo.querySelectorAll('[name]')) {
+                    if (item.name === campo) {
+                        controle = item;
+                    }
+                }
+                if (elemento) {
+                    MostrarErro(elemento.id, elemento.textContent + ' ' + erro.mensagem);
+                    if (controle) {
+                        controle.setAttribute('aria-invalid', 'true');
+                    }
+                } else {
+                    gerais.push(erro.mensagem);
+                }
+            }
+            if (gerais.length > 0) {
+                MostrarResultado_Overlay(0, gerais.join(' '));
+            }
+        }
+
+        function MostrarResultado_Overlay(tipo, mensagem) {
+            const titulo = document.getElementById('resultado-titulo');
+            const texto = document.getElementById('resultado-mensagem');
+            if (tipo === 1) {
+                titulo.textContent = 'Sucesso';
+                texto.style.color = 'var(--sucesso)';
+            } else {
+                titulo.textContent = 'Não foi possível concluir';
+                texto.style.color = 'var(--erro)';
+            }
+            texto.textContent = mensagem;
+            focoResultado = document.activeElement;
+            resultado_overlay.style.display = 'flex';
+            conteudo.inert = true;
+            document.getElementById('fechar-resultado').focus();
+        }
+
+        function mensagemResposta(resposta, dados) {
+            if (resposta.status === 401) {
+                retornarLogin = true;
+                sessaoPronta = false;
+            } else if (resposta.status === 403) {
+                retornarPrincipal = true;
+                sessaoPronta = false;
+            }
+            if (dados.mensagem) {
+                return dados.mensagem;
+            }
+            if (dados.erro) {
+                return dados.erro;
+            }
+            return `Não foi possível concluir a operação (HTTP ${resposta.status}).`;
+        }
+
+        function formatarValor(valor) {
+            if (valor === null || valor === undefined || valor === '') {
+                return '---';
+            }
+            return Number(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        }
+
+        function formatarData(valor) {
+            if (!valor) {
+                return '---';
+            }
+            const [ano, mes, dia] = String(valor).slice(0, 10).split('-');
+            return `${dia}/${mes}/${ano}`;
+        }
+
+        async function redirecionaTela() {
+            const usuario = await protegerPagina();
+            if (!usuario) {
+                return;
+            }
+            if (usuario.tipo === 'Admin') {
+                window.location.href = `/tela-admin/editar-usuarios?id=${usuario.id_usuario}`;
+            } else {
+                window.location.href = '/tela-principal/editar-usuario';
+            }
+        }
+
+        document.getElementById('meuForm-Logout').addEventListener('submit', async evento => {
+            evento.preventDefault();
+            if (carregando || enviando) {
+                return;
+            }
+            enviando = true;
+            atualizarCampos();
+            try {
+                const resposta = await fetch('/logout', { method: 'POST', credentials: 'include' });
+                const dados = await resposta.json();
+                if (resposta.ok) {
+                    localStorage.removeItem('tipo');
+                    window.location.href = '/login';
+                } else {
+                    MostrarResultado_Overlay(0, mensagemResposta(resposta, dados));
+                }
+            } catch {
+                MostrarResultado_Overlay(0, 'Não foi possível sair. Tente novamente.');
+            } finally {
+                enviando = false;
+                atualizarCampos();
+            }
+        });
+        resultado_overlay.addEventListener('keydown', evento => {
+            if (evento.key === 'Escape') {
+                FechaResultado_overlay();
+            }
+            if (evento.key === 'Tab') {
+                evento.preventDefault();
+                document.getElementById('fechar-resultado').focus();
+            }
+        });
+        const form = document.getElementById('form-editar-orcamento');
+        const salvar = document.getElementById('botao-Enviar');
+        const recarregar = document.getElementById('botao-Carregar');
+        const camposEditaveis = ['id_conta', 'id_categoria', 'descricao', 'valor_orcamento', 'tipo_periodo', 'periodo_inicio'];
+        let listasProntas = false;
+        let registroPronto = false;
+        let identificadorValido = false;
+        let registro = null;
+        const valoresIniciais = {};
+        let idOrcamento = null;
+
+        function FechaResultado_overlay() {
+            resultado_overlay.style.display = 'none';
+            conteudo.inert = false;
+            if (retornarLogin) {
+                window.location.href = '/login';
+            } else if (retornarPrincipal) {
+                window.location.href = '/tela-principal';
+            } else if (retornarListagem) {
+                window.location.href = '/tela-principal/listar-orcamentos';
+            } else if (focoResultado) {
+                focoResultado.focus();
+            }
+        }
+
+        function atualizarCampos() {
+            const ocupado = carregando || enviando;
+            const pronto = sessaoPronta && registroPronto && listasProntas;
+            for (const campo of form.querySelectorAll('input, select, textarea')) {
+                campo.disabled = !pronto || ocupado || !camposEditaveis.includes(campo.id);
+            }
+            document.getElementById('periodo_inicio').disabled = !pronto || ocupado || document.getElementById('tipo_periodo').value === '';
+            salvar.disabled = !pronto || ocupado || retornarListagem;
+            recarregar.disabled = ocupado || !sessaoPronta || !identificadorValido;
+            form.inert = ocupado;
+            if (ocupado) {
+                loading.style.display = 'flex';
+            } else {
+                loading.style.display = 'none';
+            }
+        }
+
+        function preencherPeriodos() {
+            const tipo = document.getElementById('tipo_periodo').value;
+            const select = document.getElementById('periodo_inicio');
+            select.replaceChildren();
+            if (tipo === '') {
+                select.add(new Option('Selecione primeiro o tipo de período', ''));
+                return;
+            }
+            // Estas datas são opções de escolha; a API valida o início e calcula o fim.
+            const hoje = new Intl.DateTimeFormat('en-CA', {
+                timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit'
+            }).format(new Date());
+            const atual = new Date(`${hoje}T00:00:00.000Z`);
+            if (tipo === 'Semanal') {
+                atual.setUTCDate(atual.getUTCDate() - atual.getUTCDay());
+            } else if (tipo === 'Mensal') {
+                atual.setUTCDate(1);
+            } else if (tipo === 'Anual') {
+                atual.setUTCMonth(0, 1);
+            }
+            const proximo = new Date(atual);
+            if (tipo === 'Semanal') {
+                proximo.setUTCDate(proximo.getUTCDate() + 7);
+            } else if (tipo === 'Mensal') {
+                proximo.setUTCMonth(proximo.getUTCMonth() + 1);
+            } else if (tipo === 'Anual') {
+                proximo.setUTCFullYear(proximo.getUTCFullYear() + 1);
+            }
+            const inicioAtual = atual.toISOString().slice(0, 10);
+            const inicioProximo = proximo.toISOString().slice(0, 10);
+            select.add(new Option('Selecione o início do período', ''));
+            if (registro && tipo === registro.tipo_periodo && registro.periodo_inicio !== inicioAtual && registro.periodo_inicio !== inicioProximo) {
+                select.add(new Option(`Manter período salvo (${formatarData(registro.periodo_inicio)})`, registro.periodo_inicio));
+            }
+            select.add(new Option(`Período atual (${formatarData(inicioAtual)})`, inicioAtual));
+            select.add(new Option(`Próximo período (${formatarData(inicioProximo)})`, inicioProximo));
+            if (registro && tipo === registro.tipo_periodo) {
+                select.value = registro.periodo_inicio;
+            }
+        }
+
+        async function carregarVinculos() {
+            listasProntas = false;
+            const respostaContas = await fetch('/usuario/listar-contas', { credentials: 'include' });
+            const contas = await respostaContas.json();
+            if (!respostaContas.ok) {
+                MostrarResultado_Overlay(0, mensagemResposta(respostaContas, contas));
+                return false;
+            }
+            if (!Array.isArray(contas)) {
+                throw new Error('Resposta inesperada ao carregar contas.');
+            }
+            const seletorContas = document.getElementById('id_conta');
+            const selecionadaContas = seletorContas.value;
+            seletorContas.replaceChildren();
+            seletorContas.add(new Option('Sem conta', ''));
+            for (const item of contas) {
+                seletorContas.add(new Option(`${item.nome_conta} (#${item.id_conta})`, item.id_conta));
+            }
+            if (registro.id_conta != null && !contas.some(item => Number(item.id_conta) === Number(registro.id_conta))) {
+                seletorContas.add(new Option(`Vínculo atual (#${registro.id_conta})`, registro.id_conta));
+            }
+            seletorContas.value = selecionadaContas;
+            if (seletorContas.selectedIndex === -1) {
+                seletorContas.value = '';
+            }
+            const respostaCategorias = await fetch('/usuario/listar-categoria', { credentials: 'include' });
+            const categorias = await respostaCategorias.json();
+            if (!respostaCategorias.ok) {
+                MostrarResultado_Overlay(0, mensagemResposta(respostaCategorias, categorias));
+                return false;
+            }
+            if (!Array.isArray(categorias)) {
+                throw new Error('Resposta inesperada ao carregar categorias.');
+            }
+            const seletorCategorias = document.getElementById('id_categoria');
+            const selecionadaCategorias = seletorCategorias.value;
+            seletorCategorias.replaceChildren();
+            seletorCategorias.add(new Option('Sem categoria', ''));
+            for (const item of categorias) {
+                seletorCategorias.add(new Option(`${item.nome} (#${item.id_categoria})`, item.id_categoria));
+            }
+            if (registro.id_categoria != null && !categorias.some(item => Number(item.id_categoria) === Number(registro.id_categoria))) {
+                seletorCategorias.add(new Option(`Vínculo atual (#${registro.id_categoria})`, registro.id_categoria));
+            }
+            seletorCategorias.value = selecionadaCategorias;
+            if (seletorCategorias.selectedIndex === -1) {
+                seletorCategorias.value = '';
+            }
+            listasProntas = true;
+            document.getElementById('aviso-vinculos').hidden = contas.length > 0 || categorias.length > 0;
+            return true;
+        }
+
+        function identificarRegistro() {
+            const parametros = new URLSearchParams(location.search);
+            let valido = true;
+            for (const id of ['id_orcamento']) {
+                const valores = parametros.getAll(id);
+                document.getElementById(id).value = valores.join(', ');
+                if (valores.length !== 1 || !/^\d+$/.test(valores[0]) || Number(valores[0]) < 1 || Number(valores[0]) > 2147483647) {
+                    MostrarErro(`erro-${id}`, 'Informe um identificador inteiro entre 1 e 2147483647 na URL.');
+                    valido = false;
+                }
+            }
+            if (!valido) {
+                return false;
+            }
+            idOrcamento = Number(parametros.get('id_orcamento'));
+            identificadorValido = true;
+            return true;
+        }
+
+        async function consultarRegistro() {
+            registroPronto = false;
+            const parametros = new URLSearchParams({ id_orcamento: idOrcamento });
+            const resposta = await fetch(`/usuario/listar-orcamentos?${parametros}`, { credentials: 'include' });
+            const dados = await resposta.json();
+            if (!resposta.ok) {
+                if (Array.isArray(dados.erros)) {
+                    mostrarErrosValidacao(dados.erros, form);
+                } else {
+                    MostrarResultado_Overlay(0, mensagemResposta(resposta, dados));
+                }
+                return false;
+            }
+            if (!Array.isArray(dados)) {
+                throw new Error('Resposta inesperada ao consultar o orçamento.');
+            }
+            registro = dados.find(item => Number(item.id_orcamento) === idOrcamento);
+            if (!registro) {
+                MostrarErro('erro-id_orcamento', 'Orçamento não encontrado para este usuário.');
+                return false;
+            }
+            registroPronto = true;
+            return true;
+        }
+
+        function preencherCampos() {
+            for (const id of camposEditaveis) {
+                const campo = document.getElementById(id);
+                if (registro[id] == null) {
+                    campo.value = '';
+                } else {
+                    campo.value = registro[id];
+                }
+            }
+            preencherPeriodos();
+            for (const id of camposEditaveis) {
+                valoresIniciais[id] = document.getElementById(id).value;
+            }
+            document.getElementById('id_usuario').value = registro.id_usuario;
+            document.getElementById('nome').value = registro.nome;
+            document.getElementById('valor_atual').value = formatarValor(registro.valor_atual);
+            document.getElementById('periodo_fim').value = formatarData(registro.periodo_fim);
+            for (const id of ['data_criacao', 'data_atualizacao']) {
+                let texto = '---';
+                if (registro[id]) {
+                    texto = new Date(registro[id]).toLocaleString('pt-BR');
+                }
+                document.getElementById(id).value = texto;
+            }
+        }
+
+        async function carregarDados() {
+            if (!sessaoPronta || !identificadorValido || carregando || enviando) {
+                return;
+            }
+            carregando = true;
+            recarregar.hidden = true;
+            limparErros(form);
+            atualizarCampos();
+            try {
+                if (!await consultarRegistro()) {
+                    return;
+                }
+                if (!await carregarVinculos()) {
+                    return;
+                }
+                preencherCampos();
+            } catch {
+                MostrarResultado_Overlay(0, 'Não foi possível carregar os dados. Tente novamente.');
+            } finally {
+                carregando = false;
+                recarregar.hidden = registroPronto && listasProntas;
+                atualizarCampos();
+            }
+        }
+
+        function montarPayload() {
+            const payload = { id_orcamento: idOrcamento };
+            let valido = true;
+            const conta = document.getElementById('id_conta').value;
+            const categoria = document.getElementById('id_categoria').value;
+            if (conta === '' && categoria === '') {
+                MostrarErro('erro-id_conta', 'Selecione uma conta, uma categoria ou ambas.');
+                MostrarErro('erro-id_categoria', 'Mantenha pelo menos um vínculo no orçamento.');
+                valido = false;
+            }
+            for (const id of camposEditaveis) {
+                const valor = document.getElementById(id).value.trim();
+                if (valor === valoresIniciais[id]) {
+                    continue;
+                }
+                if (id === 'valor_orcamento') {
+                    if (valor === '') {
+                        MostrarErro('erro-valor_orcamento', 'Informe o limite do orçamento.');
+                        valido = false;
+                    } else {
+                        payload.valor_orcamento = Number(valor);
+                    }
+                } else if (id === 'id_conta' || id === 'id_categoria') {
+                    if (valor !== '') {
+                        payload[id] = Number(valor);
+                    } else {
+                        payload[id] = null;
+                    }
+                } else if (id === 'periodo_inicio') {
+                    if (valor !== '') {
+                        payload.periodo_inicio = valor;
+                    } else {
+                        MostrarErro('erro-periodo_inicio', 'Selecione o início do período.');
+                        valido = false;
+                    }
+                } else {
+                    payload[id] = valor;
+                }
+            }
+            if (document.getElementById('tipo_periodo').value !== registro.tipo_periodo) {
+                const inicio = document.getElementById('periodo_inicio').value;
+                if (inicio === '') {
+                    MostrarErro('erro-periodo_inicio', 'Selecione o início ao alterar o tipo de período.');
+                    valido = false;
+                } else {
+                    payload.periodo_inicio = inicio;
+                }
+            }
+            if (!valido) {
+                return null;
+            }
+            return payload;
+        }
+
+        form.addEventListener('submit', async evento => {
+            evento.preventDefault();
+            if (!sessaoPronta || !registroPronto || !listasProntas || carregando || enviando || retornarListagem) {
+                return;
+            }
+            limparErros(form);
+            const payload = montarPayload();
+            if (!payload) {
+                return;
+            }
+            if (Object.keys(payload).length === 1) {
+                MostrarResultado_Overlay(0, 'Altere pelo menos um campo antes de salvar.');
+                return;
+            }
+            enviando = true;
+            atualizarCampos();
+            try {
+                const resposta = await fetch('/usuario/editar-orcamento', {
+                    method: 'PATCH', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const dados = await resposta.json();
+                if (resposta.status === 200) {
+                    retornarListagem = true;
+                    MostrarResultado_Overlay(1, dados.mensagem);
+                } else if (Array.isArray(dados.erros)) {
+                    mostrarErrosValidacao(dados.erros, form);
+                } else {
+                    MostrarResultado_Overlay(0, mensagemResposta(resposta, dados));
+                }
+            } catch {
+                MostrarResultado_Overlay(0, 'Não foi possível confirmar a gravação. Consulte seus orçamentos antes de tentar novamente.');
+            } finally {
+                enviando = false;
+                atualizarCampos();
+            }
+        });
+        form.addEventListener('input', evento => {
+            MostrarErro(`erro-${evento.target.id}`, '');
+            evento.target.removeAttribute('aria-invalid');
+        });
+        document.getElementById('tipo_periodo').addEventListener('change', () => {
+            preencherPeriodos();
+            MostrarErro('erro-periodo_inicio', '');
+            atualizarCampos();
+        });
+        recarregar.addEventListener('click', carregarDados);
+
+        async function iniciar() {
+            loading.style.display = 'flex';
+            try {
+                const usuario = await protegerPagina();
+                if (!usuario) {
+                    return;
+                }
+                sessaoPronta = true;
+                conteudo.hidden = false;
+                document.getElementById('nome-usuario').textContent = usuario.nome.slice(0, 8);
+                atualizarSaldoUsuario(usuario.id_usuario);
+                if (!identificarRegistro()) {
+                    return;
+                }
+                await carregarDados();
+            } finally {
+                atualizarCampos();
+            }
+        }
+        iniciar();
+    </script>
+</body>
+</html>

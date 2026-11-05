@@ -4,6 +4,17 @@
     const lista = document.getElementById('lista-opcoes');
     if (!navegacao || !botao || !lista) return;
 
+    if (!lista.querySelector('a[href$="/listar-orcamentos"]')) {
+        const orcamentos = document.createElement('a');
+        orcamentos.textContent = 'Gerir orçamentos';
+        if (lista.querySelector('a[href^="/tela-admin/"]')) {
+            orcamentos.href = '/tela-admin/listar-orcamentos';
+        } else {
+            orcamentos.href = '/tela-principal/listar-orcamentos';
+        }
+        lista.appendChild(orcamentos);
+    }
+
     function fecharOpcoes(devolverFoco = false) {
         lista.hidden = true;
         botao.setAttribute('aria-expanded', 'false');

@@ -21,6 +21,11 @@ function records() {
     id_categoria: base + i + 1,
     id_conta: base + i + 1,
     id_meta: base + i + 1,
+    id_orcamento: base + i + 1,
+    valor_orcamento: 400,
+    tipo_periodo: "Mensal",
+    periodo_inicio: "2026-11-01",
+    periodo_fim: "2026-11-30",
     id_transacao: base + i + 1,
     id_recorrencia: null,
     nome: `Registro ${base + i + 1}`,
@@ -271,7 +276,7 @@ for (const size of [[1280, 900], [390, 844], [320, 568]]) for (const file of fil
       const destination = await evaluate("location.href");
       assert(destination.includes("324"), destination);
       if (file.includes("ADMIN_") && (file.includes("contas") || file.includes("transacoes"))) assert(destination.includes("id_usuario=501"), destination);
-      if (file.includes("ADMIN_") && file.includes("metas")) assert(destination.includes("id_usuario=501"), destination);
+      if (file.includes("ADMIN_") && (file.includes("metas") || file.includes("orcamentos"))) assert(destination.includes("id_usuario=501"), destination);
       assert.equal(errors.length, 0, errors.join("\n"));
       assert.equal(writes.length, 0);
     });

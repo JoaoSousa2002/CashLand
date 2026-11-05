@@ -129,4 +129,26 @@ router.get('/tela-admin/editar-meta', (req, res) => {
     res.sendFile(path.join(__dirname, '../rf-007-Gerir_metas_financeiras/public/ADMIN_editar-meta.html'));
 });
 
+// RF008 - Gerir Orçamentos =================================================================================
+
+router.get('/tela-principal/criar-orcamento', (req, res) => {
+    res.sendFile(path.join(__dirname, '../rf-008-Gerir_orcamentos/public/criar-orcamento.html'));
+});
+
+router.get('/tela-principal/listar-orcamentos', (req, res) => {
+    res.sendFile(path.join(__dirname, '../rf-008-Gerir_orcamentos/public/listar-orcamentos.html'));
+});
+
+router.get('/tela-principal/editar-orcamento', (req, res) => {
+    res.sendFile(path.join(__dirname, '../rf-008-Gerir_orcamentos/public/editar-orcamento.html'));
+});
+
+router.get('/tela-admin/listar-orcamentos', (req, res) => {
+    res.sendFile(path.join(__dirname, '../rf-008-Gerir_orcamentos/public/ADMIN_listar-orcamentos.html'));
+});
+
+router.get('/tela-admin/editar-orcamento', (req, res) => {
+    res.sendFile(path.join(__dirname, '../rf-008-Gerir_orcamentos/public/ADMIN_editar-orcamento.html'));
+});
+
 export default router;

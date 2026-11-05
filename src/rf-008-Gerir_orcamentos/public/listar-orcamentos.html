@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/png" href="/CashLand%20emerald%20C%20icon.png">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meus orçamentos — CashLand</title>
+    <link rel="stylesheet" href="/template.css">
+    <script src="/menu-superior.js" defer></script>
+    <style>
+        #div-form-tabela #form-listar-orcamentos { flex-basis: 100%; }
+        #form-listar-orcamentos .input-dados > label { flex: none; }
+        #form-listar-orcamentos > .input-dados { flex: 1 1 240px; }
+        #filtros-overlay .loading-box { width: 560px; flex-direction: column; justify-content: flex-start; }
+        #filtros-overlay .loading-box > * { flex-shrink: 0; }
+        #form-filtros { display: flex; flex-direction: column; gap: 12px; }
+        #tabela-registros { min-width: 1450px; }
+        #loading-overlay { z-index: 10000; }
+        #resultado-overlay { z-index: 10001; }
+    </style>
+</head>
+
+<body>
+    <div class="loading-overlay" id="loading-overlay" role="status">
+        <div class="loading-box">
+            <p>Carregando...</p>
+            <div class="spinning-wheel" aria-hidden="true"></div>
+        </div>
+    </div>
+    <div class="loading-overlay" id="resultado-overlay" role="dialog" aria-modal="true" aria-labelledby="resultado-titulo">
+        <div class="loading-box dialogo-conteudo">
+            <h2 id="resultado-titulo"></h2>
+            <p id="resultado-mensagem" style="white-space: pre-line;"></p>
+            <button class="botao-dialogo" id="fechar-resultado" type="button" onclick="FechaResultado_overlay()">Continuar</button>
+        </div>
+    </div>
+    <div class="loading-overlay" id="filtros-overlay" role="dialog" aria-modal="true" aria-labelledby="titulo-filtros">
+        <div class="loading-box">
+            <div class="acoes-formulario">
+                <h2 id="titulo-filtros">Filtros de orçamentos</h2>
+                <button type="button" id="botao-fechar-filtros" aria-label="Fechar filtros">X</button>
+            </div>
+            <form id="form-filtros" novalidate>
+                    <div class="input-dados">
+                        <label for="id_orcamento">ID do orçamento:</label>
+                        <input id="id_orcamento" name="id_orcamento" type="number" aria-describedby="erro-id_orcamento" min="1" step="1">
+                        <div id="erro-id_orcamento" data-erro="id_orcamento" aria-live="polite"></div>
+                    </div>
+                    <div class="input-dados">
+                        <label for="id_conta">ID da conta:</label>
+                        <input id="id_conta" name="id_conta" type="number" aria-describedby="erro-id_conta" min="1" step="1">
+                        <div id="erro-id_conta" data-erro="id_conta" aria-live="polite"></div>
+                    </div>
+                    <div class="input-dados">
+                        <label for="id_categoria">ID da categoria:</label>
+                        <input id="id_categoria" name="id_categoria" type="number" aria-describedby="erro-id_categoria" min="1" step="1">
+                        <div id="erro-id_categoria" data-erro="id_categoria" aria-live="polite"></div>
+                    </div>
+                    <div class="input-dados">
+                        <label for="tipo_periodo">Tipo de período:</label>
+                        <select id="tipo_periodo" name="tipo_periodo" aria-describedby="erro-tipo_periodo" ><option value="">Todos</option><option>Semanal</option><option>Mensal</option><option>Anual</option></select>
+                        <div id="erro-tipo_periodo" data-erro="tipo_periodo" aria-live="polite"></div>
+                    </div>
+                    <div class="input-dados">
+                        <label for="periodo_inicio">Períodos que terminam a partir de:</label>
+                        <input id="periodo_inicio" name="periodo_inicio" type="date" aria-describedby="erro-periodo_inicio" >
+                        <div id="erro-periodo_inicio" data-erro="periodo_inicio" aria-live="polite"></div>
+                    </div>
+                    <div class="input-dados">
+                        <label for="periodo_fim">Períodos que começam até:</label>
+                        <input id="periodo_fim" name="periodo_fim" type="date" aria-describedby="erro-periodo_fim" >
+                        <div id="erro-periodo_fim" data-erro="periodo_fim" aria-live="polite"></div>
+                    </div>
+                <p class="texto-auxiliar">Deixe os campos vazios para consultar todos. As datas encontram orçamentos cujo período cruza o intervalo informado.</p>
+                <div class="acoes-formulario">
+                    <input type="button" id="botao-limpar-filtros" value="Limpar filtros">
+                    <input type="submit" id="botao-aplicar-filtros" value="Aplicar filtros">
+                </div>
+            </form>
+        </div>
+    </div>
+    <div class="loading-overlay" id="exclusao-overlay" role="dialog" aria-modal="true" aria-labelledby="titulo-exclusao" aria-describedby="mensagem-exclusao">
+        <div class="loading-box dialogo-conteudo">
+            <div class="confirmacao-exclusao">
+                <h5 id="titulo-exclusao"></h5>
+                <p id="mensagem-exclusao">Essa ação não poderá ser desfeita.</p>
+            </div>
+            <div class="input-dados">
+                <label for="exclusao-id_orcamento">ID do orçamento:</label>
+                <input id="exclusao-id_orcamento" name="id_orcamento" disabled readonly aria-describedby="erro-exclusao-id_orcamento">
+                <div id="erro-exclusao-id_orcamento" data-erro="id_orcamento" aria-live="polite"></div>
+            </div>
+            <div class="acoes-formulario">
+                <input class="botao-dialogo" type="button" id="botao-confirmar-exclusao" value="Continuar">
+                <input class="botao-dialogo" type="button" id="botao-cancelar-exclusao" value="Cancelar">
+            </div>
+        </div>
+    </div>
+    <div id="container" hidden>
+        <div id="div-superior">
+
+            <div id="div-nome-sistema">
+                <a href="/tela-principal">
+                    <h1>CashLand</h1>
+                </a>
+            </div>
+
+            <div id="div-nav">
+                <button id="botao-opcoes" type="button" aria-expanded="false" aria-controls="lista-opcoes">
+                    Opções <span aria-hidden="true">▾</span>
+                </button>
+                <nav id="lista-opcoes" aria-label="Opções de navegação" hidden>
+                    <a href="/tela-principal/listar-categoria">Gerir categorias</a>
+                    <a href="/tela-principal/listar-contas">Gerir contas financeiras</a>
+                    <a href="/tela-principal/criar-transacao">Adicionar transação</a>
+                    <a href="/tela-principal/listar-transacoes">Gerir transações</a>
+                    <a href="/tela-principal/listar-metas">Gerir metas</a>
+                </nav>
+            </div>
+            <div id="div-resumo-usuario">
+                <div id="div-saldo-usuario">
+                    <button id="botao-saldo-usuario" type="button" aria-expanded="false" aria-controls="lista-contas-saldo">
+                        <small>Saldo atual <span aria-hidden="true">▾</span></small>
+                        <strong id="saldo-usuario" aria-live="polite">Carregando...</strong>
+                        <small id="nome-conta-saldo">Selecionar conta</small>
+                    </button>
+                    <div id="lista-contas-saldo" hidden>
+                        <label for="conta-saldo-usuario">Conta financeira</label>
+                        <select id="conta-saldo-usuario" size="3" disabled></select>
+                    </div>
+                </div>
+                <div id="div-nome-usuario">
+                    <h3><span id="nome-usuario"></span></h3>
+                </div>
+            </div>
+            <div id="div-usuario">
+                <a onclick="redirecionaTela()">
+                    <img src="/User_icon_black.png" alt="icone usuario">
+                </a>
+            </div>
+            <div id="form-logout">
+                <form id="meuForm-Logout">
+                    <input type="submit" value="Sair">
+                </form>
+            </div>
+
+        </div>
+
+        <main id="container-conteudo" class="pagina-listagem">
+            <div id="div-form-tabela">
+                <h2>Meus orçamentos</h2>
+                <form id="form-listar-orcamentos" novalidate>
+                    <div class="input-dados">
+                        <label for="nome">Nome do orçamento:</label>
+                        <input id="nome" name="nome" type="text" aria-describedby="erro-nome" placeholder="Pesquisar por nome...">
+                        <div id="erro-nome" data-erro="nome" aria-live="polite"></div>
+                    </div>
+                    <input type="submit" id="botao-pesquisar" value="Pesquisar" disabled>
+                    <button type="button" id="botao-filtrar" disabled>Filtrar</button>
+                    <button type="button" id="botao-novo-orcamento" class="btn-primary" onclick="location.href='/tela-principal/criar-orcamento'">Criar orçamento</button>
+                </form>
+            </div>
+            <div id="div-tabela" tabindex="0" role="region" aria-label="Resultados da consulta">
+                <table class="tabela-listagem" id="tabela-registros" aria-label="Orçamentos">
+                    <thead>
+                        <tr id="cabecalho-tabela">
+                            <th scope="col" class="th-opcoes">Opções</th>
+                            <th scope="col" style="width: 110px;">ID do orçamento</th>
+                            <th scope="col" style="width: 230px;">Nome</th>
+                            <th scope="col" style="width: 100px;">ID da conta</th>
+                            <th scope="col" style="width: 110px;">ID da categoria</th>
+                            <th scope="col" style="width: 140px;">Valor gasto</th>
+                            <th scope="col" style="width: 140px;">Limite</th>
+                            <th scope="col" style="width: 130px;">Tipo de período</th>
+                            <th scope="col" style="width: 120px;">Início</th>
+                            <th scope="col" style="width: 120px;">Fim</th>
+                        </tr>
+                    </thead>
+                    <tbody id="corpo-tabela" aria-live="polite"></tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <script src="/protecao.js"></script>
+    <script src="/menu-tabela.js"></script>
+    <script>
+        let sessaoPronta = false;
+        let retornarLogin = false;
+        let retornarPrincipal = false;
+        let carregando = false;
+        let enviando = false;
+        const loading = document.getElementById('loading-overlay');
+        const resultado_overlay = document.getElementById('resultado-overlay');
+        const conteudo = document.getElementById('container');
+        let focoResultado = null;
+
+        function MostrarErro(id, mensagem) {
+            const elemento = document.getElementById(id);
+            if (!elemento) {
+                return;
+            }
+            elemento.replaceChildren();
+            if (mensagem) {
+                const texto = document.createElement('h5');
+                texto.textContent = mensagem;
+                elemento.appendChild(texto);
+            }
+        }
+
+        function limparErros(escopo) {
+            for (const elemento of escopo.querySelectorAll('[id^="erro-"]')) {
+                MostrarErro(elemento.id, '');
+            }
+            for (const campo of escopo.querySelectorAll('[aria-invalid]')) {
+                campo.removeAttribute('aria-invalid');
+            }
+        }
+
+        function mostrarErrosValidacao(erros, escopo) {
+            const gerais = [];
+            for (const erro of erros) {
+                const campo = String(erro.campo).split('.')[0];
+                let elemento = null;
+                let controle = null;
+                // Procura pelo nome, sem inserir textos da API em HTML ou seletores.
+                for (const item of escopo.querySelectorAll('[data-erro]')) {
+                    if (item.dataset.erro === campo) {
+                        elemento = item;
+                    }
+                }
+                for (const item of escopo.querySelectorAll('[name]')) {
+                    if (item.name === campo) {
+                        controle = item;
+                    }
+                }
+                if (elemento) {
+                    MostrarErro(elemento.id, elemento.textContent + ' ' + erro.mensagem);
+                    if (controle) {
+                        controle.setAttribute('aria-invalid', 'true');
+                    }
+                } else {
+                    gerais.push(erro.mensagem);
+                }
+            }
+            if (gerais.length > 0) {
+                MostrarResultado_Overlay(0, gerais.join(' '));
+            }
+        }
+
+        function MostrarResultado_Overlay(tipo, mensagem) {
+            const titulo = document.getElementById('resultado-titulo');
+            const texto = document.getElementById('resultado-mensagem');
+            if (tipo === 1) {
+                titulo.textContent = 'Sucesso';
+                texto.style.color = 'var(--sucesso)';
+            } else {
+                titulo.textContent = 'Não foi possível concluir';
+                texto.style.color = 'var(--erro)';
+            }
+            texto.textContent = mensagem;
+            focoResultado = document.activeElement;
+            resultado_overlay.style.display = 'flex';
+            conteudo.inert = true;
+            filtros_overlay.inert = true;
+            exclusao_overlay.inert = true;
+            document.getElementById('fechar-resultado').focus();
+        }
+
+        function mensagemResposta(resposta, dados) {
+            if (resposta.status === 401) {
+                retornarLogin = true;
+                sessaoPronta = false;
+            } else if (resposta.status === 403) {
+                retornarPrincipal = true;
+                sessaoPronta = false;
+            }
+            if (dados.mensagem) {
+                return dados.mensagem;
+            }
+            if (dados.erro) {
+                return dados.erro;
+            }
+            return `Não foi possível concluir a operação (HTTP ${resposta.status}).`;
+        }
+
+        function formatarValor(valor) {
+            if (valor === null || valor === undefined || valor === '') {
+                return '---';
+            }
+            return Number(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        }
+
+        function formatarData(valor) {
+            if (!valor) {
+                return '---';
+            }
+            const [ano, mes, dia] = String(valor).slice(0, 10).split('-');
+            return `${dia}/${mes}/${ano}`;
+        }
+
+        async function redirecionaTela() {
+            const usuario = await protegerPagina();
+            if (!usuario) {
+                return;
+            }
+            if (usuario.tipo === 'Admin') {
+                window.location.href = `/tela-admin/editar-usuarios?id=${usuario.id_usuario}`;
+            } else {
+                window.location.href = '/tela-principal/editar-usuario';
+            }
+        }
+
+        document.getElementById('meuForm-Logout').addEventListener('submit', async evento => {
+            evento.preventDefault();
+            if (carregando || enviando) {
+                return;
+            }
+            enviando = true;
+            atualizarCampos();
+            try {
+                const resposta = await fetch('/logout', { method: 'POST', credentials: 'include' });
+                const dados = await resposta.json();
+                if (resposta.ok) {
+                    localStorage.removeItem('tipo');
+                    window.location.href = '/login';
+                } else {
+                    MostrarResultado_Overlay(0, mensagemResposta(resposta, dados));
+                }
+            } catch {
+                MostrarResultado_Overlay(0, 'Não foi possível sair. Tente novamente.');
+            } finally {
+                enviando = false;
+                atualizarCampos();
+            }
+        });
+        resultado_overlay.addEventListener('keydown', evento => {
+            if (evento.key === 'Escape') {
+                FechaResultado_overlay();
+            }
+            if (evento.key === 'Tab') {
+                evento.preventDefault();
+                document.getElementById('fechar-resultado').focus();
+            }
+        });
+        const form = document.getElementById('form-listar-orcamentos');
+        const formFiltros = document.getElementById('form-filtros');
+        const filtros_overlay = document.getElementById('filtros-overlay');
+        const exclusao_overlay = document.getElementById('exclusao-overlay');
+        const corpo = document.getElementById('corpo-tabela');
+        const menuTabela = criarMenuTabela(corpo, () => !sessaoPronta || carregando || enviando);
+        let filtrosAplicados = {};
+        let exclusaoPendente = null;
+        let botaoExclusao = null;
+        let atualizarAposExclusao = false;
+        const camposFiltros = ['id_orcamento', 'id_conta', 'id_categoria', 'tipo_periodo', 'periodo_inicio', 'periodo_fim'];
+
+        function atualizarCampos() {
+            const ocupado = carregando || enviando;
+            for (const campo of form.querySelectorAll('input, button')) {
+                campo.disabled = ocupado || !sessaoPronta;
+            }
+            for (const campo of formFiltros.querySelectorAll('input, select')) {
+                campo.disabled = ocupado || !sessaoPronta;
+            }
+            document.getElementById('botao-fechar-filtros').disabled = ocupado;
+            document.getElementById('botao-confirmar-exclusao').disabled = ocupado || !sessaoPronta;
+            document.getElementById('botao-cancelar-exclusao').disabled = ocupado;
+            if (ocupado) {
+                menuTabela.fechar();
+                loading.style.display = 'flex';
+            } else {
+                loading.style.display = 'none';
+            }
+        }
+
+        function FechaResultado_overlay() {
+            resultado_overlay.style.display = 'none';
+            if (retornarLogin) {
+                window.location.href = '/login';
+                return;
+            }
+            if (retornarPrincipal) {
+                window.location.href = '/tela-principal';
+                return;
+            }
+            conteudo.inert = filtros_overlay.style.display === 'flex' || exclusao_overlay.style.display === 'flex';
+            filtros_overlay.inert = false;
+            exclusao_overlay.inert = false;
+            if (atualizarAposExclusao) {
+                atualizarAposExclusao = false;
+                listarRegistros();
+            } else if (focoResultado) {
+                focoResultado.focus();
+            }
+        }
+
+        function abrirFiltros(restaurar = true) {
+            if (!sessaoPronta || carregando || enviando) {
+                return;
+            }
+            if (restaurar) {
+                formFiltros.reset();
+                limparErros(formFiltros);
+                for (const campo of camposFiltros) {
+                    if (filtrosAplicados[campo] !== undefined) {
+                        document.getElementById(campo).value = filtrosAplicados[campo];
+                    }
+                }
+            }
+            filtros_overlay.style.display = 'flex';
+            conteudo.inert = true;
+            document.getElementById('botao-fechar-filtros').focus();
+        }
+
+        function fecharFiltros() {
+            if (carregando || enviando) {
+                return;
+            }
+            filtros_overlay.style.display = 'none';
+            conteudo.inert = false;
+            document.getElementById('botao-filtrar').focus();
+        }
+
+        function montarParametros() {
+            const parametros = new URLSearchParams(filtrosAplicados);
+            const nome = document.getElementById('nome').value.trim();
+            if (nome !== '') {
+                parametros.set('nome', nome);
+            }
+            return parametros;
+        }
+
+        function mostrarMensagemTabela(mensagem) {
+            menuTabela.fechar();
+            corpo.replaceChildren();
+            const linha = document.createElement('tr');
+            linha.id = 'linha-vazia';
+            const coluna = document.createElement('td');
+            coluna.colSpan = document.getElementById('cabecalho-tabela').children.length;
+            coluna.textContent = mensagem;
+            linha.appendChild(coluna);
+            corpo.appendChild(linha);
+        }
+
+        function renderizarTabela(registros) {
+            menuTabela.fechar();
+            corpo.replaceChildren();
+            if (registros.length === 0) {
+                mostrarMensagemTabela('Nenhum orçamento encontrado.');
+                return;
+            }
+            for (const registro of registros) {
+                const valores = [registro.id_orcamento,  registro.nome, registro.id_conta, registro.id_categoria,
+                    formatarValor(registro.valor_atual), formatarValor(registro.valor_orcamento), registro.tipo_periodo,
+                    formatarData(registro.periodo_inicio), formatarData(registro.periodo_fim)];
+                const linha = document.createElement('tr');
+                for (const valor of valores) {
+                    const coluna = document.createElement('td');
+                    if (valor === null || valor === undefined || valor === '') {
+                        coluna.textContent = '---';
+                    } else {
+                        coluna.textContent = valor;
+                    }
+                    coluna.title = coluna.textContent;
+                    linha.appendChild(coluna);
+                }
+                const acoes = document.createElement('div');
+                acoes.className = 'acoes-tabela';
+                const botaoVer = document.createElement('button');
+                botaoVer.type = 'button';
+                botaoVer.textContent = 'Ver';
+                botaoVer.addEventListener('click', () => {
+                    const parametros = new URLSearchParams({ id_orcamento: registro.id_orcamento });
+                    
+                    window.location.href = `/tela-principal/editar-orcamento?${parametros}`;
+                });
+                const botaoExcluir = document.createElement('button');
+                botaoExcluir.type = 'button';
+                botaoExcluir.textContent = 'Excluir';
+                botaoExcluir.className = 'botao-excluir';
+                botaoExcluir.addEventListener('click', () => confirmarDelete(registro, linha));
+                
+                acoes.append(botaoVer, botaoExcluir);
+                menuTabela.registrar(linha, acoes);
+                corpo.appendChild(linha);
+            }
+        }
+
+        async function listarRegistros() {
+            if (!sessaoPronta || carregando || enviando) {
+                return;
+            }
+            carregando = true;
+            limparErros(form);
+            limparErros(formFiltros);
+            atualizarCampos();
+            mostrarMensagemTabela('Carregando...');
+            try {
+                const parametros = montarParametros();
+                let url = '/usuario/listar-orcamentos';
+                if (parametros.size > 0) {
+                    url += `?${parametros}`;
+                }
+                const resposta = await fetch(url, { credentials: 'include' });
+                const dados = await resposta.json();
+                if (resposta.ok) {
+                    if (!Array.isArray(dados)) {
+                        throw new Error('Resposta inesperada.');
+                    }
+                    renderizarTabela(dados);
+                } else {
+                    mostrarMensagemTabela('Não foi possível consultar os orçamentos. Use Pesquisar para tentar novamente.');
+                    const mensagem = mensagemResposta(resposta, dados);
+                    if (Array.isArray(dados.erros)) {
+                        // Abre os filtros antes de mostrar os erros dos respectivos campos.
+                        for (const erro of dados.erros) {
+                            if (camposFiltros.includes(erro.campo)) {
+                                carregando = false;
+                                abrirFiltros(false);
+                                mostrarErrosValidacao([erro], formFiltros);
+                            } else {
+                                mostrarErrosValidacao([erro], form);
+                            }
+                        }
+                    } else {
+                        MostrarResultado_Overlay(0, mensagem);
+                    }
+                }
+            } catch {
+                mostrarMensagemTabela('Não foi possível carregar os orçamentos.');
+                MostrarResultado_Overlay(0, 'Falha de comunicação. Use Pesquisar para tentar novamente.');
+            } finally {
+                carregando = false;
+                atualizarCampos();
+            }
+        }
+
+        function confirmarDelete(registro, botao) {
+            if (!sessaoPronta || carregando || enviando) {
+                return;
+            }
+            exclusaoPendente = registro;
+            botaoExclusao = botao;
+            limparErros(exclusao_overlay);
+            document.getElementById('exclusao-id_orcamento').value = registro.id_orcamento;
+            
+            document.getElementById('titulo-exclusao').textContent = `Tem certeza que deseja excluir o orçamento “${registro.nome}”?`;
+            exclusao_overlay.style.display = 'flex';
+            conteudo.inert = true;
+            document.getElementById('botao-cancelar-exclusao').focus();
+        }
+
+        function cancelarExclusao() {
+            if (enviando) {
+                return;
+            }
+            exclusaoPendente = null;
+            exclusao_overlay.style.display = 'none';
+            conteudo.inert = false;
+            if (botaoExclusao) {
+                botaoExclusao.focus();
+            }
+        }
+
+        async function excluirRegistro() {
+            if (!sessaoPronta || enviando || !exclusaoPendente) {
+                return;
+            }
+            enviando = true;
+            limparErros(exclusao_overlay);
+            atualizarCampos();
+            try {
+                const resposta = await fetch(`/usuario/deletar-orcamento/${encodeURIComponent(exclusaoPendente.id_orcamento)}`, {
+                    method: 'DELETE', credentials: 'include'
+                });
+                const dados = await resposta.json();
+                if (resposta.ok) {
+                    exclusaoPendente = null;
+                    exclusao_overlay.style.display = 'none';
+                    atualizarAposExclusao = true;
+                    MostrarResultado_Overlay(1, dados.mensagem);
+                } else {
+                    const mensagem = mensagemResposta(resposta, dados);
+                    if (Array.isArray(dados.erros)) {
+                        mostrarErrosValidacao(dados.erros, exclusao_overlay);
+                    } else {
+                        MostrarResultado_Overlay(0, mensagem);
+                    }
+                }
+            } catch {
+                MostrarResultado_Overlay(0, 'Não foi possível confirmar a exclusão. Consulte a listagem antes de tentar novamente.');
+            } finally {
+                enviando = false;
+                atualizarCampos();
+            }
+        }
+
+        form.addEventListener('submit', async evento => {
+            evento.preventDefault();
+            await listarRegistros();
+        });
+        formFiltros.addEventListener('submit', async evento => {
+            evento.preventDefault();
+            if (carregando || enviando) {
+                return;
+            }
+            filtrosAplicados = {};
+            for (const campo of camposFiltros) {
+                const valor = document.getElementById(campo).value.trim();
+                if (valor !== '') {
+                    filtrosAplicados[campo] = valor;
+                }
+            }
+            fecharFiltros();
+            await listarRegistros();
+        });
+        document.getElementById('botao-limpar-filtros').addEventListener('click', async () => {
+            filtrosAplicados = {};
+            form.reset();
+            formFiltros.reset();
+            fecharFiltros();
+            await listarRegistros();
+        });
+        document.getElementById('botao-filtrar').addEventListener('click', () => abrirFiltros());
+        document.getElementById('botao-fechar-filtros').addEventListener('click', fecharFiltros);
+        document.getElementById('botao-cancelar-exclusao').addEventListener('click', cancelarExclusao);
+        document.getElementById('botao-confirmar-exclusao').addEventListener('click', excluirRegistro);
+        for (const overlay of [filtros_overlay, exclusao_overlay]) {
+            overlay.addEventListener('keydown', evento => {
+                if (evento.key === 'Escape') {
+                    if (overlay === filtros_overlay) {
+                        fecharFiltros();
+                    } else {
+                        cancelarExclusao();
+                    }
+                }
+                if (evento.key === 'Tab') {
+                    const campos = Array.from(overlay.querySelectorAll('button:not(:disabled), input:not(:disabled), select:not(:disabled)'));
+                    const primeiro = campos[0];
+                    const ultimo = campos[campos.length - 1];
+                    if (evento.shiftKey && document.activeElement === primeiro) {
+                        evento.preventDefault();
+                        ultimo.focus();
+                    } else if (!evento.shiftKey && document.activeElement === ultimo) {
+                        evento.preventDefault();
+                        primeiro.focus();
+                    }
+                }
+            });
+        }
+        for (const formulario of [form, formFiltros]) {
+            formulario.addEventListener('input', evento => {
+                MostrarErro(`erro-${evento.target.name}`, '');
+                evento.target.removeAttribute('aria-invalid');
+            });
+        }
+
+        async function iniciarPagina() {
+            const usuario = await protegerPagina();
+            if (!usuario) {
+                return;
+            }
+            sessaoPronta = true;
+            conteudo.hidden = false;
+            document.getElementById('nome-usuario').textContent = usuario.nome.slice(0, 8);
+            atualizarSaldoUsuario(usuario.id_usuario);
+            await listarRegistros();
+        }
+        iniciarPagina();
+    </script>
+</body>
+</html>
