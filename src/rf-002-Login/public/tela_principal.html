@@ -5,9 +5,25 @@
     <meta charset="UTF-8">
     <link rel="icon" type="image/png" href="/CashLand%20emerald%20C%20icon.png">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Início — CashLand</title>
+    <title>Dashboard — CashLand</title>
     <link rel="stylesheet" href="/template.css">
     <script src="/menu-superior.js" defer></script>
+    <style>
+        #titulo-dashboard {
+            width: 100%;
+            max-width: 1800px;
+            margin: 0 auto;
+        }
+        #titulo-orcamentos { margin-bottom: 16px; }
+        #tabela-orcamentos .coluna-ver { width: 84px; }
+        #tabela-orcamentos td:nth-child(2) {
+            white-space: normal;
+            overflow-wrap: anywhere;
+        }
+        #tabela-orcamentos .orcamento-verde td { background-color: #d9efdf; }
+        #tabela-orcamentos .orcamento-amarelo td { background-color: #fff1bd; }
+        #tabela-orcamentos .orcamento-vermelho td { background-color: #f8d7da; }
+    </style>
 </head>
 
 <body>
@@ -72,8 +88,26 @@
                 </form>
             </div>
         </div>
-        <div id="container-conteudo">
-
+        <div id="container-conteudo" class="pagina-listagem">
+            <h2 id="titulo-dashboard">Dashboard</h2>
+            <section id="div-tabela" tabindex="0" aria-labelledby="titulo-orcamentos">
+                <h3 id="titulo-orcamentos">Orçamentos atuais</h3>
+                <table id="tabela-orcamentos" class="tabela-listagem" aria-labelledby="titulo-orcamentos">
+                    <thead>
+                        <tr>
+                            <th scope="col" class="coluna-ver">Ver</th>
+                            <th scope="col">Nome do orçamento</th>
+                            <th scope="col">Valor atual</th>
+                            <th scope="col">Valor do orçamento</th>
+                            <th scope="col">Início do período</th>
+                            <th scope="col">Fim do período</th>
+                        </tr>
+                    </thead>
+                    <tbody id="corpo-orcamentos" aria-live="polite">
+                        <tr><td colspan="6">Carregando orçamentos atuais...</td></tr>
+                    </tbody>
+                </table>
+            </section>
         </div>
     </div>
 
@@ -166,10 +200,97 @@
                 window.location.href = `/tela-admin/editar-usuarios?id=${data.id_usuario}`
             }
         }
+        function formatarValor(valor) {
+            return Number(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        }
+
+        function formatarData(valor) {
+            const [ano, mes, dia] = valor.split('-');
+            return `${dia}/${mes}/${ano}`;
+        }
+
+        function mostrarMensagemOrcamentos(mensagem) {
+            const corpo = document.getElementById('corpo-orcamentos');
+            const linha = document.createElement('tr');
+            const coluna = document.createElement('td');
+            coluna.colSpan = 6;
+            coluna.textContent = mensagem;
+            linha.appendChild(coluna);
+            corpo.replaceChildren(linha);
+        }
+
+        function renderizarOrcamentos(registros) {
+            const corpo = document.getElementById('corpo-orcamentos');
+            corpo.replaceChildren();
+            if (registros.length === 0) {
+                mostrarMensagemOrcamentos('Nenhum orçamento atual.');
+                return;
+            }
+            for (const registro of registros) {
+                const linha = document.createElement('tr');
+                // Os valores da API têm duas casas decimais; compare centavos inteiros.
+                const valorAtual = Math.round(Number(registro.valor_atual) * 100);
+                const valorOrcamento = Math.round(Number(registro.valor_orcamento) * 100);
+                const valorRestante = valorOrcamento - valorAtual;
+                if (valorRestante < 0) {
+                    linha.className = 'orcamento-vermelho';
+                } else if (valorRestante < 10000) {
+                    linha.className = 'orcamento-amarelo';
+                } else {
+                    linha.className = 'orcamento-verde';
+                }
+
+                const colunaVer = document.createElement('td');
+                const botaoVer = document.createElement('button');
+                botaoVer.type = 'button';
+                botaoVer.textContent = 'ver';
+                botaoVer.addEventListener('click', () => {
+                    const parametros = new URLSearchParams({ id_orcamento: registro.id_orcamento });
+                    window.location.href = `/tela-principal/editar-orcamento?${parametros}`;
+                });
+                colunaVer.appendChild(botaoVer);
+                linha.appendChild(colunaVer);
+
+                const valores = [registro.nome, formatarValor(registro.valor_atual),
+                    formatarValor(registro.valor_orcamento), formatarData(registro.periodo_inicio),
+                    formatarData(registro.periodo_fim)];
+                for (const valor of valores) {
+                    const coluna = document.createElement('td');
+                    coluna.textContent = valor;
+                    coluna.title = coluna.textContent;
+                    linha.appendChild(coluna);
+                }
+                corpo.appendChild(linha);
+            }
+        }
+
+        async function carregarOrcamentos() {
+            mostrarMensagemOrcamentos('Carregando orçamentos atuais...');
+            try {
+                const hoje = new Intl.DateTimeFormat('en-CA', {
+                    timeZone: 'America/Sao_Paulo',
+                    year: 'numeric', month: '2-digit', day: '2-digit'
+                }).format(new Date());
+                const parametros = new URLSearchParams({ periodo_inicio: hoje, periodo_fim: hoje });
+                const resposta = await fetch(`/usuario/listar-orcamentos?${parametros}`, { credentials: 'include' });
+                if (!resposta.ok) {
+                    throw new Error('Não foi possível consultar os orçamentos.');
+                }
+                const registros = await resposta.json();
+                if (!Array.isArray(registros)) {
+                    throw new Error('Resposta inesperada.');
+                }
+                renderizarOrcamentos(registros);
+            } catch {
+                mostrarMensagemOrcamentos('Não foi possível consultar os orçamentos. Recarregue a página para tentar novamente.');
+            }
+        }
+
         protegerPagina().then(usuario => {
             if (!usuario) return;
             document.getElementById('nome-usuario').textContent = usuario.nome.slice(0, 8);
             atualizarSaldoUsuario(usuario.id_usuario);
+            carregarOrcamentos();
         });
 
         document.getElementById("meuForm-Logout").addEventListener("submit", async (e) => {
