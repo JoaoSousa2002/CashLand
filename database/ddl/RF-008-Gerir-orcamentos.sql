@@ -4,6 +4,7 @@ create table public.orcamentos (
   id_categoria integer null,
   id_usuario integer not null,
   nome character varying not null,
+  nome_personalizado boolean not null default false,
   descricao text null,
   valor_atual numeric(12, 2) not null default 0,
   valor_orcamento numeric(12, 2) not null,
@@ -13,7 +14,6 @@ create table public.orcamentos (
   data_criacao timestamp with time zone not null default CURRENT_TIMESTAMP,
   data_atualizacao timestamp with time zone not null default CURRENT_TIMESTAMP,
   constraint pk_orcamentos primary key (id_orcamento),
-  constraint uq_orcamentos_nome unique (nome),
   constraint fk_orcamentos_categoria foreign KEY (id_categoria) references categorias (id_categoria) on delete CASCADE,
   constraint fk_orcamentos_conta foreign KEY (id_conta) references contas_bancarias (id_conta) on delete CASCADE,
   constraint fk_orcamentos_usuario foreign KEY (id_usuario) references usuarios (id_usuario) on delete CASCADE,
@@ -33,6 +33,12 @@ create table public.orcamentos (
       )::date
     )
   ),
+  constraint ck_orcamentos_nome_personalizado check (
+    (
+      (not nome_personalizado)
+      or (length(btrim((nome)::text)) between 1 and 100)
+    )
+  ),
   constraint ck_orcamentos_limite check ((valor_orcamento > (0)::numeric)),
   constraint ck_orcamentos_tipo_periodo check (
     (
@@ -49,6 +55,8 @@ create table public.orcamentos (
   ),
   constraint ck_orcamentos_valor_atual check ((valor_atual >= (0)::numeric))
 ) TABLESPACE pg_default;
+
+create unique INDEX IF not exists uq_orcamentos_usuario_nome on public.orcamentos using btree (id_usuario, lower((nome)::text)) TABLESPACE pg_default;
 
 create index IF not exists idx_orcamentos_categoria on public.orcamentos using btree (id_categoria) TABLESPACE pg_default;
 
@@ -121,6 +129,7 @@ BEGIN
             USING ERRCODE = '23514';
     END IF;
 
+    -- Os vínculos são validados sempre, inclusive com nome personalizado.
     IF NEW.id_conta IS NOT NULL THEN
         SELECT c.nome_conta INTO v_nome_vinculo
         FROM public.contas_bancarias AS c
@@ -145,6 +154,15 @@ BEGIN
         v_nome := v_nome || '+' || v_nome_vinculo || '#' || NEW.id_categoria;
     END IF;
 
+    -- Nome definido pelo usuário: mantém o texto informado, sem espaços nas pontas.
+    -- Marcado como personalizado mas vazio volta a ser gerado.
+    IF COALESCE(NEW.nome_personalizado, FALSE) AND btrim(COALESCE(NEW.nome, '')) <> '' THEN
+        NEW.nome := btrim(NEW.nome);
+        NEW.nome_personalizado := TRUE;
+        RETURN NEW;
+    END IF;
+    NEW.nome_personalizado := FALSE;
+
     CASE NEW.tipo_periodo
         WHEN 'Semanal' THEN
             IF DATE_TRUNC('month', NEW.periodo_inicio::TIMESTAMP)
@@ -161,7 +179,7 @@ BEGIN
             v_periodo := TO_CHAR(NEW.periodo_inicio, 'YYYY');
     END CASE;
 
-    -- Regera inclusive nos UPDATEs para impedir atribuição direta de nome.
+    -- Nome automático: regerado inclusive nos UPDATEs, para acompanhar os vínculos.
     NEW.nome := v_nome || ' [' || v_periodo || ']';
     RETURN NEW;
 END;

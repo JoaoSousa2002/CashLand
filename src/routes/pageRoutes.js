@@ -20,7 +20,7 @@ router.get('/resetar-senha', (req, res) => {
 });
 
 router.get('/tela-principal', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public/tela_principal.html'));
+    res.sendFile(path.join(__dirname, '../rf-009-Dashboard/public/tela_principal.html'));
 });
 
 router.get('/tela-principal/editar-usuario', (req, res) => {

@@ -4,7 +4,7 @@ import { verificarContaBancaria, verificarCategoria } from '../validacoes/valida
 import { validarPeriodoOrcamento } from '../validacoes/orcamentos.js';
 
 export async function criarOrcamento(req, res) {
-    const { id_conta, id_categoria, descricao, valor_orcamento, tipo_periodo, periodo_inicio } = req.body;
+    const { nome, id_conta, id_categoria, descricao, valor_orcamento, tipo_periodo, periodo_inicio } = req.body;
     const id_usuario = req.usuario.id_usuario;
     const inicio = validarPeriodoOrcamento(tipo_periodo, periodo_inicio, res);
     if (inicio === null) {
@@ -31,10 +31,17 @@ export async function criarOrcamento(req, res) {
         }
     }
 
-    // Nome, fim do período, totais e datas são preenchidos pelos triggers.
+    // Fim do período, totais e datas são preenchidos pelos triggers. O nome também,
+    // exceto quando o usuário informa um nome próprio.
+    const nomeInformado = {};
+    if (nome) {
+        nomeInformado.nome = nome;
+        nomeInformado.nome_personalizado = true;
+    }
     const { data: criado, error: erroCriaOrcamento } = await supabase
         .from('orcamentos')
         .insert({
+            ...nomeInformado,
             id_usuario: id_usuario,
             id_conta: id_conta,
             id_categoria: id_categoria,
@@ -106,7 +113,7 @@ export async function listarOrcamentos(req, res) {
 }
 
 export async function editarOrcamento(req, res) {
-    const { id_orcamento, id_conta, id_categoria, descricao, valor_orcamento, tipo_periodo, periodo_inicio } = req.body;
+    const { id_orcamento, nome, id_conta, id_categoria, descricao, valor_orcamento, tipo_periodo, periodo_inicio } = req.body;
     const id_usuario = req.usuario.id_usuario;
 
     const { data: consultaOrcamento, error: erroConsulta } = await supabase
@@ -183,6 +190,15 @@ export async function editarOrcamento(req, res) {
     }
     if (id_categoria !== undefined) {
         dados.id_categoria = id_categoria;
+    }
+    // Nome informado passa a ser personalizado; vazio ou null restaura o nome gerado pelo banco.
+    if (nome !== undefined) {
+        if (nome === null || nome === '') {
+            dados.nome_personalizado = false;
+        } else {
+            dados.nome = nome;
+            dados.nome_personalizado = true;
+        }
     }
     if (descricao !== undefined) {
         dados.descricao = descricao;

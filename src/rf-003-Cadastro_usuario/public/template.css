@@ -1,21 +1,70 @@
+/* =============================================================================
+   CashLand — folha de estilos compartilhada
+   -----------------------------------------------------------------------------
+   Todas as telas carregam este arquivo. Os nomes das variáveis antigas
+   (--fundo, --superficie, --borda, --foco, --texto, --texto-suave, --sucesso,
+   --erro, --raio, --sombra) foram mantidos porque os estilos internos de cada
+   página os utilizam. As variáveis novas (--primaria, --aviso, etc.) completam
+   o sistema de design: cores, tipografia, espaçamentos e componentes.
+   ============================================================================= */
+
 :root {
-    --fundo: #cadaf2;
+    /* Marca: o verde esmeralda do ícone do CashLand. */
+    --primaria: #0e9f55;
+    --primaria-escura: #0b7d43;
+    --primaria-suave: #e4f6ec;
+    --primaria-contraste: #ffffff;
+
+    /* Neutros */
+    --fundo: #f3f6f4;
+    --fundo-suave: #eaefec;
     --superficie: #ffffff;
-    --borda: #ccc;
-    --foco: #4a90d9;
-    --texto: #222;
-    --texto-suave: #596575;
-    --sucesso: #277335;
-    --erro: #a00202;
-    --raio: 12px;
-    --sombra: 0 4px 12px rgba(0, 0, 0, 0.1);
+    --superficie-elevada: #ffffff;
+    --borda: #dfe6e2;
+    --borda-forte: #c5d0ca;
+    --texto: #14201a;
+    --texto-suave: #5c6b63;
+    --texto-fraco: #8a978f;
+
+    /* Semânticas */
+    --sucesso: #0b7d43;
+    --sucesso-suave: #e4f6ec;
+    --erro: #b42318;
+    --erro-suave: #fdecea;
+    --aviso: #9a6700;
+    --aviso-suave: #fff4d6;
+    --info: #1d5fb4;
+    --info-suave: #e6eefb;
+    --foco: #0e9f55;
+
+    /* Série de dados (validadas para daltonismo) */
+    --serie-entrada: #0e9f55;
+    --serie-saida: #e8590c;
+    --serie-neutra: #2a78d6;
+
+    /* Forma */
+    --raio: 14px;
+    --raio-pequeno: 10px;
+    --raio-grande: 20px;
+    --sombra: 0 1px 2px rgba(20, 32, 26, 0.05), 0 10px 30px -18px rgba(20, 32, 26, 0.28);
+    --sombra-flutuante: 0 12px 40px -12px rgba(20, 32, 26, 0.35);
+    --fonte: "Inter", "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+
+    /* Estrutura */
+    --largura-sidebar: 256px;
+    --altura-topo: 64px;
+    --altura-barra-inferior: 64px;
 }
 
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: Arial, sans-serif;
+    font-family: var(--fonte);
+}
+
+html {
+    -webkit-text-size-adjust: 100%;
 }
 
 body {
@@ -23,466 +72,122 @@ body {
     color: var(--texto);
     min-height: 100vh;
     line-height: 1.5;
+    font-size: 15px;
+    -webkit-font-smoothing: antialiased;
 }
 
-.container,
-#container-conteudo {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 24px;
-    min-width: 0;
+/* -----------------------------------------------------------------------------
+   Tipografia
+   ----------------------------------------------------------------------------- */
+h1, h2, h3, h4 {
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+    letter-spacing: -0.01em;
 }
 
-.container,
-#container {
-    min-height: 100vh;
-}
-
-#container {
-    display: flex;
-    flex-direction: column;
-}
-
-#container-conteudo {
-    flex: 1;
-}
-
-#container-conteudo>div {
-    max-width: 100%;
-}
-
-.cartao,
-.loading-box {
-    background-color: var(--superficie);
-    border-radius: var(--raio);
-    box-shadow: var(--sombra);
-}
-
-.cartao {
-    padding: 40px;
-    width: 420px;
-    max-width: 100%;
-}
-
-.cartao form {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-#id-Titulo {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 12px;
-    margin-bottom: 20px;
-}
-
-h1 {
-    font-size: 32px;
-}
-
-h2 {
-    font-size: 24px;
-}
-
-h3 {
-    font-size: 18px;
-}
+h1 { font-size: 26px; font-weight: 700; }
+h2 { font-size: 22px; font-weight: 700; }
+h3 { font-size: 17px; font-weight: 650; }
+h4 { font-size: 15px; font-weight: 600; }
 
 a {
-    color: #285f9d;
+    color: var(--primaria-escura);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
 }
 
 a:hover {
-    color: #1b426e;
+    color: var(--primaria);
 }
 
 label {
     display: block;
-    font-weight: bold;
+    font-weight: 600;
+    font-size: 13.5px;
+    color: var(--texto-suave);
 }
 
-.input-dados {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 5px;
+.texto-auxiliar {
+    color: var(--texto-suave);
+    font-size: 13.5px;
 }
 
-.cartao form br {
-    display: none;
+[hidden] {
+    display: none !important;
 }
 
+/* -----------------------------------------------------------------------------
+   Campos e botões
+   ----------------------------------------------------------------------------- */
 input,
 button,
 select,
 textarea {
     min-width: 0;
     max-width: 100%;
-    padding: 10px;
-    border: 1px solid var(--borda);
-    border-radius: 8px;
+    padding: 10px 12px;
+    border: 1px solid var(--borda-forte);
+    border-radius: var(--raio-pequeno);
     font-size: 14px;
+    line-height: 1.4;
     color: inherit;
+    background-color: var(--superficie);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
 }
 
-input:not([type="submit"]):not([type="button"]),
+input:not([type="submit"]):not([type="button"]):not([type="checkbox"]):not([type="radio"]),
 select,
 textarea {
     width: 100%;
-    background-color: var(--superficie);
 }
 
-input:disabled {
-    background-color: #eee !important;
-    color: #555;
+select {
+    appearance: none;
+    -webkit-appearance: none;
+    padding-right: 36px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%235c6b63' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+}
+
+select[multiple],
+select[size]:not([size="1"]) {
+    background-image: none;
+    padding-right: 12px;
+}
+
+input::placeholder,
+textarea::placeholder {
+    color: var(--texto-fraco);
+}
+
+input:disabled,
+select:disabled,
+textarea:disabled {
+    background-color: var(--fundo-suave) !important;
+    color: var(--texto-suave);
+    border-color: var(--borda);
 }
 
 input:focus,
-button:focus-visible,
 select:focus,
-textarea:focus,
-a:focus-visible {
+textarea:focus {
+    outline: none;
+    border-color: var(--foco);
+    box-shadow: 0 0 0 3px rgba(14, 159, 85, 0.18);
+}
+
+button:focus-visible,
+a:focus-visible,
+[tabindex]:focus-visible {
     outline: 2px solid var(--foco);
     outline-offset: 2px;
-    border-color: var(--foco);
-    box-shadow: 0 0 0 2px rgba(74, 144, 217, 0.2);
 }
 
-input[type="submit"],
-input[type="button"],
-button {
-    background-color: #f3f3f3;
-    cursor: pointer;
-}
-
-input[type="submit"]:hover,
-input[type="button"]:hover,
-button:hover {
-    background-color: #e4edf9;
-}
-
-#botao-Voltar {
-    padding: 6px 12px;
-}
-
-#input-submit {
-    display: flex;
-    justify-content: center;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin-top: 12px;
-}
-
-#input-submit input {
-    min-width: 100px;
-}
-
-.campo-senha {
-    position: relative;
-    width: 100%;
-    min-width: 0;
-    /* bottom: 10px; */
-}
-
-.campo-senha input {
-    padding-right: 44px;
-}
-
-.campo-senha button {
-    position: absolute;
-    right: 8px;
-    top: 50%;
-    transform: translateY(-50%);
-    border: none;
-    background: none;
-    padding: 2px;
-    font-size: 18px;
-}
-
-.campo-senha-reset input {
-    padding-right: 124px;
-}
-
-.campo-senha-reset button {
-    border: 1px solid var(--borda);
-    background-color: #f3f3f3;
-    padding: 5px 8px;
-    font-size: 13px;
-}
-
-.campo-senha-reset button:hover {
-    background-color: #e4edf9;
-}
-
-.campo-senha-reset button:active {
-    background-color: #cadaf2;
-}
-
-/* Os erros são inseridos pelos scripts com margens próprias. */
-[id^="erro-"] h5 {
-    margin-left: 0 !important;
-    overflow-wrap: anywhere;
-}
-
-#div-superior {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 16px;
-    width: 100%;
-    padding: 12px 24px;
-    background-color: var(--superficie);
-    box-shadow: var(--sombra);
-}
-
-#div-nome-sistema {
-    flex-shrink: 0;
-}
-
-#div-nome-sistema a {
-    color: inherit;
-    text-decoration: none;
-}
-
-#div-nav {
-    position: relative;
-    flex: 1;
-    min-width: 0;
-}
-
-#botao-opcoes {
-    padding: 4px;
-    font-size: 19px;
-    border: none;
-    background-color: transparent;
-    color: inherit;
-    text-align: left;
-    line-height: 1.5;
-}
-
-#lista-opcoes {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    z-index: 10;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    width: 260px;
-    max-width: calc(100vw - 32px);
-    overflow-y: auto;
-    padding: 12px;
-    border: 1px solid var(--borda);
-    border-radius: var(--raio);
-    background-color: var(--superficie);
-    box-shadow: var(--sombra);
-}
-
-#lista-opcoes a {
-    padding: 8px;
-    border-radius: 8px;
-    text-decoration: none;
-}
-
-#lista-opcoes a:hover,
-#lista-opcoes a:focus-visible {
-    background-color: #e4edf9;
-}
-
-#div-nome-usuario {
-    overflow-wrap: anywhere;
-    min-width: 0;
-}
-
-#div-resumo-usuario {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    min-width: 0;
-}
-
-#div-saldo-usuario {
-    position: relative;
-    min-width: 0;
-}
-
-#botao-saldo-usuario {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    padding: 4px;
-    border: none;
-    background-color: transparent;
-    color: inherit;
-    text-align: left;
-    line-height: 1.5;
-}
-
-#div-saldo-usuario small {
-    color: var(--texto-suave);
-}
-
-#saldo-usuario {
-    white-space: nowrap;
-}
-
-#nome-conta-saldo {
-    max-width: 160px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-#lista-contas-saldo {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    z-index: 10;
-    width: 260px;
-    max-width: calc(100vw - 32px);
-    padding: 12px;
-    border: 1px solid var(--borda);
-    border-radius: var(--raio);
-    background-color: var(--superficie);
-    box-shadow: var(--sombra);
-}
-
-#conta-saldo-usuario {
-    width: 100%;
-}
-
-#div-usuario {
-    display: flex;
-    align-items: center;
-}
-
-#div-usuario a {
-    display: flex;
-    cursor: pointer;
-}
-
-#div-usuario img {
-    width: 40px;
-    height: 40px;
-    object-fit: contain;
-}
-
-#form-logout {
-    display: flex;
-    align-items: center;
-}
-
-.loading-overlay {
-    display: none;
-    position: fixed;
-    inset: 0;
-    padding: 20px;
-    background-color: rgba(0, 0, 0, 0.5);
-    z-index: 9999;
-    justify-content: center;
-    align-items: center;
-}
-
-.loading-box {
-    display: flex;
-    justify-content: center;
-    padding: 40px;
-    width: 400px;
-    max-width: 100%;
-    max-height: calc(100dvh - 40px);
-    overflow: auto;
-    font-size: 16px;
-    overflow-wrap: anywhere;
-}
-
-.loading-box>* {
-    min-width: 0;
-    max-width: 100%;
-}
-
-#div-resultado-overlay {
-    text-align: center;
-    gap: 20px;
-}
-
-.spinning-wheel {
-    flex-shrink: 0;
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
-    border: 4px solid #f3f3f3;
-    border-top-color: #000;
-    animation: spin 1s linear infinite;
-    margin-left: 20px;
-}
-
-@keyframes spin {
-    to {
-        transform: rotate(360deg);
-    }
-}
-
-.cartao-erro {
-    text-align: center;
-}
-
-.cartao-erro p {
-    margin: 16px 0;
-}
-
-@media (max-width: 600px) {
-
-    .container,
-    #container-conteudo {
-        padding: 16px;
-    }
-
-    .cartao,
-    .loading-box {
-        padding: 24px;
-    }
-
-    #div-superior {
-        padding: 12px 16px;
-        gap: 12px;
-    }
-
-    #div-nav {
-        flex-basis: 100%;
-        order: 1;
-    }
-
-    #div-nav:has(nav:empty) {
-        display: none;
-    }
-
-    #div-nome-usuario {
-        flex: 1;
-    }
-}
-
-
-/* Componentes comuns a todas as telas. */
-[hidden] {
-    display: none !important;
-}
-
-h1, h2, h3, h4 {
-    line-height: 1.25;
-    overflow-wrap: anywhere;
-}
-
-.cartao > h2,
-.cartao > .texto-auxiliar {
-    margin-bottom: 20px;
-}
-
-.cartao form > h4 {
-    margin-bottom: 8px;
+input[aria-invalid="true"],
+select[aria-invalid="true"],
+textarea[aria-invalid="true"] {
+    border-color: var(--erro);
 }
 
 textarea {
@@ -497,51 +202,138 @@ input[type="color"] {
     flex-shrink: 0;
 }
 
+input[type="checkbox"],
+input[type="radio"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--primaria);
+}
+
+/* Botão padrão: neutro, com borda. */
+input[type="submit"],
+input[type="button"],
+button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 16px;
+    font-weight: 600;
+    color: var(--texto);
+    background-color: var(--superficie);
+    border: 1px solid var(--borda-forte);
+    cursor: pointer;
+    white-space: nowrap;
+    user-select: none;
+}
+
+input[type="submit"]:hover:not(:disabled),
+input[type="button"]:hover:not(:disabled),
+button:hover:not(:disabled) {
+    background-color: var(--fundo-suave);
+    border-color: var(--borda-forte);
+}
+
 button:disabled,
 input[type="submit"]:disabled,
 input[type="button"]:disabled {
     cursor: not-allowed;
-    opacity: 0.6;
+    opacity: 0.55;
 }
 
+/* Botão principal: verde da marca. */
 input[type="submit"],
 .btn-primary,
-#botao-nova-categoria {
-    background-color: var(--fundo);
-    font-weight: 600;
+#botao-nova-categoria,
+#botao-nova-conta,
+#botao-nova-meta,
+#botao-novo-orcamento,
+#botao-Enviar {
+    background-color: var(--primaria);
+    border-color: var(--primaria);
+    color: var(--primaria-contraste);
 }
 
 input[type="submit"]:hover:not(:disabled),
 .btn-primary:hover:not(:disabled),
-#botao-nova-categoria:hover {
-    background-color: #b3c8ea;
+#botao-nova-categoria:hover:not(:disabled),
+#botao-nova-conta:hover:not(:disabled),
+#botao-nova-meta:hover:not(:disabled),
+#botao-novo-orcamento:hover:not(:disabled),
+#botao-Enviar:hover:not(:disabled) {
+    background-color: var(--primaria-escura);
+    border-color: var(--primaria-escura);
+    color: var(--primaria-contraste);
+}
+
+/* Pesquisar nas listagens é uma ação secundária. */
+#div-form-tabela input[type="submit"] {
+    background-color: var(--superficie);
+    border-color: var(--borda-forte);
+    color: var(--texto);
+}
+
+#div-form-tabela input[type="submit"]:hover:not(:disabled) {
+    background-color: var(--fundo-suave);
+}
+
+.btn-secundario {
+    background-color: var(--primaria-suave);
+    border-color: transparent;
+    color: var(--primaria-escura);
+}
+
+.btn-secundario:hover:not(:disabled) {
+    background-color: #d3efdf;
+}
+
+.btn-fantasma,
+#botao-Voltar {
+    background-color: transparent;
+    border-color: transparent;
+    color: var(--texto-suave);
+    padding: 8px 12px;
+}
+
+.btn-fantasma:hover:not(:disabled),
+#botao-Voltar:hover:not(:disabled) {
+    background-color: var(--fundo-suave);
+    color: var(--texto);
+}
+
+.botao-excluir {
+    background-color: var(--erro-suave);
+    border-color: transparent;
+    color: var(--erro);
+}
+
+.botao-excluir:hover:not(:disabled) {
+    background-color: #f9d9d5;
+    color: var(--erro);
 }
 
 #form-logout input {
-    background-color: #f3f3f3;
-    font-weight: normal;
-}
-
-#div-nav a {
-    text-underline-offset: 4px;
-}
-
-#div-usuario a {
-    border-radius: 8px;
-}
-
-.texto-auxiliar {
+    background-color: transparent;
+    border-color: var(--borda);
     color: var(--texto-suave);
-    font-size: 14px;
+    font-weight: 600;
 }
 
-.cartao-acoes {
-    margin-top: 24px;
-    text-align: center;
+#form-logout input:hover:not(:disabled) {
+    background-color: var(--fundo-suave);
+    color: var(--texto);
 }
 
-.cartao-acoes > h2 {
-    text-align: left;
+#input-submit {
+    display: flex;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+#input-submit input {
+    min-width: 120px;
 }
 
 .acoes-formulario {
@@ -556,40 +348,66 @@ form > .acoes-formulario {
     margin-top: 12px;
 }
 
-.dialogo-conteudo,
-#div-resultado-overlay {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    gap: 20px;
+/* Campo de senha com botão interno. */
+.campo-senha {
+    position: relative;
     width: 100%;
+    min-width: 0;
 }
 
-.loading-box.dialogo-conteudo {
-    width: 400px;
+.campo-senha input {
+    padding-right: 44px;
 }
 
-.dialogo-conteudo h5,
-#div-resultado-overlay h5 {
-    font-size: 16px;
-    line-height: 1.5;
+.campo-senha button {
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    border: none;
+    background: none;
+    padding: 4px 6px;
+    font-size: 17px;
+    color: var(--texto-suave);
 }
 
-.botao-dialogo {
-    min-width: 100px;
+.campo-senha-reset input {
+    padding-right: 132px;
 }
 
+.campo-senha-reset button {
+    border: 1px solid var(--borda);
+    background-color: var(--superficie);
+    padding: 5px 10px;
+    font-size: 12.5px;
+    font-weight: 600;
+    border-radius: 8px;
+}
+
+.campo-senha-reset button:hover {
+    background-color: var(--fundo-suave);
+}
+
+/* Mensagens de erro inseridas pelos scripts. */
 [id^="erro-"] h5,
 .error-message {
     color: var(--erro);
     font-size: 13px;
+    font-weight: 500;
     line-height: 1.5;
+    margin-left: 0 !important;
+    overflow-wrap: anywhere;
 }
 
 .error-message {
     display: none;
+}
+
+.input-dados {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
 }
 
 .campos-lado-a-lado {
@@ -609,22 +427,124 @@ form > .acoes-formulario {
     gap: 10px;
 }
 
-/* Filtros e tabelas mantêm a largura ampla das listagens. */
+/* Controles segmentados definidos nas páginas (#seletor-listagem, #seletor-modalidade). */
+body [id^="seletor-"][role="radiogroup"] {
+    background-color: var(--fundo-suave);
+    border-color: transparent;
+    border-radius: var(--raio-pequeno);
+}
+
+body [id^="seletor-"][role="radiogroup"] span {
+    font-weight: 600;
+    color: var(--texto-suave);
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+body [id^="seletor-"][role="radiogroup"] input:checked + span {
+    background-color: var(--superficie);
+    color: var(--texto);
+    box-shadow: 0 1px 2px rgba(20, 32, 26, 0.12);
+}
+
+/* -----------------------------------------------------------------------------
+   Cartões e layout de conteúdo
+   ----------------------------------------------------------------------------- */
+.cartao,
+.loading-box {
+    background-color: var(--superficie);
+    border-radius: var(--raio);
+    box-shadow: var(--sombra);
+    border: 1px solid var(--borda);
+}
+
+.cartao {
+    padding: 32px;
+    width: 480px;
+    max-width: 100%;
+}
+
+.cartao form {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.cartao form br {
+    display: none;
+}
+
+.cartao > h2,
+.cartao > .texto-auxiliar {
+    margin-bottom: 20px;
+}
+
+.cartao form > h4 {
+    margin-bottom: 8px;
+}
+
+.cartao-acoes {
+    margin-top: 24px;
+    text-align: center;
+}
+
+.cartao-acoes > h2 {
+    text-align: left;
+}
+
+.cartao-erro {
+    text-align: center;
+}
+
+.cartao-erro p {
+    margin: 16px 0;
+}
+
+#id-Titulo {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+#container {
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+}
+
+#container-conteudo {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 32px 24px 48px;
+    min-width: 0;
+}
+
+#container-conteudo > div {
+    max-width: 100%;
+}
+
+/* Listagens: filtros e tabelas usam a largura total. */
 #container-conteudo.pagina-listagem {
     flex-direction: column;
     justify-content: flex-start;
     align-items: stretch;
-    gap: 24px;
+    gap: 20px;
 }
 
 #div-form-tabela,
 #div-tabela {
     width: 100%;
-    max-width: 1800px;
+    max-width: 1400px;
     margin: 0 auto;
-    padding: 24px;
+    padding: 20px 24px;
     background-color: var(--superficie);
     border-radius: var(--raio);
+    border: 1px solid var(--borda);
     box-shadow: var(--sombra);
 }
 
@@ -638,6 +558,7 @@ form > .acoes-formulario {
 
 #div-form-tabela h2 {
     flex-basis: 100%;
+    margin-bottom: 4px;
 }
 
 #div-form-tabela form {
@@ -651,19 +572,26 @@ form > .acoes-formulario {
 }
 
 #div-form-tabela label input {
-    margin-top: 5px;
+    margin-top: 6px;
 }
 
 #div-tabela {
     overflow-x: auto;
+    padding: 8px 0 4px;
 }
 
+#div-tabela > h3 {
+    padding: 12px 24px 8px;
+}
+
+/* -----------------------------------------------------------------------------
+   Tabelas
+   ----------------------------------------------------------------------------- */
 .tabela-listagem {
     width: 100%;
     min-width: 760px;
     border-collapse: collapse;
-    font-size: 0.85rem;
-    letter-spacing: 0.01em;
+    font-size: 0.875rem;
     table-layout: fixed;
 }
 
@@ -676,29 +604,35 @@ form > .acoes-formulario {
 }
 
 .tabela-listagem thead tr {
-    border-bottom: 2px solid var(--texto);
+    border-bottom: 1px solid var(--borda);
 }
 
 .tabela-listagem th {
-    padding: 12px 8px;
+    padding: 12px 16px;
     text-align: left;
     font-weight: 600;
-    font-size: 0.78rem;
+    font-size: 0.72rem;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: #444;
+    letter-spacing: 0.06em;
+    color: var(--texto-suave);
+    background-color: var(--superficie);
 }
 
 .tabela-listagem td {
-    padding: 12px 8px;
-    border-bottom: 1px solid #e8e8e8;
+    padding: 13px 16px;
+    border-bottom: 1px solid var(--borda);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+.tabela-listagem tbody tr:last-child td {
+    border-bottom: none;
 }
 
 .tabela-listagem tbody tr:hover {
-    background-color: #f7f7f7;
+    background-color: var(--fundo);
 }
 
 .tabela-listagem .th-opcoes,
@@ -706,17 +640,17 @@ form > .acoes-formulario {
     position: sticky;
     left: 0;
     z-index: 1;
-    width: 84px;
+    width: 72px;
     text-align: center;
     background-color: var(--superficie);
 }
 
 .tabela-listagem tr:hover .td-opcoes {
-    background-color: #f7f7f7;
+    background-color: var(--fundo);
 }
 
 .tabela-listagem tr.linha-menu-ativa .td-opcoes {
-    background-color: var(--fundo);
+    background-color: var(--primaria-suave);
 }
 
 .botao-opcoes-tabela {
@@ -729,9 +663,17 @@ form > .acoes-formulario {
     min-width: 24px;
     min-height: 24px;
     padding: 0;
-    border-radius: 4px;
+    border-radius: 6px;
+    border-color: transparent;
+    background-color: transparent;
     font-size: 18px;
     line-height: 1;
+    color: var(--texto-suave);
+}
+
+.botao-opcoes-tabela:hover:not(:disabled) {
+    background-color: var(--fundo-suave);
+    color: var(--texto);
 }
 
 /* Mantém 44 × 44 px de área clicável sem ampliar o visual do botão. */
@@ -753,12 +695,12 @@ form > .acoes-formulario {
 }
 
 .acoes-tabela button {
-    padding: 6px 10px;
+    padding: 6px 12px;
     font-size: 13px;
 }
 
 .tabela-listagem tbody tr.linha-menu-ativa {
-    background-color: var(--fundo);
+    background-color: var(--primaria-suave);
     outline: 2px solid var(--foco);
     outline-offset: -2px;
 }
@@ -771,41 +713,80 @@ form > .acoes-formulario {
 .menu-tabela {
     position: fixed;
     z-index: 9998;
-    width: 180px;
+    width: 190px;
     max-width: calc(100vw - 16px);
     max-height: calc(100dvh - 16px);
     overflow: auto;
-    padding: 8px;
+    padding: 6px;
     border: 1px solid var(--borda);
-    border-radius: var(--raio);
+    border-radius: var(--raio-pequeno);
     background-color: var(--superficie);
-    box-shadow: var(--sombra);
+    box-shadow: var(--sombra-flutuante);
 }
 
 .menu-tabela .acoes-tabela {
     display: flex;
     flex-direction: column;
     align-items: stretch;
+    gap: 2px;
 }
 
 .menu-tabela button {
     min-height: 44px;
     text-align: left;
+    justify-content: flex-start;
     white-space: normal;
+    border-color: transparent;
+    background-color: transparent;
 }
 
-.botao-excluir {
-    background-color: rgb(250, 176, 176);
+.menu-tabela button:hover:not(:disabled) {
+    background-color: var(--fundo-suave);
 }
 
-.botao-excluir:hover {
-    background-color: rgb(240, 156, 156);
+.menu-tabela .botao-excluir {
+    color: var(--erro);
 }
 
 #linha-vazia td {
     text-align: center;
     color: var(--texto-suave);
     white-space: normal;
+    padding: 32px 16px;
+}
+
+/* -----------------------------------------------------------------------------
+   Sobreposições, diálogos e carregamento
+   ----------------------------------------------------------------------------- */
+.loading-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    padding: 20px;
+    background-color: rgba(10, 20, 15, 0.45);
+    -webkit-backdrop-filter: blur(3px);
+    backdrop-filter: blur(3px);
+    z-index: 9999;
+    justify-content: center;
+    align-items: center;
+}
+
+.loading-box {
+    display: flex;
+    justify-content: center;
+    padding: 32px;
+    width: 420px;
+    max-width: 100%;
+    max-height: calc(100dvh - 40px);
+    overflow: auto;
+    font-size: 15px;
+    overflow-wrap: anywhere;
+    box-shadow: var(--sombra-flutuante);
+}
+
+.loading-box > * {
+    min-width: 0;
+    max-width: 100%;
 }
 
 .loading-box #form-categoria {
@@ -817,10 +798,552 @@ form > .acoes-formulario {
     max-width: 100%;
 }
 
+.dialogo-conteudo,
+#div-resultado-overlay {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 20px;
+    width: 100%;
+}
+
+.loading-box.dialogo-conteudo {
+    width: 420px;
+}
+
+.dialogo-conteudo h5,
+#div-resultado-overlay h5 {
+    font-size: 15.5px;
+    font-weight: 600;
+    line-height: 1.5;
+}
+
+.botao-dialogo {
+    min-width: 110px;
+}
+
+.confirmacao-exclusao h5 {
+    color: var(--erro);
+    margin: 0;
+}
+
+.confirmacao-exclusao p {
+    color: var(--erro);
+    margin: 0;
+    font-size: 13px;
+}
+
+.spinning-wheel {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 3px solid var(--fundo-suave);
+    border-top-color: var(--primaria);
+    animation: spin 0.8s linear infinite;
+    margin-left: 16px;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* -----------------------------------------------------------------------------
+   Telas de autenticação (login, cadastro, recuperação, 404): fundo da marca.
+   ----------------------------------------------------------------------------- */
+.container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding: 24px;
+    min-width: 0;
+    background:
+        radial-gradient(900px 500px at 10% -10%, rgba(14, 159, 85, 0.22), transparent 60%),
+        radial-gradient(700px 400px at 100% 110%, rgba(14, 159, 85, 0.16), transparent 60%),
+        var(--fundo);
+}
+
+.container .cartao {
+    padding: 40px;
+}
+
+.container #id-Titulo h1 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 28px;
+}
+
+.container #id-Titulo h1::before {
+    content: '';
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='12' fill='%230e9f55'/%3E%3Cpath d='M31.5 17.5A9.5 9.5 0 1 0 31.5 30.5' fill='none' stroke='%23fff' stroke-width='5' stroke-linecap='round'/%3E%3Cpath d='M24 9v30' stroke='%23fff' stroke-width='5' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat;
+    flex-shrink: 0;
+}
+
+.container form a {
+    font-size: 14px;
+    font-weight: 500;
+}
+
+/* -----------------------------------------------------------------------------
+   App shell: barra superior (mobile) e barra lateral (desktop)
+   ----------------------------------------------------------------------------- */
+#div-superior {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: var(--altura-topo);
+    padding: 10px 16px;
+    background-color: var(--superficie);
+    border-bottom: 1px solid var(--borda);
+    position: sticky;
+    top: 0;
+    z-index: 50;
+}
+
+#div-nome-sistema {
+    flex-shrink: 0;
+    margin-right: auto;
+}
+
+#div-nome-sistema a {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    color: inherit;
+    text-decoration: none;
+}
+
+#div-nome-sistema h1 {
+    font-size: 21px;
+    font-weight: 750;
+    letter-spacing: -0.02em;
+}
+
+.marca-logo {
+    width: 34px;
+    height: 34px;
+    flex-shrink: 0;
+}
+
+#div-nav {
+    position: relative;
+    min-width: 0;
+    order: 10;
+}
+
+#botao-opcoes {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    padding: 0;
+    border-color: transparent;
+    background-color: transparent;
+    color: var(--texto);
+    font-size: 0;
+    line-height: 1;
+}
+
+#botao-opcoes:hover:not(:disabled) {
+    background-color: var(--fundo-suave);
+}
+
+#botao-opcoes > span {
+    display: none;
+}
+
+#botao-opcoes .nav-icone {
+    width: 24px;
+    height: 24px;
+}
+
+/* Gaveta de navegação (mobile). */
+#lista-opcoes {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: auto;
+    z-index: 70;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    width: min(320px, 86vw);
+    max-width: none;
+    max-height: none !important;
+    overflow-y: auto;
+    padding: 16px 12px calc(16px + env(safe-area-inset-bottom, 0px));
+    border: none;
+    border-left: 1px solid var(--borda);
+    border-radius: 0;
+    background-color: var(--superficie);
+    box-shadow: var(--sombra-flutuante);
+    animation: deslizar-gaveta 0.18s ease-out;
+}
+
+@keyframes deslizar-gaveta {
+    from { transform: translateX(16px); opacity: 0; }
+    to { transform: none; opacity: 1; }
+}
+
+.shell-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 69;
+    background-color: rgba(10, 20, 15, 0.4);
+}
+
+.nav-titulo {
+    padding: 4px 12px 10px;
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--texto-fraco);
+}
+
+#lista-opcoes a,
+.nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 11px 12px;
+    border-radius: var(--raio-pequeno);
+    text-decoration: none;
+    color: var(--texto-suave);
+    font-weight: 550;
+    font-size: 14.5px;
+    line-height: 1.3;
+    transition: background-color 0.12s ease, color 0.12s ease;
+}
+
+#lista-opcoes a:hover,
+#lista-opcoes a:focus-visible,
+.nav-item:hover {
+    background-color: var(--fundo-suave);
+    color: var(--texto);
+}
+
+#lista-opcoes a[aria-current="page"],
+.nav-item[aria-current="page"] {
+    background-color: var(--primaria-suave);
+    color: var(--primaria-escura);
+}
+
+.nav-icone {
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.nav-separador {
+    height: 1px;
+    margin: 10px 8px;
+    background-color: var(--borda);
+}
+
+.nav-sair {
+    margin-top: auto;
+    width: 100%;
+    justify-content: flex-start;
+    border-color: transparent;
+    background-color: transparent;
+    color: var(--texto-suave);
+    gap: 12px;
+    padding: 11px 12px;
+}
+
+/* Resumo do usuário: saldo e nome. */
+#div-resumo-usuario {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+}
+
+#div-nome-usuario {
+    overflow-wrap: anywhere;
+    min-width: 0;
+}
+
+#div-nome-usuario h3 {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--texto);
+}
+
+#div-saldo-usuario {
+    position: relative;
+    min-width: 0;
+}
+
+#botao-saldo-usuario {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0;
+    padding: 6px 10px;
+    border-color: transparent;
+    background-color: var(--fundo);
+    color: inherit;
+    text-align: left;
+    line-height: 1.3;
+    border-radius: var(--raio-pequeno);
+}
+
+#botao-saldo-usuario:hover:not(:disabled) {
+    background-color: var(--fundo-suave);
+}
+
+#div-saldo-usuario small {
+    color: var(--texto-suave);
+    font-size: 11.5px;
+    font-weight: 600;
+}
+
+#saldo-usuario {
+    white-space: nowrap;
+    font-size: 15px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+#nome-conta-saldo {
+    max-width: 160px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#lista-contas-saldo {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    z-index: 80;
+    width: 260px;
+    max-width: calc(100vw - 32px);
+    padding: 12px;
+    border: 1px solid var(--borda);
+    border-radius: var(--raio-pequeno);
+    background-color: var(--superficie);
+    box-shadow: var(--sombra-flutuante);
+}
+
+#lista-contas-saldo label {
+    margin-bottom: 6px;
+}
+
+#conta-saldo-usuario {
+    width: 100%;
+}
+
+#div-usuario {
+    display: flex;
+    align-items: center;
+}
+
+#div-usuario a {
+    display: flex;
+    cursor: pointer;
+    border-radius: 50%;
+    padding: 2px;
+}
+
+#div-usuario img {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+    background-color: var(--primaria-suave);
+    padding: 6px;
+}
+
+#form-logout {
+    display: flex;
+    align-items: center;
+}
+
+.shell-usuario {
+    display: contents;
+}
+
+.shell-rodape {
+    display: contents;
+}
+
+/* Barra inferior e botão flutuante (mobile; criados por menu-superior.js). */
+#barra-inferior {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 60;
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    align-items: stretch;
+    min-height: var(--altura-barra-inferior);
+    padding: 6px 4px calc(6px + env(safe-area-inset-bottom, 0px));
+    background-color: var(--superficie);
+    border-top: 1px solid var(--borda);
+    box-shadow: 0 -8px 24px -18px rgba(20, 32, 26, 0.4);
+}
+
+#barra-inferior a,
+#barra-inferior button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 4px 2px;
+    border: none;
+    border-radius: var(--raio-pequeno);
+    background: transparent;
+    color: var(--texto-suave);
+    font-size: 11px;
+    font-weight: 600;
+    text-decoration: none;
+    line-height: 1.2;
+    min-width: 0;
+}
+
+#barra-inferior a span,
+#barra-inferior button span {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#barra-inferior a[aria-current="page"] {
+    color: var(--primaria-escura);
+}
+
+#barra-inferior a[aria-current="page"] .nav-icone {
+    stroke-width: 2.2;
+}
+
+#barra-inferior .nav-icone {
+    width: 24px;
+    height: 24px;
+}
+
+#botao-flutuante {
+    position: fixed;
+    right: 16px;
+    bottom: calc(var(--altura-barra-inferior) + 16px + env(safe-area-inset-bottom, 0px));
+    z-index: 61;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    padding: 0;
+    border-radius: 50%;
+    border: none;
+    background-color: var(--primaria);
+    color: var(--primaria-contraste);
+    box-shadow: 0 10px 24px -8px rgba(14, 159, 85, 0.7);
+    text-decoration: none;
+}
+
+#botao-flutuante:hover {
+    background-color: var(--primaria-escura);
+    color: var(--primaria-contraste);
+}
+
+#botao-flutuante .nav-icone {
+    width: 26px;
+    height: 26px;
+    stroke-width: 2.4;
+}
+
+body.com-barra-inferior #container {
+    padding-bottom: calc(var(--altura-barra-inferior) + env(safe-area-inset-bottom, 0px));
+}
+
+/* Em telas estreitas, oculta elementos secundários da barra superior. */
+@media (max-width: 1023px) {
+    /* A rolagem até um elemento não o deixa sob as barras fixas. */
+    html {
+        scroll-padding-top: calc(var(--altura-topo) + 8px);
+    }
+
+    html:has(body.com-barra-inferior) {
+        scroll-padding-bottom: calc(var(--altura-barra-inferior) + 16px + env(safe-area-inset-bottom, 0px));
+    }
+
+    #form-logout {
+        display: none;
+    }
+
+    #div-nome-usuario {
+        display: none;
+    }
+
+    #botao-saldo-usuario {
+        padding: 4px 10px;
+    }
+
+    #saldo-usuario {
+        font-size: 14px;
+    }
+
+    #nome-conta-saldo {
+        display: none;
+    }
+
+    /* Botão flutuante sem barra inferior (admin): encosta no rodapé. */
+    body:not(.com-barra-inferior) #botao-flutuante {
+        bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    }
+}
+
 @media (max-width: 600px) {
+    #container-conteudo {
+        padding: 16px 16px 32px;
+    }
+
+    .cartao,
+    .loading-box,
+    .container .cartao {
+        padding: 24px 20px;
+    }
+
+    #div-superior {
+        padding: 8px 12px;
+        gap: 8px;
+    }
+
+    #div-nome-sistema h1 {
+        font-size: 18px;
+    }
+
     #div-form-tabela,
     #div-tabela {
         padding: 16px;
+    }
+
+    #div-tabela {
+        padding: 4px 0;
     }
 
     .campos-lado-a-lado {
@@ -832,15 +1355,143 @@ form > .acoes-formulario {
     }
 }
 
+/* Desktop: barra lateral fixa com a navegação sempre visível. */
+@media (min-width: 1024px) {
+    #container {
+        display: grid;
+        grid-template-columns: var(--largura-sidebar) minmax(0, 1fr);
+        grid-template-rows: minmax(0, 1fr);
+        align-items: stretch;
+    }
 
-/* Confirmações de exclusão seguem o diálogo de administração de usuários. */
-.confirmacao-exclusao h5 {
-    color: var(--erro);
-    margin: 0;
+    #div-superior {
+        position: sticky;
+        top: 0;
+        height: 100vh;
+        height: 100dvh;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+        padding: 20px 14px 16px;
+        border-bottom: none;
+        border-right: 1px solid var(--borda);
+        overflow-y: auto;
+    }
+
+    #div-nome-sistema {
+        margin: 0 0 12px;
+        padding: 0 6px;
+    }
+
+    #div-nav {
+        order: 0;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+    }
+
+    /* A lista fica visível e o botão some assim que o script a revela. */
+    #div-nav:has(#lista-opcoes:not([hidden])) #botao-opcoes {
+        display: none;
+    }
+
+    #div-nav:has(#lista-opcoes[hidden]) #botao-opcoes {
+        align-self: flex-start;
+        font-size: 14px;
+        width: auto;
+        padding: 8px 12px;
+        gap: 8px;
+    }
+
+    #div-nav:has(#lista-opcoes[hidden]) #botao-opcoes > span {
+        display: inline;
+    }
+
+    #lista-opcoes {
+        position: static;
+        width: auto;
+        padding: 0;
+        border: none;
+        box-shadow: none;
+        background: transparent;
+        animation: none;
+        overflow: visible;
+    }
+
+    .shell-backdrop {
+        display: none;
+    }
+
+    .shell-usuario {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        padding-top: 12px;
+        border-top: 1px solid var(--borda);
+    }
+
+    #div-resumo-usuario {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+    }
+
+    #div-saldo-usuario,
+    #botao-saldo-usuario {
+        width: 100%;
+    }
+
+    #nome-conta-saldo {
+        max-width: 100%;
+    }
+
+    #lista-contas-saldo {
+        top: auto;
+        bottom: calc(100% + 6px);
+        width: 100%;
+    }
+
+    .shell-rodape {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 0 4px;
+    }
+
+    #div-nome-usuario h3 {
+        font-size: 14px;
+    }
+
+    #form-logout input {
+        padding: 8px 12px;
+        font-size: 13px;
+    }
+
+    .nav-sair {
+        display: none;
+    }
+
+    #barra-inferior,
+    #botao-flutuante {
+        display: none !important;
+    }
+
+    body.com-barra-inferior #container {
+        padding-bottom: 0;
+    }
+
+    #container-conteudo {
+        padding: 40px 40px 56px;
+    }
 }
 
-.confirmacao-exclusao p {
-    color: var(--erro);
-    margin: 0;
-    font-size: 13px;
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.001ms !important;
+        transition-duration: 0.001ms !important;
+    }
 }

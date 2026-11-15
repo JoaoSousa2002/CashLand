@@ -2,6 +2,8 @@ import '../helpers/ambiente-local.js';
 import { before, after, test, mock } from 'node:test';
 import assert from 'node:assert/strict';
 import { writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import express from 'express';
 import cookieParser from 'cookie-parser';
@@ -49,10 +51,22 @@ app.get('/usuario/verificar-saldo', async (req, res) => {
     res.json({ saldo });
 });
 app.get('/usuario/listar-categoria', (req, res) => res.json([{ id_categoria: 21, nome: 'Alimentação' }]));
+// Rotas consumidas pelos demais cartões da RF-009 (simuladas).
+let transacoes = [];
+let metas = [];
+const criacoes = [];
+app.get('/usuario/listar-transacoes', (req, res) => res.json(transacoes));
+app.get('/usuario/listar-metas', (req, res) => metas.length
+    ? res.json({ mensagem: 'Metas listadas com sucesso', metas })
+    : res.status(404).json({ mensagem: 'Nenhuma meta encontrada' }));
+app.post('/usuario/criar-categoria', (req, res) => {
+    criacoes.push(req.body);
+    res.status(201).json({ mensagem: 'Categoria criada com sucesso' });
+});
 app.use(autenticacao);
 app.use('/usuario', orcamentos);
 app.use(paginas);
-for (const pasta of ['rf-002-Login/public', 'rf-003-Cadastro_usuario/public', 'img']) {
+for (const pasta of ['rf-002-Login/public', 'rf-003-Cadastro_usuario/public', 'rf-009-Dashboard/public', 'img']) {
     app.use(express.static(fileURLToPath(new URL(`../../src/${pasta}/`, import.meta.url))));
 }
 
@@ -173,7 +187,7 @@ test('Dashboard: sessão, fuso, períodos inclusivos, seis colunas e cores em to
         await navegador.enviar('Emulation.setDeviceMetricsOverride', { width: largura, height: 900, deviceScaleFactor: 1, mobile: largura < 600 });
         assert.equal(await avaliar('document.documentElement.scrollWidth <= innerWidth'), true);
         const captura = await navegador.enviar('Page.captureScreenshot', { format: 'png', captureBeyondViewport: true });
-        writeFileSync(`/tmp/cashland-dashboard-${largura}.png`, Buffer.from(captura.data, 'base64'));
+        writeFileSync(path.join(tmpdir(), `cashland-dashboard-${largura}.png`), Buffer.from(captura.data, 'base64'));
     }
     await abrir({ usuario: 901 });
     await ate("document.querySelectorAll('#corpo-orcamentos button').length === 1");
@@ -247,4 +261,60 @@ test('sem sessão não consulta orçamentos nem saldo', async () => {
     await ate("document.getElementById('resultado-funcao')?.textContent.includes('Não autenticado')");
     assert.equal(chamadas.some(item => item.caminho.startsWith('/usuario/')), false);
     assert.deepEqual(navegador.erros, []);
+});
+
+test('RF-009: saldo total, indicadores do mês, gráficos, listas e ação rápida', async () => {
+    const base = { id_conta_origem: 11, id_conta_destino: null, id_categoria: 21, id_meta: null, forma_pagamento: 'PIX' };
+    transacoes = [
+        { ...base, id_transacao: 1, nome: 'Salário', tipo_transacao: 'Entrada', valor_transacao: 1000, status_transacao: 'Pago', data_transacao: '2028-01-01', data_pagamento: '2028-01-01' },
+        { ...base, id_transacao: 2, nome: 'Mercado', tipo_transacao: 'Saida', valor_transacao: 250.5, status_transacao: 'Pago', data_transacao: '2028-01-01', data_pagamento: '2028-01-01' },
+        { ...base, id_transacao: 3, nome: 'Aluguel', tipo_transacao: 'Saida', valor_transacao: 400, status_transacao: 'Pago', data_transacao: '2027-12-10', data_pagamento: '2027-12-10' },
+        { ...base, id_transacao: 4, nome: '<img src=x onerror=alert(1)> Luz', tipo_transacao: 'Saida', valor_transacao: 80, status_transacao: 'Pendente', data_transacao: '2027-12-15', data_vencimento: '2027-12-20', data_pagamento: null },
+        { ...base, id_transacao: 5, nome: 'Reserva', tipo_transacao: 'Transferencia', id_conta_destino: 12, id_categoria: null, valor_transacao: 300, status_transacao: 'Pago', data_transacao: '2028-01-01', data_pagamento: '2028-01-01' }
+    ];
+    metas = [{ id_meta: 31, id_conta: 12, nome: 'Viagem', status: 'Em progresso', valor_atual: 250, valor_meta: 1000, data_meta: '2028-03-01' }];
+    try {
+        await navegador.enviar('Emulation.setDeviceMetricsOverride', { width: 1280, height: 900, deviceScaleFactor: 1, mobile: false });
+        await abrir();
+        await linhasProntas();
+        await ate("document.getElementById('saldo-total').textContent.includes('2.023,56')");
+        await ate("document.querySelectorAll('#lista-movimentacoes .mov-item').length === 5");
+        const texto = id => avaliar(`document.getElementById('${id}').textContent.replaceAll('\\u00a0', ' ')`);
+        // Transferências e pendências não entram nos indicadores do mês.
+        assert.equal(await texto('kpi-entradas'), 'R$ 1.000,00');
+        assert.equal(await texto('kpi-despesas'), 'R$ 250,50');
+        assert.equal(await texto('kpi-economia'), 'R$ 749,50');
+        assert.equal(await avaliar("document.querySelectorAll('#grafico-fluxo svg, #grafico-evolucao svg').length"), 2);
+        assert.equal(await avaliar("document.querySelectorAll('#tabela-fluxo tbody tr').length"), 6);
+        assert.equal(await avaliar("document.querySelectorAll('#lista-metas .meta-item').length"), 1);
+        assert.match(await texto('lista-metas'), /25%/);
+        assert.match(await texto('lista-pendencias'), /Atrasada/);
+        assert.equal(await avaliar("document.querySelectorAll('#lista-pendencias button').length"), 1);
+        assert.match(await texto('lista-categorias'), /Alimentação/);
+        assert.equal(await avaliar("document.querySelectorAll('#container-conteudo img').length"), 0);
+        for (const largura of [1280, 390, 320]) {
+            await navegador.enviar('Emulation.setDeviceMetricsOverride', { width: largura, height: 900, deviceScaleFactor: 1, mobile: largura < 600 });
+            await avaliar('new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))');
+            assert.equal(await avaliar('document.documentElement.scrollWidth <= innerWidth'), true, `largura ${largura}`);
+        }
+        // Ação rápida: cria categoria pela rota existente, sem sair da página.
+        await avaliar("document.querySelector('.dash-acoes [data-acao=\"categoria\"]').click()");
+        await ate("!!document.querySelector('.modal #nome')");
+        await avaliar("document.querySelector('.modal #nome').value = 'Transporte'; document.querySelector('.modal form').requestSubmit()");
+        await ate("!document.querySelector('.modal') && !!document.querySelector('.toast')");
+        assert.deepEqual(criacoes, [{ nome: 'Transporte', descricao: '' }]);
+        assert.equal(await avaliar('location.pathname'), '/tela-principal');
+        // Os demais modais montam seus campos com as listas já carregadas.
+        for (const [acao, campo] of [['despesa', 'valor_transacao'], ['meta', 'valor_meta'], ['orcamento', 'valor_orcamento']]) {
+            await avaliar(`document.querySelector('.dash-acoes [data-acao="${acao}"]').click()`);
+            await ate(`!!document.querySelector('.modal #${campo}')`);
+            assert.equal(await avaliar("document.querySelector('.modal select[name^=\"id_conta\"]').options.length >= 3"), true);
+            await avaliar("document.querySelector('.modal-fechar').click()");
+            await ate("!document.querySelector('.modal')");
+        }
+        assert.deepEqual(navegador.erros, []);
+    } finally {
+        transacoes = [];
+        metas = [];
+    }
 });

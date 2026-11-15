@@ -89,7 +89,8 @@
                     </div>
                     <div class="input-dados">
                         <label for="nome">Nome do orçamento:</label>
-                        <input id="nome" name="nome" type="text" aria-describedby="erro-nome" disabled readonly>
+                        <input id="nome" name="nome" type="text" aria-describedby="erro-nome" maxlength="100" disabled>
+                        <p class="texto-auxiliar">Apague o nome para voltar ao nome gerado automaticamente.</p>
                         <div id="erro-nome" data-erro="nome" aria-live="polite"></div>
                     </div>
                     <div class="input-dados">
@@ -143,7 +144,7 @@
                         <select id="periodo_inicio" name="periodo_inicio" aria-describedby="erro-periodo_inicio" disabled><option value="">Selecione primeiro o tipo de período</option></select>
                         <div id="erro-periodo_inicio" data-erro="periodo_inicio" aria-live="polite"></div>
                     </div>
-                    <p class="texto-auxiliar">Escolha o período atual ou o próximo. A semana começa no domingo. O nome, a data final e o valor gasto são preenchidos automaticamente.</p>
+                    <p class="texto-auxiliar">Escolha o período atual ou o próximo. A semana começa no domingo. A data final e o valor gasto são preenchidos automaticamente.</p>
                     <p class="texto-auxiliar">Para manter um período antigo, não altere o tipo nem o início.</p>
                     <p id="aviso-vinculos" class="texto-auxiliar" hidden>Nenhuma conta ou categoria disponível.</p>
                     <button type="button" id="botao-Carregar" hidden>Recarregar dados</button>
@@ -315,7 +316,7 @@
         const form = document.getElementById('form-editar-orcamento');
         const salvar = document.getElementById('botao-Enviar');
         const recarregar = document.getElementById('botao-Carregar');
-        const camposEditaveis = ['id_conta', 'id_categoria', 'descricao', 'valor_orcamento', 'tipo_periodo', 'periodo_inicio'];
+        const camposEditaveis = ['nome', 'id_conta', 'id_categoria', 'descricao', 'valor_orcamento', 'tipo_periodo', 'periodo_inicio'];
         let listasProntas = false;
         let registroPronto = false;
         let identificadorValido = false;
@@ -509,7 +510,6 @@
                 valoresIniciais[id] = document.getElementById(id).value;
             }
             document.getElementById('id_usuario').value = registro.id_usuario;
-            document.getElementById('nome').value = registro.nome;
             document.getElementById('valor_atual').value = formatarValor(registro.valor_atual);
             document.getElementById('periodo_fim').value = formatarData(registro.periodo_fim);
             for (const id of ['data_criacao', 'data_atualizacao']) {

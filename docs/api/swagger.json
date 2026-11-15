@@ -18137,6 +18137,13 @@
             "maximum": 2147483647,
             "nullable": true
           },
+          "nome": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 100,
+            "example": "Mercado do mês",
+            "description": "Nome definido pelo usuário (opcional). Vazio ou null mantém ou restaura o nome gerado pelo banco a partir da conta, da categoria e do período."
+          },
           "descricao": {
             "type": "string",
             "nullable": true,
@@ -18217,6 +18224,13 @@
             "minimum": 1,
             "maximum": 2147483647,
             "nullable": true
+          },
+          "nome": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 100,
+            "example": "Mercado do mês",
+            "description": "Nome definido pelo usuário (opcional). Vazio ou null mantém ou restaura o nome gerado pelo banco a partir da conta, da categoria e do período."
           },
           "descricao": {
             "type": "string",
@@ -18310,6 +18324,13 @@
             "maximum": 2147483647,
             "nullable": true
           },
+          "nome": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 100,
+            "example": "Mercado do mês",
+            "description": "Nome definido pelo usuário (opcional). Vazio ou null mantém ou restaura o nome gerado pelo banco a partir da conta, da categoria e do período."
+          },
           "descricao": {
             "type": "string",
             "nullable": true,
@@ -18401,6 +18422,11 @@
             "minimum": 1,
             "maximum": 2147483647,
             "nullable": true
+          },
+          "nome_personalizado": {
+            "type": "boolean",
+            "example": false,
+            "description": "true quando o nome foi definido pelo usuário; false quando é gerado pelo banco."
           },
           "descricao": {
             "type": "string",

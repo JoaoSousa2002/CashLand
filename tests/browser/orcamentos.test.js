@@ -1,6 +1,8 @@
 import { before, after, test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import express from 'express';
 import paginas from '../../src/routes/pageRoutes.js';
@@ -99,7 +101,7 @@ app.use(['/usuario', '/admin'], async (req, res) => {
 });
 app.get(['/login', '/tela-principal'], (req, res) => res.send('<html><head><link rel="icon" href="/CashLand%20emerald%20C%20icon.png"></head><body>Destino após redirecionamento</body></html>'));
 app.use(paginas);
-for (const pasta of ['rf-003-Cadastro_usuario/public', 'rf-002-Login/public', 'img']) {
+for (const pasta of ['rf-003-Cadastro_usuario/public', 'rf-002-Login/public', 'rf-009-Dashboard/public', 'img']) {
     app.use(express.static(fileURLToPath(new URL(`../../src/${pasta}/`, import.meta.url))));
 }
 app.use((req, res) => {
@@ -146,7 +148,7 @@ async function clicar(seletor) {
 }
 async function captura(nome) {
     const imagem = await navegador.enviar('Page.captureScreenshot', { format: 'png', captureBeyondViewport: true });
-    fs.writeFileSync(`/tmp/cashland-rf08-${nome}.png`, Buffer.from(imagem.data, 'base64'));
+    fs.writeFileSync(path.join(os.tmpdir(), `cashland-rf08-${nome}.png`), Buffer.from(imagem.data, 'base64'));
 }
 function escritas() {
     return chamadas.filter(chamada => chamada.metodo !== 'GET');
@@ -197,12 +199,15 @@ test('criação: campos vazios, erros Joi, conflito, cookies e envio único', { 
     await ate("location.pathname === '/tela-principal/listar-orcamentos'");
 });
 
-test('edição comum: período histórico preservado, automáticos bloqueados e PATCH mínimo', async () => {
+test('edição comum: período histórico preservado, automáticos bloqueados, nome editável e PATCH mínimo', async () => {
     await abrir('/tela-principal/editar-orcamento?id_orcamento=71');
     assert.equal(await avaliar("document.getElementById('periodo_inicio').value"), '2020-01-01');
-    for (const id of ['id_orcamento', 'id_usuario', 'nome', 'valor_atual', 'periodo_fim', 'data_criacao', 'data_atualizacao']) {
+    for (const id of ['id_orcamento', 'id_usuario', 'valor_atual', 'periodo_fim', 'data_criacao', 'data_atualizacao']) {
         assert.equal(await avaliar(`document.getElementById('${id}').disabled`), true);
     }
+    // O nome passou a ser editável: vem preenchido com o nome atual.
+    assert.equal(await avaliar("document.getElementById('nome').disabled"), false);
+    assert.equal(await avaliar("document.getElementById('nome').value"), registroInicial.nome);
     assert.match(await avaliar("document.getElementById('valor_atual').value"), /0,00/);
     await enviar();
     await resultado('Altere pelo menos');
@@ -213,6 +218,17 @@ test('edição comum: período histórico preservado, automáticos bloqueados e 
     await resultado('atualizado');
     assert.deepEqual(escritas().at(-1).body, { id_orcamento: 71, descricao: 'Descrição alterada' });
     assert.equal(escritas().at(-1).caminho, '/usuario/editar-orcamento');
+    // Somente o nome alterado é enviado; apagá-lo pede a restauração do nome gerado.
+    await abrir('/tela-principal/editar-orcamento?id_orcamento=71');
+    await preencher({ nome: 'Mercado do mês' });
+    await enviar();
+    await resultado('atualizado');
+    assert.deepEqual(escritas().at(-1).body, { id_orcamento: 71, nome: 'Mercado do mês' });
+    await abrir('/tela-principal/editar-orcamento?id_orcamento=71');
+    await preencher({ nome: '' });
+    await enviar();
+    await resultado('atualizado');
+    assert.deepEqual(escritas().at(-1).body, { id_orcamento: 71, nome: '' });
 });
 
 test('edição administrativa: proprietário da URL, vínculos restritos e remoção com null', async () => {

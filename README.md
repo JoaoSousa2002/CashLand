@@ -93,6 +93,10 @@ Testes das nove listagens em navegador, incluindo transações e recorrências, 
 npm run test:frontend
 ```
 
+A mesma suíte cobre o Dashboard (RF-009, `src/rf-009-Dashboard/`): sessão, orçamentos atuais,
+indicadores do mês, gráficos, listas, responsividade e ações rápidas. Requisitos em
+`docs/requisitos/RF-009-Dashboard.md`.
+
 É necessário ter Chromium, Chrome ou Brave instalado. Se o executável não for encontrado,
 informe `BROWSER_BIN=/caminho/do/navegador`. Em contêineres sem suporte ao sandbox do Chromium,
 use `BROWSER_NO_SANDBOX=1`. A execução cria um perfil temporário, usa portas locais aleatórias,

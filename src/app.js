@@ -58,6 +58,7 @@ app.use('/', pageRoutes);
 
 app.use(Express.static(path.join(__dirname, 'public')));
 app.use(Express.static(path.join(__dirname, '../rf-003-Cadastro_usuario/public')));
+app.use(Express.static(path.join(__dirname, '../rf-009-Dashboard/public')));
 app.use(Express.static(path.join(__dirname, '../img')));
 
 app.use('/', authRoutes);
