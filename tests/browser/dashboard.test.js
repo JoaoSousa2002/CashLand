@@ -63,6 +63,18 @@ app.post('/usuario/criar-categoria', (req, res) => {
     criacoes.push(req.body);
     res.status(201).json({ mensagem: 'Categoria criada com sucesso' });
 });
+// Exclusão pelas listas do Dashboard (rotas DELETE da RF-006 e da RF-007, simuladas).
+const exclusoes = [];
+app.delete('/usuario/excluir-transacao/:id_transacao', (req, res) => {
+    exclusoes.push({ rota: 'transacao', id: Number(req.params.id_transacao) });
+    transacoes = transacoes.filter(item => String(item.id_transacao) !== req.params.id_transacao);
+    res.json({ mensagem: 'Transação excluída com sucesso' });
+});
+app.delete('/usuario/deletar-meta/:id_meta', (req, res) => {
+    exclusoes.push({ rota: 'meta', id: Number(req.params.id_meta) });
+    metas = metas.filter(item => String(item.id_meta) !== req.params.id_meta);
+    res.json({ mensagem: 'Meta deletada com sucesso' });
+});
 app.use(autenticacao);
 app.use('/usuario', orcamentos);
 app.use(paginas);
@@ -289,7 +301,10 @@ test('RF-009: saldo total, indicadores do mês, gráficos, listas e ação rápi
         assert.equal(await avaliar("document.querySelectorAll('#lista-metas .meta-item').length"), 1);
         assert.match(await texto('lista-metas'), /25%/);
         assert.match(await texto('lista-pendencias'), /Atrasada/);
-        assert.equal(await avaliar("document.querySelectorAll('#lista-pendencias button').length"), 1);
+        // Pendência: botão Pagar e botão Excluir; o Excluir também existe nas movimentações e nas metas.
+        assert.equal(await avaliar("document.querySelectorAll('#lista-pendencias button').length"), 2);
+        assert.equal(await avaliar("document.querySelectorAll('#lista-movimentacoes .botao-excluir').length"), 5);
+        assert.equal(await avaliar("document.querySelectorAll('#lista-metas .botao-excluir').length"), 1);
         assert.match(await texto('lista-categorias'), /Alimentação/);
         assert.equal(await avaliar("document.querySelectorAll('#container-conteudo img').length"), 0);
         for (const largura of [1280, 390, 320]) {
@@ -304,6 +319,36 @@ test('RF-009: saldo total, indicadores do mês, gráficos, listas e ação rápi
         await ate("!document.querySelector('.modal') && !!document.querySelector('.toast')");
         assert.deepEqual(criacoes, [{ nome: 'Transporte', descricao: '' }]);
         assert.equal(await avaliar('location.pathname'), '/tela-principal');
+        // Validação visual: campo vazio enviado fica inválido (✗); preenchido fica válido (✓).
+        await avaliar("document.querySelector('.dash-acoes [data-acao=\"categoria\"]').click()");
+        await ate("!!document.querySelector('.modal #nome')");
+        await avaliar("document.querySelector('.modal form').requestSubmit()");
+        await ate("document.querySelector('.modal .input-dados[data-validacao=\"invalido\"] #nome') !== null");
+        assert.equal(await avaliar("document.querySelector('.modal #nome').getAttribute('aria-invalid')"), 'true');
+        assert.match(await avaliar("document.querySelector('.modal #erro-nome').textContent"), /^✗ /);
+        await avaliar("const c = document.querySelector('.modal #nome'); c.value = 'Lazer'; c.dispatchEvent(new Event('input', { bubbles: true }))");
+        await ate("document.querySelector('.modal .input-dados[data-validacao=\"valido\"] #nome') !== null");
+        assert.equal(await avaliar("document.querySelector('.modal #nome').getAttribute('aria-invalid')"), 'false');
+        await avaliar("document.querySelector('.modal-fechar').click()");
+        await ate("!document.querySelector('.modal')");
+        // Exclusão pela lista: cancelar preserva; confirmar chama a rota DELETE e recarrega as listas.
+        await avaliar("document.querySelector('#lista-movimentacoes .botao-excluir').click()");
+        await ate("!!document.querySelector('.modal .botao-excluir')");
+        await avaliar("document.querySelector('.modal .btn-fantasma').click()");
+        await ate("!document.querySelector('.modal')");
+        assert.deepEqual(exclusoes, []);
+        await avaliar("document.querySelector('#lista-movimentacoes .botao-excluir').click()");
+        await ate("!!document.querySelector('.modal .botao-excluir')");
+        await avaliar("document.querySelector('.modal .botao-excluir').click()");
+        await ate("!document.querySelector('.modal') && document.querySelectorAll('#lista-movimentacoes .mov-item').length === 4");
+        assert.equal(exclusoes.length, 1);
+        assert.equal(exclusoes[0].rota, 'transacao');
+        assert.ok(chamadas.some(chamada => chamada.metodo === 'DELETE' && chamada.caminho === `/usuario/excluir-transacao/${exclusoes[0].id}`));
+        await avaliar("document.querySelector('#lista-metas .botao-excluir').click()");
+        await ate("!!document.querySelector('.modal .botao-excluir')");
+        await avaliar("document.querySelector('.modal .botao-excluir').click()");
+        await ate("!document.querySelector('.modal') && document.querySelectorAll('#lista-metas .meta-item').length === 0");
+        assert.deepEqual(exclusoes[1], { rota: 'meta', id: 31 });
         // Os demais modais montam seus campos com as listas já carregadas.
         for (const [acao, campo] of [['despesa', 'valor_transacao'], ['meta', 'valor_meta'], ['orcamento', 'valor_orcamento']]) {
             await avaliar(`document.querySelector('.dash-acoes [data-acao="${acao}"]').click()`);

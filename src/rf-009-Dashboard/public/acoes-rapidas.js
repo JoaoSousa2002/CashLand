@@ -169,16 +169,24 @@ window.AcoesRapidas = (() => {
         return envoltorio;
     }
 
+    // Validação visual: borda vermelha com ✗ para campo inválido; borda verde com ✓ para
+    // campo preenchido sem erro. O estado fica em data-validacao no envoltório .input-dados.
     function mostrarErroCampo(form, nomeCampo, mensagem) {
         const alvo = form.querySelector(`#erro-${CSS.escape(nomeCampo)}`);
         const controle = form.querySelector(`[name="${CSS.escape(nomeCampo)}"]`);
         if (!alvo) return false;
+        const envoltorio = controle?.closest('.input-dados');
         alvo.replaceChildren();
         if (mensagem) {
-            alvo.appendChild(el('h5', { texto: mensagem }));
+            alvo.appendChild(el('h5', { texto: `✗ ${mensagem}` }));
             controle?.setAttribute('aria-invalid', 'true');
+            if (envoltorio) envoltorio.dataset.validacao = 'invalido';
+        } else if (controle && String(controle.value ?? '').trim() !== '') {
+            controle.setAttribute('aria-invalid', 'false');
+            if (envoltorio) envoltorio.dataset.validacao = 'valido';
         } else {
             controle?.removeAttribute('aria-invalid');
+            if (envoltorio) delete envoltorio.dataset.validacao;
         }
         return true;
     }
@@ -186,6 +194,7 @@ window.AcoesRapidas = (() => {
     function limparErros(form) {
         form.querySelectorAll('.erro-campo').forEach(elemento => elemento.replaceChildren());
         form.querySelectorAll('[aria-invalid]').forEach(elemento => elemento.removeAttribute('aria-invalid'));
+        form.querySelectorAll('[data-validacao]').forEach(elemento => delete elemento.dataset.validacao);
         form.querySelector('.erro-geral')?.remove();
     }
 

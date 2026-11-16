@@ -4,6 +4,7 @@
 
 - **ID:** RF-007.
 - **Título:** Gerir Metas Financeiras.
+- **Tipo:** Requisito funcional.
 - **Prioridade:** Alta.
 - **Complexidade:** 13 story points — estimativa relativa considerando CRUD, filtros, permissões administrativas e integração com transações.
 
@@ -47,13 +48,14 @@ A integração com a RF-006 permite associar transações e recorrências a uma 
 
 - **Usuário autenticado:** cria, consulta, edita e exclui as próprias metas — Create, Read, Update e Delete. Acessa as telas da área do usuário e utiliza as funcionalidades da RF-006 para associar movimentações a metas.
 - **Administrador autenticado:** consulta metas de diferentes usuários e edita ou exclui registros do proprietário informado — Read, Update e Delete na área administrativa. Não existe uma rota administrativa específica de criação de metas.
+- **Sistema CashLand — API e triggers do banco (ator secundário, sem interface):** recebe as movimentações da RF-006 e mantém automaticamente `valor_atual`, `status` e `data_atualizacao` das metas pelas funções `atualizar_valor_meta`, `atualizar_status_meta` e `atualizar_data_atualizacao_meta`, garante a unicidade do nome por proprietário (`verificar_nome_meta_unico`) e registra a auditoria de cada operação — somente Update automático; não cria, consulta nem exclui metas por conta própria.
 
 ### Validações necessárias
 
 - A conta bancária, o nome e o valor objetivo são obrigatórios no cadastro.
 - A conta informada deve existir e pertencer ao proprietário da operação.
 - O nome deve conter pelo menos um caractere após a remoção dos espaços das extremidades.
-- O nome não pode repetir o de outra meta do mesmo usuário, inclusive em outra conta.
+- O nome não pode repetir o de outra meta do mesmo usuário, inclusive em outra conta. A regra é verificada pela aplicação e garantida no banco pelo trigger `trigger_verificar_nome_meta_unico`.
 - O valor objetivo deve ser numérico, positivo, finito e possuir no máximo duas casas decimais.
 - A descrição é opcional e aceita texto vazio ou nulo.
 - A data limite é opcional; quando preenchida, deve ser uma data válida no formato AAAA-MM-DD.
@@ -87,6 +89,8 @@ A integração com a RF-006 permite associar transações e recorrências a uma 
 
 **Pós-condições:** meta persistida em `metas`, associada à conta selecionada e disponível para consulta.
 
+**Pós-condição de falha:** nenhuma meta é inserida; a API informa o motivo (HTTP 400, 404, 409 ou 500) e o formulário permanece preenchido para correção.
+
 ### Fluxo principal: consultar e filtrar metas
 
 **Pré-condição:** usuário autenticado.
@@ -103,6 +107,8 @@ A integração com a RF-006 permite associar transações e recorrências a uma 
 - A listagem apresenta os registros correspondentes ou a mensagem Nenhuma meta encontrada.
 
 **Pós-condição:** metas exibidas conforme pesquisa, filtros e permissões do usuário.
+
+**Pós-condição de falha:** a listagem não é alterada; a tela apresenta a mensagem retornada (HTTP 400, 404 ou 500) e mantém os critérios para nova tentativa.
 
 ### Fluxo principal: editar meta
 
@@ -122,6 +128,8 @@ A integração com a RF-006 permite associar transações e recorrências a uma 
 
 **Pós-condição:** campos enviados atualizados na meta, preservando os demais dados.
 
+**Pós-condição de falha:** a meta permanece com os dados anteriores; nenhuma alteração parcial é gravada (HTTP 400, 404, 409 ou 500).
+
 ### Fluxo principal: excluir meta
 
 **Pré-condições:** usuário autenticado, meta própria e ausência de impedimento pelas referências do banco.
@@ -138,6 +146,8 @@ A integração com a RF-006 permite associar transações e recorrências a uma 
 - A interface apresenta o resultado e atualiza a listagem.
 
 **Pós-condição:** meta removida do banco e da listagem.
+
+**Pós-condição de falha:** a meta é preservada no banco e na listagem (HTTP 404 ou 500), inclusive quando o usuário cancela a confirmação.
 
 ### Fluxo principal: administrar metas
 
@@ -156,6 +166,8 @@ A integração com a RF-006 permite associar transações e recorrências a uma 
 - A aplicação executa a operação autorizada e apresenta o resultado.
 
 **Pós-condição:** consulta, edição ou exclusão realizada no contexto do proprietário correto.
+
+**Pós-condição de falha:** nenhuma meta de outro proprietário é consultada, alterada ou excluída (HTTP 403 ou 404); os registros permanecem inalterados.
 
 ### Fluxo alternativo: nome de meta já existe
 
@@ -195,6 +207,66 @@ A integração com a RF-006 permite associar transações e recorrências a uma 
 - Usuário comum tentando executar uma operação administrativa recebe HTTP 403.
 - A operação protegida não é executada.
 
+### Exemplos práticos
+
+Os exemplos usam `BASE_URL=https://cashland-cdf0.onrender.com` e o cookie `token` emitido por `POST /login`. Os identificadores são ilustrativos; os corpos e códigos de resposta correspondem aos controllers e ao `docs/api/swagger.json`.
+
+**Criar meta — `POST /usuario/criar-meta`**
+
+```json
+{ "id_conta": 10, "nome": "Reserva de emergência", "descricao": "Seis meses de despesas", "valor_meta": 12000, "data_meta": "2027-06-30" }
+```
+
+Resposta HTTP 201:
+
+```json
+{ "mensagem": "Meta criada com sucesso" }
+```
+
+Nome já usado em outra meta do mesmo usuário, HTTP 409:
+
+```json
+{ "mensagem": "Já existe uma meta com esse nome" }
+```
+
+Dados inválidos (por exemplo, `valor_meta` negativo), HTTP 400:
+
+```json
+{ "mensagem": "Dados inválidos.", "erros": [ { "campo": "valor_meta", "mensagem": "O valor objetivo deve ser maior que zero." } ] }
+```
+
+**Consultar metas — `GET /usuario/listar-metas?pesquisa=Reserva&status=Em%20progresso`**
+
+Resposta HTTP 200:
+
+```json
+{
+  "mensagem": "Metas listadas com sucesso",
+  "metas": [
+    {
+      "id_meta": 20, "id_conta": 10, "nome": "Reserva de emergência", "descricao": "Seis meses de despesas",
+      "status": "Em progresso", "valor_atual": 1500, "valor_meta": 12000, "data_meta": "2027-06-30",
+      "data_criacao": "2026-11-15T14:02:11.512+00:00", "data_atualizacao": "2026-11-15T14:02:11.512+00:00",
+      "contas_bancarias": { "id_usuario": 1 }
+    }
+  ]
+}
+```
+
+Sem resultados, HTTP 404: `{ "mensagem": "Nenhuma meta encontrada" }`.
+
+**Editar meta — `PATCH /usuario/editar-meta`**
+
+```json
+{ "id_meta": 20, "valor_meta": 15000, "data_meta": null }
+```
+
+Resposta HTTP 200: `{ "mensagem": "Meta editada com sucesso" }`. Meta inexistente ou de outro usuário, HTTP 404: `{ "mensagem": "Essa meta não existe" }`.
+
+**Excluir meta — `DELETE /usuario/deletar-meta/20`**
+
+Resposta HTTP 200: `{ "mensagem": "Meta deletada com sucesso" }`. Sem sessão, HTTP 401; usuário comum em rota administrativa, HTTP 403.
+
 ### Requisitos não funcionais
 
 - **RNF-01 — Autenticação e autorização:** as rotas de metas devem exigir sessão válida, restringir operações comuns aos registros próprios e exigir perfil Admin nas operações administrativas.
@@ -207,7 +279,7 @@ A integração com a RF-006 permite associar transações e recorrências a uma 
 
 - **RN-01:** toda meta criada pela API deve estar vinculada a uma conta pertencente ao usuário autenticado.
 - **RN-02:** o proprietário da meta é identificado pela conta bancária vinculada.
-- **RN-03:** nomes duplicados entre metas do mesmo usuário são rejeitados na criação e edição.
+- **RN-03:** nomes duplicados entre metas do mesmo usuário são rejeitados na criação e edição pela aplicação (HTTP 409) e garantidos no banco pelo trigger `trigger_verificar_nome_meta_unico`, que serializa gravações simultâneas do mesmo proprietário.
 - **RN-04:** o valor objetivo deve ser positivo e informado com no máximo duas casas decimais.
 - **RN-05:** descrição e data limite são opcionais; enviar nulo permite remover esses valores na edição.
 - **RN-06:** o status admite somente Em progresso ou Finalizado.
@@ -244,11 +316,13 @@ Interface com CRUD em: https://cashland-cdf0.onrender.com/
 
 A consulta de detalhes utiliza a listagem com o parâmetro `pesquisa` e seleciona o ID exato na tela de edição. O cadastro aceita `id_conta`, `nome`, `descricao`, `valor_meta` e `data_meta`. A edição recebe `id_meta` e os campos alterados; na administração recebe também `id_usuario`.
 
-**Documentação da API:** `docs/api/API-SWAGGER.json` — OpenAPI 3.0.
+**Documentação da API:** `docs/api/swagger.json` — OpenAPI 3.0.
 
 **Swagger UI:** https://cashland-cdf0.onrender.com/api-docs/
 
 **DDL da RF-007:** `database/ddl/RF-007-Gerir_metas.sql`.
+
+**Responsividade:** as páginas da RF-007 não possuem regras `@media` próprias. Os pontos de quebra são definidos no sistema de design compartilhado `src/rf-003-Cadastro_usuario/public/template.css` (barra lateral a partir de 1024 px; barra superior, gaveta e barra inferior abaixo de 1024 px; ajustes de conteúdo até 600 px) e montados por `menu-superior.js`. A suíte `npm run test:frontend` verifica as listagens de metas em 1280 × 900, 390 × 844 e 320 × 568.
 
 ---
 
@@ -294,6 +368,7 @@ flowchart TB
 - **ADR-003 — PostgreSQL no Supabase:** reutilizar o banco online do projeto e relacionar metas com contas, transações e recorrências por chaves estrangeiras.
 - **ADR-004 — Validação Joi por operação:** aplicar contratos diferentes a cadastro, edição parcial, consulta e exclusão, com mensagens associadas aos campos.
 - **ADR-005 — Separação de rotas comuns e administrativas:** distinguir operações sobre dados próprios das operações que exigem perfil Admin e proprietário informado.
+- **ADR-006 — Acesso ao banco pela chave de serviço, sem RLS:** o backend usa `SUPABASE_SECRET_KEY`, que ignora as políticas de Row Level Security. Decisão consciente: a chave existe somente no servidor (variável de ambiente, fora do Git), o navegador nunca acessa o Supabase diretamente e todo o controle de acesso é feito pelos middlewares e controllers (sessão, perfil e pertencimento). Consequências: não há políticas de RLS nas migrations, e a chave não deve ser exposta fora do servidor.
 
 ### Fluxo de dados
 
@@ -311,18 +386,31 @@ flowchart TB
 
 ### Controle 1 — Autenticação de sessão
 
+- **Categoria OWASP:** A07:2021 — Identification and Authentication Failures.
 - **Vulnerabilidade OWASP:** falhas de autenticação que permitam operações financeiras sem sessão válida.
 - **Implementação:** JWT em cookie HttpOnly, verificado nas rotas privadas; cookie configurado com SameSite Strict e Secure em produção. A API recusa token ausente, inválido ou expirado.
 - **Teste:** os cenários locais de autenticação da RF-007 verificaram HTTP 401 nas rotas sem sessão, sem consulta ao banco simulado. Os cenários administrativos verificaram também HTTP 403 para usuário comum.
 
 ### Controle 2 — Controle de acesso e prevenção de IDOR
 
+- **Categoria OWASP:** A01:2021 — Broken Access Control.
 - **Vulnerabilidade OWASP:** acesso indevido por troca de identificadores de meta, conta ou proprietário.
-- **Implementação:** listagem comum limitada ao usuário autenticado; verificação do proprietário pela conta da meta; verificação de conta na criação/edição; exigência de perfil Admin e proprietário compatível nas alterações administrativas.
+- **Implementação:** listagem comum limitada ao usuário autenticado; verificação do proprietário pela conta da meta; verificação de conta na criação/edição; exigência de perfil Admin e proprietário compatível nas alterações administrativas. As escritas de edição e exclusão, comuns e administrativas, filtram também pela conta verificada como do proprietário (`id_meta` e `id_conta`), de modo que a operação não atinge o registro se o vínculo mudar entre a verificação e a gravação.
 - **Teste:** cenários locais de edição e exclusão com meta inexistente ou alheia retornaram HTTP 404 e preservaram os dados simulados. Cenários administrativos também recusaram proprietário ou conta incompatíveis.
 
 ### Controle 3 — Validação de entrada e proteção contra alteração de campos indevidos
 
+- **Categoria OWASP:** A03:2021 — Injection (entrada não validada nos filtros e nos campos); complementada por A04:2021 — Insecure Design, para os campos que o cliente não pode alterar.
 - **Vulnerabilidade OWASP:** entrada malformada e alteração não autorizada de propriedades enviadas pelo cliente.
-- **Implementação:** schemas Joi validam campos, tipos, identificadores, datas e valores; campos desconhecidos são rejeitados. Status, valor atual e datas de controle não fazem parte dos campos aceitos na edição de metas.
+- **Implementação:** schemas Joi validam campos, tipos, identificadores, datas e valores; campos desconhecidos são rejeitados. Status, valor atual e datas de controle não fazem parte dos campos aceitos na edição de metas. Os filtros da listagem são enviados como parâmetros do cliente Supabase (`in`, `eq`, `ilike`); a única string de filtro do PostgREST é montada apenas com dígitos validados por expressão regular, sem interpolar texto do usuário. A unicidade do nome é garantida no banco pelo trigger, e o erro 23505 é convertido em HTTP 409.
 - **Teste:** os cenários locais de validação da RF-007 recusaram campos obrigatórios ausentes, IDs inválidos, valor objetivo inválido, datas inexistentes e campos não autorizados com HTTP 400. Os testes de nome verificaram HTTP 409 para duplicidade e permitiram manter o nome da própria meta.
+
+### Execução dos testes — evidência
+
+- **Data:** 15/11/2026. **Ambiente:** Windows 11, Node.js v24.16.0, Python 3.14.6, Chrome headless; banco simulado nas suítes locais.
+- `npm test`: 170 testes, 170 aprovados, 0 falhas. Inclui `tests/id-meta.test.js`, `tests/metas-nome.test.js`, `tests/consultas-idor.test.js` e `tests/id-meta-frontend.test.js`.
+- `python tests/testar_rotas.py --testes-rf07`: 23 testes, OK. Cobre HTTP 401 sem sessão, 403 para usuário comum nas rotas administrativas, 404 para meta inexistente ou alheia, 400 de validação, 409 de duplicidade e o isolamento do proprietário na listagem.
+- `python tests/testar_rotas.py --testes-admin-metas`: 8 testes, OK.
+- `npm run test:frontend`: as páginas `listar-metas.html` e `ADMIN_listar-metas.html` foram aprovadas em 1280 × 900, 390 × 844 e 320 × 568.
+- `npm run test:idor` (E2E contra um Supabase de testes): **não executado**. Exige `SUPABASE_TEST_URL` e `SUPABASE_TEST_SECRET_KEY`; sem essa configuração a suíte é pulada.
+- Trigger `trigger_verificar_nome_meta_unico`: **não executado contra o banco real nesta sessão**; depende da aplicação da migration `supabase/migrations/20261115130000_rf007_nome_meta_unico.sql`.

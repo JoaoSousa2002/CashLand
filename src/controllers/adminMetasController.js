@@ -32,29 +32,6 @@ export async function listarMetas(req, res) {
         }
     }
 
-    // Essa condição aceita todas as metas quando nenhum filtro é informado
-    const filtros = ['id_meta.not.is.null']
-
-    if (id_contas?.length > 0) {
-        filtros.push(`id_conta.in.(${id_contas.join(',')})`)
-    }
-
-    if (status) {
-        filtros.push(`status.eq.${JSON.stringify(status)}`)
-    }
-
-    if (pesquisa?.trim()) {
-        const textoPesquisa = pesquisa.trim()
-        const filtroNome = `nome.ilike.${JSON.stringify(`%${textoPesquisa}%`)}`
-
-        // Pesquisa por nome ou pelo identificador, quando o texto é numérico
-        if (/^\d+$/.test(textoPesquisa)) {
-            filtros.push(`or(${filtroNome},id_meta.eq.${textoPesquisa})`)
-        } else {
-            filtros.push(filtroNome)
-        }
-    }
-
     // Filtra pelo usuario somente quando informado
     const filtroUsuario = {}
 
@@ -69,11 +46,34 @@ export async function listarMetas(req, res) {
         filtroUsuario['contas_bancarias.id_usuario'] = id_usuario
     }
 
-    const { data: consultaMeta, error: erroConsultaMeta } = await supabase
+    // Os valores dos filtros são passados como parâmetros do cliente Supabase,
+    // sem montar strings de filtro do PostgREST com texto informado pelo usuario.
+    let consulta = supabase
         .from('metas')
         .select('*, contas_bancarias!inner(id_usuario)')
         .match(filtroUsuario)
-        .or(`and(${filtros.join(',')})`)
+
+    if (id_contas?.length > 0) {
+        consulta = consulta.in('id_conta', id_contas)
+    }
+
+    if (status) {
+        consulta = consulta.eq('status', status)
+    }
+
+    if (pesquisa?.trim()) {
+        const textoPesquisa = pesquisa.trim()
+
+        // Texto somente numérico dentro do intervalo de integer: pesquisa por nome ou pelo
+        // identificador. A string de filtro contém apenas os dígitos já validados.
+        if (/^\d+$/.test(textoPesquisa) && Number(textoPesquisa) <= 2147483647) {
+            consulta = consulta.or(`nome.ilike.%${textoPesquisa}%,id_meta.eq.${textoPesquisa}`)
+        } else {
+            consulta = consulta.ilike('nome', `%${textoPesquisa}%`)
+        }
+    }
+
+    const { data: consultaMeta, error: erroConsultaMeta } = await consulta
 
     if (erroConsultaMeta) {
         console.log("/admin/listar-metas: >>>>> Erro ao listar as metas: " + erroConsultaMeta.message)
@@ -117,7 +117,7 @@ export async function editarMeta(req, res) {
     }
 
     // Verifica se a meta existe e pertence ao usuario
-    const { pertencimento: resMeta, erro: erroMeta } = await verificarMeta(id_meta, id_usuario)
+    const { pertencimento: resMeta, erro: erroMeta, consultaMeta } = await verificarMeta(id_meta, id_usuario)
     if (erroMeta) {
         return res.status(500).json({ mensagem: "Erro ao verificar a meta do usuario, tente novamente mais tarde" })
     }
@@ -144,7 +144,8 @@ export async function editarMeta(req, res) {
         }
     }
 
-    // Edita a meta
+    // Edita a meta. A escrita também filtra pela conta verificada como do proprietário,
+    // para não atingir a meta se o vínculo mudar entre a verificação e a gravação.
     const { data: alterada, error: erroEditaMeta } = await supabase
         .from('metas')
         .update({
@@ -155,10 +156,14 @@ export async function editarMeta(req, res) {
             data_meta: data_meta
         })
         .eq('id_meta', id_meta)
+        .eq('id_conta', consultaMeta.id_conta)
         .select('id_meta')
         .maybeSingle()
 
     if (erroEditaMeta) {
+        if (erroEditaMeta.code === '23505') {
+            return res.status(409).json({ mensagem: "Já existe uma meta com esse nome" })
+        }
         console.log("/admin/editar-meta: >>>>> Erro ao editar a meta: " + erroEditaMeta.message)
         return res.status(500).json({ mensagem: "Erro ao editar a meta, tente novamente mais tarde" })
     }
@@ -174,7 +179,7 @@ export async function deletarMeta(req, res) {
     const { id_meta, id_usuario } = req.params
 
     //Verifica se a meta existe e se pertence ao usuario
-    const { pertencimento: resMeta, erro: erroMeta } = await verificarMeta(id_meta, id_usuario)
+    const { pertencimento: resMeta, erro: erroMeta, consultaMeta } = await verificarMeta(id_meta, id_usuario)
     if (erroMeta) {
         return res.status(500).json({ mensagem: "Erro ao verificar a meta do usuario, tente novamente mais tarde" })
     }
@@ -182,10 +187,12 @@ export async function deletarMeta(req, res) {
         return res.status(404).json({ mensagem: "Essa meta não existe ou não pertence ao usuario" })
     }
 
+    // A exclusão também filtra pela conta verificada como do proprietário
     const { data: excluida, error: erroDeletaMeta } = await supabase
         .from('metas')
         .delete()
         .eq('id_meta', id_meta)
+        .eq('id_conta', consultaMeta.id_conta)
         .select('id_meta')
         .maybeSingle()
 

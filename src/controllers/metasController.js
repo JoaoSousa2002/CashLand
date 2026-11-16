@@ -44,6 +44,10 @@ export async function criarMeta(req, res) {
         .maybeSingle()
 
     if (erroCriaMeta) {
+        // Unicidade do nome garantida pelo trigger do banco (RN-03)
+        if (erroCriaMeta.code === '23505') {
+            return res.status(409).json({ mensagem: "Já existe uma meta com esse nome" })
+        }
         console.log("/usuario/criar-meta: >>>>> Erro ao criar a meta: " + erroCriaMeta.message)
         return res.status(500).json({ mensagem: "Erro ao criar a meta, tenve novamente mais tarde" })
     }
@@ -75,35 +79,35 @@ export async function listarMetas(req, res) {
         }
     }
 
-    // Essa condição aceita todas as metas quando nenhum filtro é informado
-    const filtros = ['id_meta.not.is.null']
+    // Restringe as metas às contas do usuario, independentemente dos filtros.
+    // Os valores dos filtros são passados como parâmetros do cliente Supabase,
+    // sem montar strings de filtro do PostgREST com texto informado pelo usuario.
+    let consulta = supabase
+        .from('metas')
+        .select('*, contas_bancarias!inner(id_usuario)')
+        .eq('contas_bancarias.id_usuario', req.usuario.id_usuario)
 
     if (id_contas?.length > 0) {
-        filtros.push(`id_conta.in.(${id_contas.join(',')})`)
+        consulta = consulta.in('id_conta', id_contas)
     }
 
     if (status) {
-        filtros.push(`status.eq.${JSON.stringify(status)}`)
+        consulta = consulta.eq('status', status)
     }
 
     if (pesquisa?.trim()) {
         const textoPesquisa = pesquisa.trim()
-        const filtroNome = `nome.ilike.${JSON.stringify(`%${textoPesquisa}%`)}`
 
-        // Pesquisa por nome ou pelo identificador, quando o texto é numérico
-        if (/^\d+$/.test(textoPesquisa)) {
-            filtros.push(`or(${filtroNome},id_meta.eq.${textoPesquisa})`)
+        // Texto somente numérico dentro do intervalo de integer: pesquisa por nome ou pelo
+        // identificador. A string de filtro contém apenas os dígitos já validados.
+        if (/^\d+$/.test(textoPesquisa) && Number(textoPesquisa) <= 2147483647) {
+            consulta = consulta.or(`nome.ilike.%${textoPesquisa}%,id_meta.eq.${textoPesquisa}`)
         } else {
-            filtros.push(filtroNome)
+            consulta = consulta.ilike('nome', `%${textoPesquisa}%`)
         }
     }
 
-    // Restringe as metas às contas do usuario, independentemente dos filtros
-    const { data: consultaMeta, error: erroConsultaMeta } = await supabase
-        .from('metas')
-        .select('*, contas_bancarias!inner(id_usuario)')
-        .eq('contas_bancarias.id_usuario', req.usuario.id_usuario)
-        .or(`and(${filtros.join(',')})`)
+    const { data: consultaMeta, error: erroConsultaMeta } = await consulta
 
     if (erroConsultaMeta) {
         console.log("/usuario/listar-metas: >>>>> Erro ao listar as metas: " + erroConsultaMeta.message)
@@ -138,7 +142,7 @@ export async function editarMeta(req, res) {
         }
     }
 
-    const { pertencimento: resMeta, erro: erroMeta } = await verificarMeta(id_meta, req.usuario.id_usuario)
+    const { pertencimento: resMeta, erro: erroMeta, consultaMeta } = await verificarMeta(id_meta, req.usuario.id_usuario)
     if (erroMeta) {
         return res.status(500).json({ mensagem: "Erro ao verificar a meta, tente novamente mais tarde" })
     }
@@ -165,7 +169,8 @@ export async function editarMeta(req, res) {
         }
     }
 
-    // Edita a meta
+    // Edita a meta. A escrita também filtra pela conta verificada como do usuario,
+    // para não atingir a meta se o vínculo mudar entre a verificação e a gravação.
     const { data: alterada, error: erroEditaMeta } = await supabase
         .from('metas')
         .update({
@@ -176,10 +181,14 @@ export async function editarMeta(req, res) {
             data_meta: data_meta
         })
         .eq('id_meta', id_meta)
+        .eq('id_conta', consultaMeta.id_conta)
         .select('id_meta')
         .maybeSingle()
 
     if (erroEditaMeta) {
+        if (erroEditaMeta.code === '23505') {
+            return res.status(409).json({ mensagem: "Já existe uma meta com esse nome" })
+        }
         console.log("/usuario/editar-meta: >>>>> Erro ao editar a meta: " + erroEditaMeta.message)
         return res.status(500).json({ mensagem: "Erro ao editar a meta, tenve novamente mais tarde" })
     }

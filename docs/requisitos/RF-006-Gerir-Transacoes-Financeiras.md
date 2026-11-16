@@ -5,11 +5,27 @@
 **Tipo:** Requisito Funcional  
 **Prioridade:** ALTA — depende de RF-005 (contas) e da gestão de categorias; constitui o registro financeiro que alimenta saldo e histórico.  
 **Complexidade:** ALTA — **34 story points (estimativa documental)**.  
-**Status:** Implementação identificada no código; validação integral de execução pendente.  
+**Status:** Implementado e publicado; avaliado e aceito na Semana 06.  
 **Data de criação:** não confirmada pelos artefatos examinados.  
-**Última revisão documental:** 13/10/2026.
+**Última revisão documental:** 15/11/2026.
 
 **Breve descrição:** Permitir a criação, consulta, edição e exclusão de transações avulsas e regras de recorrência (parceladas e periódicas), com permissões de usuário e administrador, controle de situação Pendente/Pago, transferência entre contas e consulta do saldo gerado pelo banco.
+
+### a) URL da Aplicação (Deploy Online)
+
+- **URL:** https://cashland-cdf0.onrender.com/
+- **Plataforma:** Render.
+
+### b) Link do Banco de Dados Online
+
+- **BD:** Supabase — PostgreSQL.
+- **Link:** https://supabase.com/dashboard/project/xjfgkakjpuxoznbwznyb
+- **Tabelas principais da RF-006:** `transacoes`, `recorrencias` e `saldo_conta`.
+
+### c) Link do GitHub
+
+- **Repositório:** https://github.com/JoaoSousa2002/CashLand
+- **Branch principal:** `main`.
 
 ### Estimativa de complexidade — Story Points
 
@@ -289,7 +305,7 @@ Existem **cinco arquivos HTML físicos**, mas cada um suporta estados/modos dist
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### Mockup 7 — Editar transação do usuário (pendente)
+### Mockup 7 — Editar transação do usuário com status Pendente (botão PAGAR) — implementado
 
 ```text
 ┌─────────────────────────────────────────────────────────────┐

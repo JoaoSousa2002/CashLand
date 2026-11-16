@@ -704,6 +704,10 @@ async function redirecionaTela() {
         return el('button', { type: 'button', classe: 'btn-secundario', texto: rotulo, onclick: () => efetivarTransacao(item) });
     }
 
+    function botaoExcluir(rotuloAcessivel, aoClicar) {
+        return el('button', { type: 'button', classe: 'botao-excluir', texto: 'Excluir', 'aria-label': rotuloAcessivel, onclick: aoClicar });
+    }
+
     function itemMovimentacao(item, { mostrarVencimento = false } = {}) {
         const tipo = item.tipo_transacao;
         const detalhes = [];
@@ -722,6 +726,7 @@ async function redirecionaTela() {
         const acoes = el('div', { classe: 'mov-acoes' });
         if (item.status_transacao === 'Pendente') acoes.appendChild(botaoPagar(item));
         acoes.appendChild(el('a', { href: link, classe: 'btn-fantasma', texto: 'Ver' }));
+        acoes.appendChild(botaoExcluir(`Excluir transação ${item.nome || item.id_transacao}`, () => excluirTransacao(item)));
         return el('li', { classe: 'mov-item' }, [
             el('span', { classe: `mov-icone ${tipo === 'Entrada' ? 'entrada' : tipo === 'Saida' ? 'saida' : 'transferencia'}`, 'aria-hidden': 'true' }, [iconeSvg(ICONES[tipo] || ICONES.Transferencia)]),
             el('span', { classe: 'mov-nome' }, [el('a', { href: link, texto: item.nome || `Transação #${item.id_transacao}` }), ' ', descricaoStatus(item)]),
@@ -847,8 +852,9 @@ async function redirecionaTela() {
                 prazo = el('span', { classe: `meta-prazo ${dias < 0 ? 'atrasada' : ''}`,
                     texto: dias < 0 ? `Prazo vencido em ${formatarData(meta.data_meta)}` : dias === 0 ? 'Prazo termina hoje' : `${dias} dias · até ${formatarData(meta.data_meta)}` });
             }
+            const link = `/tela-principal/editar-meta?id_meta=${encodeURIComponent(meta.id_meta)}`;
             return el('li', {}, [
-                el('a', { classe: 'meta-item', href: `/tela-principal/editar-meta?id_meta=${encodeURIComponent(meta.id_meta)}` }, [
+                el('a', { classe: 'meta-item', href: link }, [
                     el('span', { classe: 'meta-nome', texto: meta.nome }),
                     prazo,
                     el('span', { classe: `meta-barra ${concluida ? 'concluida' : ''}`, role: 'img', 'aria-label': `${Math.round(percentual)}% da meta` }, [el('span', { style: `width:${percentual}%` })]),
@@ -856,6 +862,10 @@ async function redirecionaTela() {
                         el('span', {}, [el('strong', { texto: formatarValor(atual) }), ` de ${formatarValor(objetivo)}`]),
                         el('span', { texto: `${Math.round(percentual)}%` })
                     ])
+                ]),
+                el('div', { classe: 'mov-acoes meta-acoes' }, [
+                    el('a', { href: link, classe: 'btn-fantasma', texto: 'Ver' }),
+                    botaoExcluir(`Excluir meta ${meta.nome}`, () => excluirMeta(meta))
                 ])
             ]);
         }));
@@ -941,6 +951,45 @@ async function redirecionaTela() {
         } catch {
             AcoesRapidas.toast('Não foi possível conectar ao servidor. Tente novamente.', 'erro');
         }
+    }
+
+    // Exclusão pelas listas: confirmação obrigatória e rotas DELETE existentes (RF-006 e RF-007).
+    async function excluirRegistro({ rota, titulo, mensagem, rotuloConfirmar }) {
+        const confirmado = await AcoesRapidas.confirmar({ titulo, mensagem, rotuloConfirmar, perigo: true });
+        if (!confirmado) return;
+        try {
+            const resposta = await fetch(rota, { method: 'DELETE', credentials: 'include' });
+            let dados = {};
+            try { dados = await resposta.json(); } catch { dados = {}; }
+            if (resposta.ok) {
+                AcoesRapidas.toast(dados.mensagem || 'Registro excluído com sucesso.');
+                await aoConcluir();
+            } else if (resposta.status === 401) {
+                window.location.href = '/login';
+            } else {
+                AcoesRapidas.toast(dados.mensagem || `Não foi possível excluir (HTTP ${resposta.status}).`, 'erro');
+            }
+        } catch {
+            AcoesRapidas.toast('Não foi possível conectar ao servidor. Tente novamente.', 'erro');
+        }
+    }
+
+    function excluirTransacao(item) {
+        return excluirRegistro({
+            rota: `/usuario/excluir-transacao/${encodeURIComponent(item.id_transacao)}`,
+            titulo: 'Excluir transação',
+            mensagem: `Excluir "${item.nome || `Transação #${item.id_transacao}`}" (${formatarValor(item.valor_transacao)})? Esta ação não poderá ser desfeita e o saldo da conta será recalculado.`,
+            rotuloConfirmar: 'Excluir transação'
+        });
+    }
+
+    function excluirMeta(meta) {
+        return excluirRegistro({
+            rota: `/usuario/deletar-meta/${encodeURIComponent(meta.id_meta)}`,
+            titulo: 'Excluir meta',
+            mensagem: `Excluir a meta "${meta.nome}"? Esta ação não poderá ser desfeita. Transações vinculadas a ela impedem a exclusão.`,
+            rotuloConfirmar: 'Excluir meta'
+        });
     }
 
     async function aoConcluir() {
