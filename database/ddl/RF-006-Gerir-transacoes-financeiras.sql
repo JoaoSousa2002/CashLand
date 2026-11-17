@@ -314,7 +314,7 @@ BEGIN
     END LOOP;
 
     RETURN NEW;
-END;$function$
+END;$function$;
 
 CREATE OR REPLACE FUNCTION public.criar_transacao_periodica()
  RETURNS trigger
@@ -429,7 +429,7 @@ BEGIN
     END LOOP;
 
     RETURN NEW;
-END;$function$
+END;$function$;
 
 CREATE OR REPLACE FUNCTION public.atualizar_transacoes_recorrencia()
  RETURNS trigger
@@ -946,7 +946,7 @@ BEGIN
 
     RETURN NEW;
 
-END;$function$
+END;$function$;
 
 CREATE OR REPLACE FUNCTION public.atualizar_saldo()
  RETURNS trigger
@@ -1103,7 +1103,7 @@ BEGIN
     RETURN NEW;
 
 END;
-$function$
+$function$;
 
 CREATE OR REPLACE FUNCTION public.recalcular_valor_total_recorrencia()
  RETURNS trigger
@@ -1121,7 +1121,7 @@ BEGIN
 
     RETURN NEW;
 END;
-$function$
+$function$;
 
 CREATE OR REPLACE FUNCTION public.atualizar_orcamentos_por_transacao()
  RETURNS trigger
@@ -1212,7 +1212,7 @@ BEGIN
     END IF;
     RETURN NEW;
 END;
-$function$
+$function$;
 
 
 

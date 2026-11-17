@@ -58,7 +58,7 @@ BEGIN
     RETURN NEW;
 
 END;
-$function$
+$function$;
 
 CREATE OR REPLACE FUNCTION public.criar_conta_padrao()
  RETURNS trigger
@@ -84,7 +84,7 @@ AS $function$BEGIN
 
     RETURN NEW;
 
-END;$function$
+END;$function$;
 
 -- TRIGGERS
 

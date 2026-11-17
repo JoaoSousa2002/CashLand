@@ -49,7 +49,7 @@ BEGIN
     -- O BEFORE de geração substitui nome pelo valor atualizado dos vínculos.
     RETURN NEW;
 END;
-$function$
+$function$;
 
 
 -- Triggers
