@@ -88,6 +88,12 @@
                 </div>
                 <form id="meuForm" novalidate>
                     <div class="input-dados">
+                        <label for="nome">Nome (opcional):</label>
+                        <input id="nome" name="nome" type="text" aria-describedby="erro-nome" maxlength="100" placeholder="Ex.: Mercado do mês" disabled>
+                        <p class="texto-auxiliar">Em branco, o nome é gerado a partir da conta, da categoria e do período.</p>
+                        <div id="erro-nome" data-erro="nome" aria-live="polite"></div>
+                    </div>
+                    <div class="input-dados">
                         <label for="id_conta">Conta bancária (opcional):</label>
                         <select id="id_conta" name="id_conta" aria-describedby="erro-id_conta" disabled><option value="">Carregando contas...</option></select>
                         <div id="erro-id_conta" data-erro="id_conta" aria-live="polite"></div>
@@ -118,7 +124,7 @@
                         <select id="periodo_inicio" name="periodo_inicio" aria-describedby="erro-periodo_inicio" disabled><option value="">Selecione primeiro o tipo de período</option></select>
                         <div id="erro-periodo_inicio" data-erro="periodo_inicio" aria-live="polite"></div>
                     </div>
-                    <p class="texto-auxiliar">Escolha o período atual ou o próximo. A semana começa no domingo. O nome, a data final e o valor gasto são preenchidos automaticamente.</p>
+                    <p class="texto-auxiliar">Escolha o período atual ou o próximo. A semana começa no domingo. A data final e o valor gasto são preenchidos automaticamente.</p>
                     <p id="aviso-vinculos" class="texto-auxiliar" hidden>Nenhuma conta ou categoria disponível.</p>
                     <button type="button" id="botao-Carregar" hidden>Recarregar dados</button>
                     <button type="submit" id="botao-Enviar" disabled>Criar orçamento</button>
@@ -289,7 +295,7 @@
         const form = document.getElementById('meuForm');
         const salvar = document.getElementById('botao-Enviar');
         const recarregar = document.getElementById('botao-Carregar');
-        const camposEditaveis = ['id_conta', 'id_categoria', 'descricao', 'valor_orcamento', 'tipo_periodo', 'periodo_inicio'];
+        const camposEditaveis = ['nome', 'id_conta', 'id_categoria', 'descricao', 'valor_orcamento', 'tipo_periodo', 'periodo_inicio'];
         let listasProntas = false;
 
         function FechaResultado_overlay() {
@@ -453,6 +459,10 @@
                 } else if (id === 'periodo_inicio') {
                     if (valor !== '') {
                         payload.periodo_inicio = valor;
+                    }
+                } else if (id === 'nome') {
+                    if (valor !== '') {
+                        payload.nome = valor;
                     }
                 } else {
                     payload[id] = valor;

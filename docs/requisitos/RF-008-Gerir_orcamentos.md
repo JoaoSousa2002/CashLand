@@ -27,9 +27,9 @@
 
 ## 2. Descrição e Atores
 
-A RF-008 permite definir limites de gastos por conta bancária, categoria ou combinação de ambas, em períodos semanais, mensais ou anuais. No cadastro, o usuário informa os vínculos, o valor do orçamento e o tipo de período, podendo informar uma descrição e escolher o período atual ou o próximo. O sistema identifica o proprietário pela sessão, e o banco gera o nome, o fim do período, o valor atual e as datas de controle.
+A RF-008 permite definir limites de gastos por conta bancária, categoria ou combinação de ambas, em períodos semanais, mensais ou anuais. No cadastro, o usuário informa os vínculos, o valor do orçamento e o tipo de período, podendo informar um nome, uma descrição e escolher o período atual ou o próximo. O sistema identifica o proprietário pela sessão, e o banco gera o fim do período, o valor atual e as datas de controle. Quando o nome não é informado, o banco o gera a partir dos vínculos e do período.
 
-O usuário pode consultar seus orçamentos, pesquisar por nome e combinar filtros por identificador, conta, categoria, tipo de período e intervalo de datas. Na edição, pode alterar os vínculos, a descrição, o limite, o tipo de período e o início. Identificador, proprietário, nome, valor atual, fim do período e datas de criação e atualização são dados de consulta. A exclusão é disponibilizada no menu de opções da linha e exige confirmação.
+O usuário pode consultar seus orçamentos, pesquisar por nome e combinar filtros por identificador, conta, categoria, tipo de período e intervalo de datas. Na edição, pode alterar o nome, os vínculos, a descrição, o limite, o tipo de período e o início; apagar o nome restaura o nome gerado. Identificador, proprietário, valor atual, fim do período e datas de criação e atualização são dados de consulta. A exclusão é disponibilizada no menu de opções da linha e exige confirmação.
 
 O administrador possui acesso às listagens e aos formulários administrativos para consultar, editar e excluir orçamentos. Pode consultar diferentes usuários ou informar um proprietário nos filtros. As alterações e exclusões administrativas exigem identificar o proprietário do orçamento. O pertencimento é determinado pela coluna `id_usuario` da própria tabela `orcamentos`.
 
@@ -84,7 +84,7 @@ O Dashboard da tela principal apresenta somente os orçamentos atuais, cujo per�
 - Seleciona Criar orçamento para enviar o formulário.
 - O sistema valida os campos, o período e o pertencimento dos vínculos.
 - O backend obtém o proprietário pela sessão e solicita a inserção.
-- Os triggers do banco definem o fim do período, geram o nome, calculam o valor atual e preenchem as datas de controle.
+- Os triggers do banco definem o fim do período, calculam o valor atual, preenchem as datas de controle e geram o nome quando o usuário não informa um.
 - O backend confirma o registro criado e apresenta a mensagem de sucesso.
 - Ao continuar, o usuário retorna à listagem.
 
@@ -133,7 +133,7 @@ O Dashboard da tela principal apresenta somente os orçamentos atuais, cujo per�
 - O usuário abre as opções da linha na listagem e seleciona Ver, ou utiliza o botão `ver` no Dashboard.
 - A página de edição recebe `id_orcamento` pela URL.
 - O sistema consulta a listagem com esse identificador e seleciona o registro exato.
-- Exibe identificador, proprietário, nome, valor atual, fim do período e datas de controle em campos bloqueados.
+- Exibe identificador, proprietário, valor atual, fim do período e datas de controle em campos bloqueados. O nome é editável.
 - O usuário altera conta, categoria, descrição, valor do orçamento ou período.
 - Se remover um vínculo, mantém o outro preenchido.
 - Se alterar o tipo de período, informa o início correspondente.
@@ -176,12 +176,12 @@ O Dashboard da tela principal apresenta somente os orçamentos atuais, cujo per�
 
 **Pós-condição:** consulta, edição ou exclusão realizada no contexto do proprietário correto.
 
-### Fluxo alternativo: orçamento com nome gerado já existe
+### Fluxo alternativo: orçamento com nome já existente
 
-- O banco gera o nome a partir dos vínculos e do período.
-- Se o nome resultante já existir, a restrição de unicidade impede a criação ou edição.
+- O nome é o informado pelo usuário ou, na ausência dele, o gerado pelo banco a partir dos vínculos e do período.
+- Se o mesmo proprietário já possuir um orçamento com esse nome, sem diferenciar maiúsculas de minúsculas, a restrição de unicidade impede a criação ou edição.
 - A API retorna HTTP 409 com a mensagem Já existe um orçamento com esse nome.
-- O usuário pode rever os vínculos e o período antes de enviar novamente; o nome não é digitado manualmente.
+- O usuário pode informar outro nome ou rever os vínculos e o período antes de enviar novamente.
 
 ### Fluxo alternativo: dados inválidos
 
@@ -232,11 +232,11 @@ O Dashboard da tela principal apresenta somente os orçamentos atuais, cujo per�
 - **RN-03:** o limite deve ser positivo, ter no máximo duas casas decimais e respeitar a capacidade de `numeric(12, 2)`.
 - **RN-04:** os períodos admitidos são Semanal, Mensal e Anual, com início e fim definidos pelo calendário. O fim deve ser posterior ao início e não pode anteceder a data de criação no fuso de São Paulo.
 - **RN-05:** a criação utiliza o período atual quando o início é omitido. O início enviado na criação ou edição deve corresponder ao período atual ou ao próximo; alterações que omitem o período preservam o já armazenado.
-- **RN-06:** o banco gera o nome com os nomes e IDs dos vínculos e a indicação do período. A unicidade é aplicada ao nome completo na tabela. Renomear uma conta ou categoria aciona a sincronização dos nomes dos orçamentos vinculados.
+- **RN-06:** o nome é opcional, com até 100 caracteres. Quando informado, é mantido (`nome_personalizado = true`); quando omitido, vazio ou nulo, o banco gera o nome com os nomes e IDs dos vínculos e a indicação do período (`nome_personalizado = false`). A unicidade é aplicada por proprietário, sem diferenciar maiúsculas de minúsculas. Renomear uma conta ou categoria aciona a sincronização somente dos nomes gerados.
 - **RN-07:** `valor_atual` soma somente transações Saida/Pago do proprietário, com data de pagamento dentro do período inclusivo e compatíveis com todos os vínculos preenchidos.
 - **RN-08:** criação e edição do orçamento recalculam o gasto. O trigger da RF-006 também recalcula os orçamentos afetados por inserção, alteração relevante ou exclusão de transações. Sem despesas compatíveis, o valor atual é zero.
 - **RN-09:** o cálculo do gasto não modifica `valor_orcamento`. Ultrapassar o limite é permitido e sinalizado no Dashboard; o orçamento não bloqueia o registro de despesas.
-- **RN-10:** identificador, proprietário, nome, valor atual, fim do período e datas de controle não são livremente alteráveis pelo formulário nem pelo contrato de edição. O proprietário informado pelo administrador identifica o alvo, sem transferir a propriedade.
+- **RN-10:** identificador, proprietário, valor atual, fim do período e datas de controle não são livremente alteráveis pelo formulário nem pelo contrato de edição. O proprietário informado pelo administrador identifica o alvo, sem transferir a propriedade.
 - **RN-11:** campos omitidos no PATCH são preservados. Enviar nulo remove um vínculo, desde que outro permaneça; a descrição aceita texto vazio ou nulo.
 - **RN-12:** filtros de identificador, nome, conta, categoria, tipo de período e datas podem ser combinados com AND. As datas aplicam sobreposição inclusiva, e não exigem igualdade entre os períodos.
 - **RN-13:** a listagem administrativa permite consulta global; informar `id_usuario` restringe o resultado ao proprietário selecionado. Edição e exclusão administrativas exigem esse identificador.

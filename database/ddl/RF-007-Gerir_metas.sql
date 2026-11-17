@@ -154,3 +154,52 @@ valor_transacao,
 tipo_transacao,
 status_transacao on transacoes for EACH row
 execute FUNCTION atualizar_valor_meta ();
+
+-- UNICIDADE DO NOME DA META POR PROPRIETÁRIO (RN-03)
+-- A tabela metas não possui coluna de usuário: o proprietário é obtido pela conta vinculada.
+-- O bloqueio consultivo por usuário serializa inserções e edições simultâneas do mesmo
+-- proprietário, evitando que duas requisições concorrentes gravem nomes repetidos.
+-- A aplicação mapeia o erro 23505 (unique_violation) para HTTP 409.
+
+CREATE OR REPLACE FUNCTION public.verificar_nome_meta_unico()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'pg_catalog', 'public'
+AS $function$
+DECLARE
+    v_id_usuario integer;
+BEGIN
+    SELECT c.id_usuario INTO v_id_usuario
+    FROM public.contas_bancarias AS c
+    WHERE c.id_conta = NEW.id_conta;
+
+    -- Conta inexistente é tratada pela chave estrangeira metas_id_conta_fkey.
+    IF v_id_usuario IS NULL THEN
+        RETURN NEW;
+    END IF;
+
+    PERFORM pg_advisory_xact_lock(hashtext('metas_nome_usuario'), v_id_usuario);
+
+    IF EXISTS (
+        SELECT 1
+        FROM public.metas AS m
+        JOIN public.contas_bancarias AS c ON c.id_conta = m.id_conta
+        WHERE c.id_usuario = v_id_usuario
+          AND m.nome = NEW.nome
+          AND m.id_meta IS DISTINCT FROM NEW.id_meta
+    ) THEN
+        RAISE unique_violation
+            USING MESSAGE = 'Já existe uma meta com esse nome para este usuário.',
+                  CONSTRAINT = 'uq_metas_usuario_nome';
+    END IF;
+
+    RETURN NEW;
+END;
+$function$;
+
+DROP TRIGGER IF EXISTS trigger_verificar_nome_meta_unico ON public.metas;
+
+CREATE TRIGGER trigger_verificar_nome_meta_unico
+BEFORE INSERT OR UPDATE OF nome, id_conta ON public.metas
+FOR EACH ROW
+EXECUTE FUNCTION public.verificar_nome_meta_unico();

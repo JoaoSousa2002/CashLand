@@ -1120,7 +1120,7 @@ class TestesHTTP(unittest.TestCase):
         processo = subprocess.run(
             ["node", "tests/helpers/rf06-http.js"], cwd=raiz,
             input=json.dumps({"banco": banco if banco is not None else self.banco(), "chamadas": chamadas, "falha": falha}),
-            text=True, capture_output=True, timeout=30,
+            text=True, encoding="utf-8", capture_output=True, timeout=30,
         )
         self.assertEqual(processo.returncode, 0, processo.stderr + processo.stdout)
         resultado = next(linha for linha in processo.stdout.splitlines() if linha.startswith("RESULTADO_RF06="))
@@ -1670,7 +1670,10 @@ class TestesRF07(TestesHTTP):
         for consulta in consultas:
             self.assertEqual(consulta["campos"], "*, contas_bancarias!inner(id_usuario)")
             self.assertIn(["eq", "contas_bancarias.id_usuario", 1], consulta["filtros"])
-        self.assertIn(["or", 'and(id_meta.not.is.null,id_conta.in.(10,11),status.eq."Em progresso",nome.ilike."%resERVa%")'], consultas[1]["filtros"])
+        # Filtros passados como parâmetros do cliente Supabase, sem string de filtro montada com texto do usuário
+        for filtro in (["in", "id_conta", [10, 11]], ["eq", "status", "Em progresso"], ["ilike", "nome", "%resERVa%"]):
+            self.assertIn(filtro, consultas[1]["filtros"])
+        self.assertFalse(any(f[0] == "or" for f in consultas[1]["filtros"]))
         self.assertEqual([e["resultado"] for e in resultado["eventos"]],
                          ["SUCESSO" if ids else "FALHA" for _, ids in casos])
 

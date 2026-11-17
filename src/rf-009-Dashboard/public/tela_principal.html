@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/png" href="/CashLand%20emerald%20C%20icon.png">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Dashboard — CashLand</title>
+    <link rel="stylesheet" href="/template.css">
+    <link rel="stylesheet" href="/dashboard.css">
+    <script src="/menu-superior.js" defer></script>
+</head>
+
+<body>
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="loading-box">
+            <div style="margin: auto 0;">
+                <p>Carregando... </p>
+            </div>
+            <div class="spinning-wheel"></div>
+        </div>
+    </div>
+
+    <div class="loading-overlay" id="resultado-overlay">
+        <div class="loading-box" id="resultado-funcao">
+        </div>
+    </div>
+    <div id="container">
+        <div id="div-superior">
+
+            <div id="div-nome-sistema">
+                <a href="/tela-principal">
+                    <h1>CashLand</h1>
+                </a>
+            </div>
+
+            <div id="div-nav">
+                <button id="botao-opcoes" type="button" aria-expanded="false" aria-controls="lista-opcoes">
+                    Opções <span aria-hidden="true">▾</span>
+                </button>
+                <nav id="lista-opcoes" aria-label="Opções de navegação" hidden>
+                    <a href="/tela-principal/listar-categoria">Gerir categorias</a>
+                    <a href="/tela-principal/listar-contas">Gerir contas financeiras</a>
+                    <a href="/tela-principal/criar-transacao">Adicionar transação</a>
+                    <a href="/tela-principal/listar-transacoes">Gerir transações</a>
+                    <a href="/tela-principal/listar-metas">Gerir metas</a>
+                </nav>
+            </div>
+            <div id="div-resumo-usuario">
+                <div id="div-saldo-usuario">
+                    <button id="botao-saldo-usuario" type="button" aria-expanded="false" aria-controls="lista-contas-saldo">
+                        <small>Saldo atual <span aria-hidden="true">▾</span></small>
+                        <strong id="saldo-usuario" aria-live="polite">Carregando...</strong>
+                        <small id="nome-conta-saldo">Selecionar conta</small>
+                    </button>
+                    <div id="lista-contas-saldo" hidden>
+                        <label for="conta-saldo-usuario">Conta financeira</label>
+                        <select id="conta-saldo-usuario" size="3" disabled></select>
+                    </div>
+                </div>
+                <div id="div-nome-usuario">
+                    <h3><span id="nome-usuario"></span></h3>
+                </div>
+            </div>
+            <div id="div-usuario">
+                <a onclick="redirecionaTela()">
+                    <img src="/User_icon_black.png" alt="icone usuario">
+                </a>
+            </div>
+            <div id="form-logout">
+                <form id="meuForm-Logout">
+                    <input type="submit" value="Sair">
+                </form>
+            </div>
+        </div>
+
+        <main id="container-conteudo" class="pagina-dashboard">
+            <header class="dash-topo">
+                <div>
+                    <p class="dash-saudacao" id="dash-saudacao">Olá!</p>
+                    <h2 id="titulo-dashboard">Visão geral</h2>
+                    <p class="texto-auxiliar dash-periodo" id="dash-periodo">&nbsp;</p>
+                </div>
+                <div class="dash-acoes" role="group" aria-label="Ações rápidas">
+                    <button type="button" class="btn-receita" data-acao="receita" disabled>
+                        <svg class="nav-icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"/><path d="m6 13 6 6 6-6"/></svg>
+                        Receita
+                    </button>
+                    <button type="button" class="btn-despesa" data-acao="despesa" disabled>
+                        <svg class="nav-icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5"/><path d="m6 11 6-6 6 6"/></svg>
+                        Despesa
+                    </button>
+                    <button type="button" data-acao="transferencia" disabled>
+                        <svg class="nav-icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8h15"/><path d="m14 4 4 4-4 4"/><path d="M21 16H6"/><path d="m10 12-4 4 4 4"/></svg>
+                        Transferência
+                    </button>
+                    <button type="button" data-acao="meta" disabled>
+                        <svg class="nav-icone" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2"/></svg>
+                        Meta
+                    </button>
+                    <button type="button" data-acao="orcamento" disabled>
+                        <svg class="nav-icone" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/><path d="M15 15h3"/></svg>
+                        Orçamento
+                    </button>
+                    <button type="button" data-acao="categoria" disabled>
+                        <svg class="nav-icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>
+                        Categoria
+                    </button>
+                </div>
+            </header>
+
+            <div id="dash-aviso" class="dash-aviso" hidden></div>
+
+            <div class="dash-grade">
+                <!-- Saldo e evolução mensal -->
+                <section class="cartao dash-cartao dash-hero" aria-labelledby="titulo-saldo">
+                    <div class="dash-cartao-topo">
+                        <div>
+                            <h3 id="titulo-saldo">Saldo disponível</h3>
+                            <p class="texto-auxiliar">Soma das contas ativas</p>
+                        </div>
+                        <div class="dash-cartao-acoes">
+                            <a href="/tela-principal/listar-contas">Gerir contas</a>
+                            <a href="/tela-principal/criar-conta">Nova conta</a>
+                        </div>
+                    </div>
+                    <p class="dash-hero-valor" id="saldo-total" aria-live="polite">—</p>
+                    <div class="dash-hero-sub" id="saldo-resumo"></div>
+                    <ul class="dash-contas" id="lista-contas-dash" aria-label="Contas financeiras"></ul>
+                    <div class="dash-evolucao">
+                        <div class="dash-evolucao-topo">
+                            <span>Evolução mensal · <strong>resultado</strong> (entradas − despesas)</span>
+                            <span id="evolucao-resumo"></span>
+                        </div>
+                        <div id="grafico-evolucao" class="grafico" aria-live="polite"></div>
+                    </div>
+                </section>
+
+                <!-- Indicadores do mês -->
+                <div class="dash-kpis">
+                    <article class="cartao dash-cartao kpi kpi-entrada">
+                        <header>
+                            <span class="kpi-icone" aria-hidden="true"><svg class="nav-icone" viewBox="0 0 24 24"><path d="M12 5v14"/><path d="m6 13 6 6 6-6"/></svg></span>
+                            <h3>Entradas do mês</h3>
+                        </header>
+                        <p class="kpi-valor" id="kpi-entradas">—</p>
+                        <p class="kpi-delta" id="kpi-entradas-delta"></p>
+                    </article>
+                    <article class="cartao dash-cartao kpi kpi-saida">
+                        <header>
+                            <span class="kpi-icone" aria-hidden="true"><svg class="nav-icone" viewBox="0 0 24 24"><path d="M12 19V5"/><path d="m6 11 6-6 6 6"/></svg></span>
+                            <h3>Despesas do mês</h3>
+                        </header>
+                        <p class="kpi-valor" id="kpi-despesas">—</p>
+                        <p class="kpi-delta" id="kpi-despesas-delta"></p>
+                    </article>
+                    <article class="cartao dash-cartao kpi kpi-economia">
+                        <header>
+                            <span class="kpi-icone" aria-hidden="true"><svg class="nav-icone" viewBox="0 0 24 24"><path d="M4 12a8 8 0 0 1 15.5-2.8L22 9v5l-2.4.5A8 8 0 0 1 12 20H9l-1 2H6v-2.3A8 8 0 0 1 4 12z"/><circle cx="15" cy="11" r="0.8"/><path d="M9 8c1-.7 2.5-.7 3.5 0"/></svg></span>
+                            <h3>Economizado no mês</h3>
+                        </header>
+                        <p class="kpi-valor" id="kpi-economia">—</p>
+                        <p class="kpi-delta" id="kpi-economia-delta"></p>
+                    </article>
+                </div>
+
+                <!-- Fluxo de caixa -->
+                <section class="cartao dash-cartao dash-fluxo" aria-labelledby="titulo-fluxo">
+                    <div class="dash-cartao-topo">
+                        <div>
+                            <h3 id="titulo-fluxo">Fluxo de caixa</h3>
+                            <p class="texto-auxiliar">Entradas e despesas pagas nos últimos 6 meses</p>
+                        </div>
+                        <div class="dash-cartao-acoes">
+                            <button type="button" class="btn-fantasma" id="alternar-tabela-fluxo" aria-pressed="false" aria-controls="tabela-fluxo">Ver tabela</button>
+                            <a href="/tela-principal/listar-transacoes">Ver transações</a>
+                        </div>
+                    </div>
+                    <div class="legenda" aria-hidden="true">
+                        <span><i style="background: var(--serie-entrada)"></i>Entradas</span>
+                        <span><i style="background: var(--serie-saida)"></i>Despesas</span>
+                    </div>
+                    <div id="grafico-fluxo" class="grafico"></div>
+                    <table id="tabela-fluxo" class="tabela-grafico" hidden>
+                        <caption class="sr-only">Fluxo de caixa mensal</caption>
+                        <thead><tr><th scope="col">Mês</th><th scope="col">Entradas</th><th scope="col">Despesas</th><th scope="col">Resultado</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </section>
+
+                <!-- Metas -->
+                <section class="cartao dash-cartao dash-metas" aria-labelledby="titulo-metas">
+                    <div class="dash-cartao-topo">
+                        <div>
+                            <h3 id="titulo-metas">Metas financeiras</h3>
+                            <p class="texto-auxiliar" id="metas-resumo">Progresso das metas em andamento</p>
+                        </div>
+                        <div class="dash-cartao-acoes">
+                            <button type="button" class="btn-secundario" data-acao="meta" disabled>Nova meta</button>
+                            <a href="/tela-principal/listar-metas">Ver todas</a>
+                        </div>
+                    </div>
+                    <ul class="dash-lista" id="lista-metas"></ul>
+                </section>
+
+                <!-- Últimas movimentações -->
+                <section class="cartao dash-cartao dash-movimentacoes" aria-labelledby="titulo-movimentacoes">
+                    <div class="dash-cartao-topo">
+                        <div>
+                            <h3 id="titulo-movimentacoes">Últimas movimentações</h3>
+                            <p class="texto-auxiliar">Transações mais recentes de todas as contas</p>
+                        </div>
+                        <div class="dash-cartao-acoes">
+                            <button type="button" class="btn-secundario" data-acao="despesa" disabled>Nova transação</button>
+                            <a href="/tela-principal/listar-transacoes">Ver todas</a>
+                        </div>
+                    </div>
+                    <ul class="dash-lista" id="lista-movimentacoes"></ul>
+                </section>
+
+                <!-- Próximos vencimentos -->
+                <section class="cartao dash-cartao dash-pendencias" aria-labelledby="titulo-pendencias">
+                    <div class="dash-cartao-topo">
+                        <div>
+                            <h3 id="titulo-pendencias">Contas a pagar e receber</h3>
+                            <p class="texto-auxiliar">Transações pendentes por vencimento</p>
+                        </div>
+                        <div class="dash-cartao-acoes">
+                            <a href="/tela-principal/listar-transacoes">Ver pendentes</a>
+                        </div>
+                    </div>
+                    <div class="pend-resumo" id="pendencias-resumo"></div>
+                    <ul class="dash-lista" id="lista-pendencias"></ul>
+                </section>
+
+                <!-- Categorias -->
+                <section class="cartao dash-cartao dash-categorias" aria-labelledby="titulo-categorias">
+                    <div class="dash-cartao-topo">
+                        <div>
+                            <h3 id="titulo-categorias">Despesas por categoria</h3>
+                            <p class="texto-auxiliar" id="categorias-resumo">Despesas pagas no mês atual</p>
+                        </div>
+                        <div class="dash-cartao-acoes">
+                            <button type="button" class="btn-secundario" data-acao="categoria" disabled>Nova categoria</button>
+                            <a href="/tela-principal/listar-categoria">Gerir</a>
+                        </div>
+                    </div>
+                    <ol class="dash-lista" id="lista-categorias"></ol>
+                </section>
+
+                <!-- Orçamentos atuais (RF-008) -->
+                <section id="div-tabela" class="cartao dash-cartao dash-orcamentos" tabindex="0" aria-labelledby="titulo-orcamentos">
+                    <div class="dash-cartao-topo">
+                        <div>
+                            <h3 id="titulo-orcamentos">Orçamentos atuais</h3>
+                            <p class="texto-auxiliar">Limites cujo período inclui a data de hoje</p>
+                        </div>
+                        <div class="dash-cartao-acoes">
+                            <button type="button" class="btn-secundario" data-acao="orcamento" disabled>Novo orçamento</button>
+                            <a href="/tela-principal/listar-orcamentos">Ver todos</a>
+                        </div>
+                    </div>
+                    <div class="legenda-orcamentos" aria-hidden="true">
+                        <span><i style="background:#d9efdf"></i>Dentro do limite</span>
+                        <span><i style="background:#fff1bd"></i>Restam menos de R$ 100</span>
+                        <span><i style="background:#f8d7da"></i>Limite ultrapassado</span>
+                    </div>
+                    <div class="tabela-rolagem">
+                        <table id="tabela-orcamentos" class="tabela-listagem" aria-labelledby="titulo-orcamentos">
+                            <thead>
+                                <tr>
+                                    <th scope="col" class="coluna-ver">Ver</th>
+                                    <th scope="col">Nome do orçamento</th>
+                                    <th scope="col">Valor atual</th>
+                                    <th scope="col">Valor do orçamento</th>
+                                    <th scope="col">Início do período</th>
+                                    <th scope="col">Fim do período</th>
+                                </tr>
+                            </thead>
+                            <tbody id="corpo-orcamentos" aria-live="polite">
+                                <tr><td colspan="6">Carregando orçamentos atuais...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <script src="/protecao.js"></script>
+    <script src="/acoes-rapidas.js"></script>
+    <script src="/dashboard.js"></script>
+</body>
+
+</html>

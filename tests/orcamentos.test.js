@@ -183,3 +183,58 @@ test('RF008 aplica rate limit e registra a tentativa bloqueada', async t => {
     assert.ok(Number(bloqueio.headers['retry-after']) > 0);
     assert.ok(eventos.some(e => e.rota === 'USER_CRIAR_ORCAMENTO' && e.resultado === 'NEGADO' && e.detalhes.status_http === 429));
 });
+
+test('nome opcional: informado é gravado como personalizado; vazio restaura o nome gerado', async t => {
+    // Criação com nome próprio.
+    let consultas = simularConsultas(t, [
+        { data: { id_usuario: 1 }, error: null },
+        { data: { id_orcamento: 100, id_usuario: 1 }, error: null }
+    ]);
+    await http('post', '/usuario/criar-orcamento')
+        .send({ nome: '  Mercado do mês  ', id_conta: 10, tipo_periodo: 'Mensal', valor_orcamento: 100 }).expect(201);
+    let gravado = consultas.find(c => c.operacao === 'insert').dados;
+    assert.equal(gravado.nome, 'Mercado do mês');
+    assert.equal(gravado.nome_personalizado, true);
+
+    // Criação sem nome: o trigger continua gerando; nada sobre o nome é enviado.
+    for (const nome of [undefined, '', null]) {
+        consultas = simularConsultas(t, [
+            { data: { id_usuario: 1 }, error: null },
+            { data: { id_orcamento: 100, id_usuario: 1 }, error: null }
+        ]);
+        const dados = { id_conta: 10, tipo_periodo: 'Mensal', valor_orcamento: 100 };
+        if (nome !== undefined) dados.nome = nome;
+        await http('post', '/usuario/criar-orcamento').send(dados).expect(201);
+        gravado = consultas.find(c => c.operacao === 'insert').dados;
+        assert.equal('nome' in gravado, false);
+        assert.equal('nome_personalizado' in gravado, false);
+    }
+
+    // Edição pelo usuário e pelo administrador.
+    for (const admin of [false, true]) {
+        for (const [nome, esperado] of [
+            ['Combustível', { nome: 'Combustível', nome_personalizado: true }],
+            ['', { nome_personalizado: false }],
+            [null, { nome_personalizado: false }]
+        ]) {
+            const respostas = [];
+            let caminho = '/usuario/editar-orcamento';
+            const dados = { id_orcamento: 100, nome };
+            if (admin) {
+                caminho = '/admin/editar-orcamento';
+                dados.id_usuario = 2;
+                respostas.push({ data: { status_usuario: 'Ativo' }, error: null });
+            }
+            respostas.push({ data: orcamento, error: null }, { data: { id_orcamento: 100, id_usuario: 2 }, error: null });
+            consultas = simularConsultas(t, respostas);
+            await http('patch', caminho, admin).send(dados).expect(200);
+            assert.deepEqual(consultas.find(c => c.operacao === 'update').dados, esperado);
+        }
+    }
+
+    // Limite de tamanho e tipo.
+    const longo = await http('post', '/usuario/criar-orcamento')
+        .send({ nome: 'x'.repeat(101), id_conta: 10, tipo_periodo: 'Mensal', valor_orcamento: 100 }).expect(400);
+    assert.equal(longo.body.erros[0].campo, 'nome');
+    await http('patch', '/usuario/editar-orcamento').send({ id_orcamento: 100, nome: 123 }).expect(400);
+});

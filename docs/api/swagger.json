@@ -3,7 +3,7 @@
   "info": {
     "title": "CashLand API",
     "version": "1.0.0",
-    "description": "Contrato da implementação atual: 64 operações de API das RF-002 a RF-008. Páginas HTML, arquivos estáticos e /api-docs não são endpoints de negócio e não integram paths. Não existem rotas adicionais de detalhe ou paginação: os filtros das listagens consultam os registros.\n\nAutenticação real: JWT recebido exclusivamente no cookie token. Authorization: Bearer não é lido pelo backend. O login define cookie HttpOnly, SameSite=Strict, duração de duas horas e Secure em produção. Use o login na mesma origem do Swagger UI para que o navegador envie o cookie; o campo Authorize de cookie não consegue definir manualmente um cabeçalho Cookie no navegador. Em curl, use -c e -b. Os endpoints /usuario aceitam sessões Comum e Admin; /admin exige tipo Admin no JWT. O middleware de autenticação valida o JWT, mas não reconsulta status/perfil no banco a cada chamada; verificações adicionais constam em cada operação.\n\nRequisições JSON: quando há Joi, campos desconhecidos são rejeitados, erros são acumulados e os tipos compatíveis são convertidos (exceto valor_meta e valor_orcamento, estritos). Os schemas descrevem os tipos normalizados; conversões e arredondamentos estão indicados nos campos. PATCH pode exigir campos completos, conforme cada schema. Arrays de query usam a chave repetida, por exemplo id_contas=10&id_contas=11. Null permitido pelo Joi em parâmetros não significa que o texto literal null da URL seja convertido em null; omita o filtro para não aplicá-lo.\n\nRespostas: mensagens e status preservam o código, inclusive grafia, 203 no login, 201 na pesquisa de usuários e 501 na solicitação administrativa de reset. Não há envelope global nem paginação no servidor. Erros tratados retornam JSON; sem middleware global de erros, exceções não tratadas e falhas do parser Express usam HTML (500, JSON malformado 400 e corpo acima de 100 KB 413). Caminhos inexistentes retornam a página HTML 404, não um erro JSON desta API. Rate limits são por IP, compartilhados entre rotas que usam a mesma instância e executados antes da autenticação; 429 inclui Retry-After.\n\nIDs gerados, timestamps, saldo, valor_atual e status de metas são saídas do banco/backend, não campos de criação. Restrições de DDL podem causar 500 mesmo para valores aceitos pelo Joi; os DDLs são referências locais e não houve execução contra o banco publicado. Todos os exemplos são fictícios."
+    "description": "Contrato da implementação atual: 64 operações de API das RF-002 a RF-008. A RF-009 (Dashboard, tela principal) não acrescenta operações: consome GET /me, /usuario/listar-contas, /usuario/verificar-saldo, /usuario/listar-categoria, /usuario/listar-transacoes, /usuario/listar-metas e /usuario/listar-orcamentos; cria registros por POST /usuario/criar-transacao, /usuario/criar-categoria, /usuario/criar-meta e /usuario/criar-orcamento; efetiva pendências por PATCH /usuario/editar-transacao; e exclui por DELETE /usuario/excluir-transacao/{id_transacao} e /usuario/deletar-meta/{id_meta}. Páginas HTML, arquivos estáticos e /api-docs não são endpoints de negócio e não integram paths. Não existem rotas adicionais de detalhe ou paginação: os filtros das listagens consultam os registros.\n\nAutenticação real: JWT recebido exclusivamente no cookie token. Authorization: Bearer não é lido pelo backend. O login define cookie HttpOnly, SameSite=Strict, duração de duas horas e Secure em produção. Use o login na mesma origem do Swagger UI para que o navegador envie o cookie; o campo Authorize de cookie não consegue definir manualmente um cabeçalho Cookie no navegador. Em curl, use -c e -b. Os endpoints /usuario aceitam sessões Comum e Admin; /admin exige tipo Admin no JWT. O middleware de autenticação valida o JWT, mas não reconsulta status/perfil no banco a cada chamada; verificações adicionais constam em cada operação.\n\nRequisições JSON: quando há Joi, campos desconhecidos são rejeitados, erros são acumulados e os tipos compatíveis são convertidos (exceto valor_meta e valor_orcamento, estritos). Os schemas descrevem os tipos normalizados; conversões e arredondamentos estão indicados nos campos. PATCH pode exigir campos completos, conforme cada schema. Arrays de query usam a chave repetida, por exemplo id_contas=10&id_contas=11. Null permitido pelo Joi em parâmetros não significa que o texto literal null da URL seja convertido em null; omita o filtro para não aplicá-lo.\n\nRespostas: mensagens e status preservam o código, inclusive grafia, 203 no login, 201 na pesquisa de usuários e 501 na solicitação administrativa de reset. Não há envelope global nem paginação no servidor. Erros tratados retornam JSON; sem middleware global de erros, exceções não tratadas e falhas do parser Express usam HTML (500, JSON malformado 400 e corpo acima de 100 KB 413). Caminhos inexistentes retornam a página HTML 404, não um erro JSON desta API. Rate limits são por IP, compartilhados entre rotas que usam a mesma instância e executados antes da autenticação; 429 inclui Retry-After.\n\nIDs gerados, timestamps, saldo, valor_atual e status de metas são saídas do banco/backend, não campos de criação. Restrições de DDL podem causar 500 mesmo para valores aceitos pelo Joi; os DDLs são referências locais e não houve execução contra o banco publicado. Todos os exemplos são fictícios."
   },
   "servers": [
     {
@@ -5259,14 +5259,14 @@
             "name": "id_meta",
             "in": "query",
             "required": false,
-            "description": "Identificador da meta; null remove o vínculo em edição. Joi aceita conversão de texto compatível para este tipo.",
+            "description": "Filtra as movimentações vinculadas à meta informada. Joi aceita conversão de texto compatível para este tipo.",
             "schema": {
               "type": "integer",
               "nullable": true,
               "minimum": 0,
               "exclusiveMinimum": true,
               "maximum": 2147483647,
-              "description": "Identificador da meta; null remove o vínculo em edição. Joi aceita conversão de texto compatível para este tipo."
+              "description": "Filtra as movimentações vinculadas à meta informada. Joi aceita conversão de texto compatível para este tipo."
             },
             "example": 20
           },
@@ -5589,14 +5589,14 @@
             "name": "id_meta",
             "in": "query",
             "required": false,
-            "description": "Identificador da meta; null remove o vínculo em edição. Joi aceita conversão de texto compatível para este tipo.",
+            "description": "Filtra as movimentações vinculadas à meta informada. Joi aceita conversão de texto compatível para este tipo.",
             "schema": {
               "type": "integer",
               "nullable": true,
               "minimum": 0,
               "exclusiveMinimum": true,
               "maximum": 2147483647,
-              "description": "Identificador da meta; null remove o vínculo em edição. Joi aceita conversão de texto compatível para este tipo."
+              "description": "Filtra as movimentações vinculadas à meta informada. Joi aceita conversão de texto compatível para este tipo."
             },
             "example": 20
           },
@@ -7107,12 +7107,12 @@
             "name": "id_meta",
             "in": "path",
             "required": true,
-            "description": "Identificador da meta; null remove o vínculo em edição. Joi aceita conversão de texto compatível para este tipo.",
+            "description": "Identificador da meta a excluir, informado no caminho. Joi aceita conversão de texto compatível para este tipo.",
             "schema": {
               "type": "integer",
               "minimum": 1,
               "maximum": 2147483647,
-              "description": "Identificador da meta; null remove o vínculo em edição. Joi aceita conversão de texto compatível para este tipo."
+              "description": "Identificador da meta a excluir, informado no caminho. Joi aceita conversão de texto compatível para este tipo."
             },
             "example": 20
           }
@@ -11439,14 +11439,14 @@
             "name": "id_meta",
             "in": "query",
             "required": false,
-            "description": "Identificador da meta; null remove o vínculo em edição. Joi aceita conversão de texto compatível para este tipo.",
+            "description": "Filtra as movimentações vinculadas à meta informada. Joi aceita conversão de texto compatível para este tipo.",
             "schema": {
               "type": "integer",
               "nullable": true,
               "minimum": 0,
               "exclusiveMinimum": true,
               "maximum": 2147483647,
-              "description": "Identificador da meta; null remove o vínculo em edição. Joi aceita conversão de texto compatível para este tipo."
+              "description": "Filtra as movimentações vinculadas à meta informada. Joi aceita conversão de texto compatível para este tipo."
             },
             "example": 20
           },
@@ -11718,14 +11718,14 @@
             "name": "id_meta",
             "in": "query",
             "required": false,
-            "description": "Identificador da meta; null remove o vínculo em edição. Joi aceita conversão de texto compatível para este tipo.",
+            "description": "Filtra as movimentações vinculadas à meta informada. Joi aceita conversão de texto compatível para este tipo.",
             "schema": {
               "type": "integer",
               "nullable": true,
               "minimum": 0,
               "exclusiveMinimum": true,
               "maximum": 2147483647,
-              "description": "Identificador da meta; null remove o vínculo em edição. Joi aceita conversão de texto compatível para este tipo."
+              "description": "Filtra as movimentações vinculadas à meta informada. Joi aceita conversão de texto compatível para este tipo."
             },
             "example": 20
           },
@@ -13093,12 +13093,12 @@
             "name": "id_meta",
             "in": "path",
             "required": true,
-            "description": "Identificador da meta; null remove o vínculo em edição. Joi aceita conversão de texto compatível para este tipo.",
+            "description": "Identificador da meta a excluir, informado no caminho. Joi aceita conversão de texto compatível para este tipo.",
             "schema": {
               "type": "integer",
               "minimum": 1,
               "maximum": 2147483647,
-              "description": "Identificador da meta; null remove o vínculo em edição. Joi aceita conversão de texto compatível para este tipo."
+              "description": "Identificador da meta a excluir, informado no caminho. Joi aceita conversão de texto compatível para este tipo."
             },
             "example": 20
           }
@@ -16319,7 +16319,7 @@
             "minimum": 0,
             "exclusiveMinimum": true,
             "maximum": 2147483647,
-            "description": "Identificador da meta; null remove o vínculo em edição. Joi aceita conversão de texto compatível para este tipo."
+            "description": "Identificador opcional da meta à qual as transações da recorrência contribuem. A meta deve pertencer ao mesmo usuário e não é aceita em transferências. Joi aceita conversão de texto compatível para este tipo."
           },
           "id_conta": {
             "type": "integer",
@@ -16577,7 +16577,7 @@
             "minimum": 0,
             "exclusiveMinimum": true,
             "maximum": 2147483647,
-            "description": "Identificador da meta; null remove o vínculo em edição. Joi aceita conversão de texto compatível para este tipo."
+            "description": "Identificador da meta vinculada; null remove o vínculo. A meta deve pertencer ao mesmo usuário e não é aceita em transferências. Joi aceita conversão de texto compatível para este tipo."
           },
           "id_recorrencia": {
             "type": "integer",
@@ -16719,7 +16719,7 @@
             "minimum": 0,
             "exclusiveMinimum": true,
             "maximum": 2147483647,
-            "description": "Identificador da meta; null remove o vínculo em edição. Joi aceita conversão de texto compatível para este tipo."
+            "description": "Identificador opcional da meta à qual a transação contribui. A meta deve pertencer ao mesmo usuário e não é aceita em transferências. Joi aceita conversão de texto compatível para este tipo."
           },
           "tipo_transacao": {
             "type": "string",
@@ -17075,7 +17075,7 @@
             "minimum": 0,
             "exclusiveMinimum": true,
             "maximum": 2147483647,
-            "description": "Identificador da meta; null remove o vínculo em edição. Joi aceita conversão de texto compatível para este tipo."
+            "description": "Identificador da meta vinculada; null remove o vínculo. A meta deve pertencer ao mesmo usuário e não é aceita em transferências. Joi aceita conversão de texto compatível para este tipo."
           },
           "tipo_transacao": {
             "type": "string",
@@ -17422,7 +17422,7 @@
             "type": "integer",
             "minimum": 1,
             "maximum": 2147483647,
-            "description": "Identificador da meta; null remove o vínculo em edição. Joi aceita conversão de texto compatível para este tipo."
+            "description": "Identificador da meta a editar. Deve pertencer ao usuário autenticado. Joi aceita conversão de texto compatível para este tipo."
           },
           "id_conta": {
             "type": "integer",
@@ -17609,7 +17609,7 @@
             "minimum": 0,
             "exclusiveMinimum": true,
             "maximum": 2147483647,
-            "description": "Identificador da meta; null remove o vínculo em edição. Joi aceita conversão de texto compatível para este tipo."
+            "description": "Identificador da meta vinculada; null remove o vínculo. A meta deve pertencer ao proprietário informado em id_usuario e não é aceita em transferências. Joi aceita conversão de texto compatível para este tipo."
           },
           "id_usuario": {
             "type": "integer",
@@ -17767,7 +17767,7 @@
             "minimum": 0,
             "exclusiveMinimum": true,
             "maximum": 2147483647,
-            "description": "Identificador da meta; null remove o vínculo em edição. Joi aceita conversão de texto compatível para este tipo."
+            "description": "Identificador da meta vinculada; null remove o vínculo. A meta deve pertencer ao proprietário informado em id_usuario e não é aceita em transferências. Joi aceita conversão de texto compatível para este tipo."
           },
           "tipo_transacao": {
             "type": "string",
@@ -18082,7 +18082,7 @@
             "type": "integer",
             "minimum": 1,
             "maximum": 2147483647,
-            "description": "Identificador da meta; null remove o vínculo em edição. Joi aceita conversão de texto compatível para este tipo."
+            "description": "Identificador da meta a editar. Deve pertencer ao proprietário informado em id_usuario. Joi aceita conversão de texto compatível para este tipo."
           },
           "id_conta": {
             "type": "integer",
@@ -18136,6 +18136,13 @@
             "minimum": 1,
             "maximum": 2147483647,
             "nullable": true
+          },
+          "nome": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 100,
+            "example": "Mercado do mês",
+            "description": "Nome definido pelo usuário (opcional). Vazio ou null mantém ou restaura o nome gerado pelo banco a partir da conta, da categoria e do período."
           },
           "descricao": {
             "type": "string",
@@ -18217,6 +18224,13 @@
             "minimum": 1,
             "maximum": 2147483647,
             "nullable": true
+          },
+          "nome": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 100,
+            "example": "Mercado do mês",
+            "description": "Nome definido pelo usuário (opcional). Vazio ou null mantém ou restaura o nome gerado pelo banco a partir da conta, da categoria e do período."
           },
           "descricao": {
             "type": "string",
@@ -18310,6 +18324,13 @@
             "maximum": 2147483647,
             "nullable": true
           },
+          "nome": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 100,
+            "example": "Mercado do mês",
+            "description": "Nome definido pelo usuário (opcional). Vazio ou null mantém ou restaura o nome gerado pelo banco a partir da conta, da categoria e do período."
+          },
           "descricao": {
             "type": "string",
             "nullable": true,
@@ -18401,6 +18422,11 @@
             "minimum": 1,
             "maximum": 2147483647,
             "nullable": true
+          },
+          "nome_personalizado": {
+            "type": "boolean",
+            "example": false,
+            "description": "true quando o nome foi definido pelo usuário; false quando é gerado pelo banco."
           },
           "descricao": {
             "type": "string",

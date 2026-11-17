@@ -57,7 +57,7 @@ export async function listarOrcamentos(req, res) {
 }
 
 export async function editarOrcamento(req, res) {
-    const { id_orcamento, id_conta, id_categoria, descricao, valor_orcamento, tipo_periodo, periodo_inicio } = req.body;
+    const { nome, id_orcamento, id_conta, id_categoria, descricao, valor_orcamento, tipo_periodo, periodo_inicio } = req.body;
     const { id_usuario } = req.body;
 
     // Verifica o proprietário informado pelo administrador.
@@ -143,6 +143,15 @@ export async function editarOrcamento(req, res) {
     }
     if (id_categoria !== undefined) {
         dados.id_categoria = id_categoria;
+    }
+    // Nome informado passa a ser personalizado; vazio ou null restaura o nome gerado pelo banco.
+    if (nome !== undefined) {
+        if (nome === null || nome === '') {
+            dados.nome_personalizado = false;
+        } else {
+            dados.nome = nome;
+            dados.nome_personalizado = true;
+        }
     }
     if (descricao !== undefined) {
         dados.descricao = descricao;

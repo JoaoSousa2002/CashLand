@@ -78,7 +78,7 @@ const server = http.createServer((req, res) => {
     res.setHeader("Content-Type", "text/html");
     return res.end("<html><body>Destino simulado</body></html>");
   } else {
-    for (const dir of ["rf-003-Cadastro_usuario/public", "rf-002-Login/public", "img"]) {
+    for (const dir of ["rf-003-Cadastro_usuario/public", "rf-002-Login/public", "rf-009-Dashboard/public", "img"]) {
       const p = path.join(root, "src", dir, path.basename(url.pathname));
       if (fs.existsSync(p) && fs.statSync(p).isFile()) {
         file = p;
@@ -321,7 +321,7 @@ test("atalhos, permissões, bloqueios, recarga e duas tabelas", { timeout: 3e4 }
   assert.equal(await evaluate(`document.querySelectorAll('.menu-tabela:not([hidden])').length`), 1);
   assert.equal(await evaluate(`document.querySelectorAll('${trigger}')[0].getAttribute('aria-expanded')`), "false");
   await press("Escape", "Escape", 27);
-  const user = files.find((f) => f.endsWith("/listar-transacoes.html"));
+  const user = files.find((f) => path.basename(f) === "listar-transacoes.html");
   await load(user, [1280, 900], "transacao");
   await evaluate(`renderizarTabela([{id_transacao:903,nome:'Transação recorrente',id_recorrencia:10}])`);
   await settle();

@@ -19,7 +19,8 @@
 
 - **LINK_REPOSITORIO_GITHUB:** https://github.com/JoaoSousa2002/CashLand
 - **BRANCH_PRINCIPAL:** main
-- **LINK_APLICACAO_DEPLOY:** https://dashboard.render.com/web/srv-dafl4k0n74is73aguusg/deploys
+- **LINK_APLICACAO_DEPLOY:** https://cashland-cdf0.onrender.com/
+- **PAINEL_RENDER (privado, para a equipe):** https://dashboard.render.com/web/srv-dafl4k0n74is73aguusg/deploys
 - **LINK_BANCO_DADOS:** https://supabase.com/dashboard/project/xjfgkakjpuxoznbwznyb
 - **LINK_API_SWAGGER:** https://cashland-cdf0.onrender.com/api-docs/
 - **LINK_DEMONSTRAÇÃO:** https://cashland-cdf0.onrender.com/
@@ -93,8 +94,13 @@ Testes das nove listagens em navegador, incluindo transações e recorrências, 
 npm run test:frontend
 ```
 
+A mesma suíte cobre o Dashboard (RF-009, `src/rf-009-Dashboard/`): sessão, orçamentos atuais,
+indicadores do mês, gráficos, listas, responsividade e ações rápidas. Requisitos em
+`docs/requisitos/RF-009-Dashboard.md`.
+
 É necessário ter Chromium, Chrome ou Brave instalado. Se o executável não for encontrado,
-informe `BROWSER_BIN=/caminho/do/navegador`. Em contêineres sem suporte ao sandbox do Chromium,
+informe `BROWSER_BIN=/caminho/do/navegador`; no Windows (Git Bash), por exemplo,
+`BROWSER_BIN="/c/Program Files/Google/Chrome/Application/chrome.exe" npm run test:frontend`. Em contêineres sem suporte ao sandbox do Chromium,
 use `BROWSER_NO_SANDBOX=1`. A execução cria um perfil temporário, usa portas locais aleatórias,
 bloqueia requisições externas e simula as APIs. Verifica clique/toque, teclado, foco, menu único,
 posicionamento, rolagem, filtros, recarga, permissões e o botão de 24 × 24 px com área de toque de 44 × 44 px.
@@ -129,6 +135,19 @@ Esses testes não executam SQL, migrations ou triggers no banco real.
 O E2E IDOR permanece separado: configure `SUPABASE_TEST_URL`, `SUPABASE_TEST_SECRET_KEY` e
 `SEGREDO_JWT` para um Supabase de testes diferente do banco da aplicação e execute `npm run test:idor`.
 Essa suíte cria e remove somente seus registros temporários. Sem essa configuração, ela é pulada por `npm test`.
+
+#### Empacotar para entrega
+
+O ZIP enviado ao professor deve conter somente os arquivos versionados. O comando abaixo gera o
+pacote a partir do Git, o que exclui por construção `.env`, `node_modules/`, `logs/`,
+`supabase/.temp/` e qualquer outro arquivo ignorado:
+
+```bash
+npm run empacotar
+```
+
+Equivale a `git archive --format=zip --output=../CashLand-entrega.zip HEAD`. Confira o conteúdo
+antes de enviar: `unzip -l ../CashLand-entrega.zip | grep -i env` deve listar apenas `.env.example`.
 
 #### Exemplos de curl — autenticação e CRUD da RF-007
 
@@ -418,6 +437,52 @@ para refletir a limpeza feita pelo servidor.
 curl -i -X POST -b cookies-cashland.txt -c cookies-cashland.txt "$BASE_URL/logout"
 ```
 
+#### Exemplos de curl — RF-009 Dashboard (tela principal)
+
+A RF-009 não cria rotas: a tela `/tela-principal` consome as operações abaixo com o mesmo
+cookie de sessão. Os comandos reproduzem, na URL publicada, exatamente o que o painel faz.
+`HOJE` é a data em `America/Sao_Paulo`, no formato AAAA-MM-DD.
+
+```bash
+HOJE=$(TZ=America/Sao_Paulo date +%F)
+
+# Sessão (antes dela, nenhuma rota /usuario é consultada) — HTTP 200
+curl -i -b cookies-cashland.txt "$BASE_URL/me"
+
+# Read: contas e saldo por conta ativa, categorias, transações, metas e orçamentos vigentes — HTTP 200
+curl -i -b cookies-cashland.txt "$BASE_URL/usuario/listar-contas"
+curl -i -b cookies-cashland.txt "$BASE_URL/usuario/verificar-saldo?id_conta=$ID_CONTA"
+curl -i -b cookies-cashland.txt "$BASE_URL/usuario/listar-categoria"
+curl -i -b cookies-cashland.txt "$BASE_URL/usuario/listar-transacoes"
+curl -i -b cookies-cashland.txt "$BASE_URL/usuario/listar-metas"            # 404 quando não há metas
+curl -i -b cookies-cashland.txt --get \
+  --data-urlencode "periodo_inicio=$HOJE" --data-urlencode "periodo_fim=$HOJE" \
+  "$BASE_URL/usuario/listar-orcamentos"
+
+# Create (ações rápidas Receita/Despesa, Categoria, Meta e Orçamento) — HTTP 201, 200, 201 e 201
+curl -i -b cookies-cashland.txt -H 'Content-Type: application/json' \
+  --data "{\"id_conta_origem\":$ID_CONTA,\"id_categoria\":$ID_CATEGORIA,\"tipo_transacao\":\"Saida\",\"nome\":\"Despesa pelo painel\",\"forma_pagamento\":\"PIX\",\"valor_transacao\":25.5,\"status_transacao\":\"Pendente\",\"data_transacao\":\"$HOJE\",\"data_pagamento\":null}" \
+  "$BASE_URL/usuario/criar-transacao"
+curl -i -b cookies-cashland.txt -H 'Content-Type: application/json' \
+  --data '{"nome":"Categoria pelo painel","descricao":"Criada pela ação rápida"}' "$BASE_URL/usuario/criar-categoria"
+curl -i -b cookies-cashland.txt -H 'Content-Type: application/json' \
+  --data "{\"id_conta\":$ID_CONTA,\"nome\":\"Meta pelo painel\",\"valor_meta\":1000}" "$BASE_URL/usuario/criar-meta"
+curl -i -b cookies-cashland.txt -H 'Content-Type: application/json' \
+  --data "{\"id_categoria\":$ID_CATEGORIA,\"valor_orcamento\":500,\"tipo_periodo\":\"Mensal\"}" "$BASE_URL/usuario/criar-orcamento"
+
+# Update (botão Pagar/Receber de uma pendência) — HTTP 200
+curl -i -X PATCH -b cookies-cashland.txt -H 'Content-Type: application/json' \
+  --data "{\"id_transacao\":$ID_TRANSACAO,\"status_transacao\":\"Pago\",\"data_pagamento\":\"$HOJE\"}" \
+  "$BASE_URL/usuario/editar-transacao"
+
+# Delete (botão Excluir das listas de movimentações e de metas, após confirmação) — HTTP 200
+curl -i -X DELETE -b cookies-cashland.txt "$BASE_URL/usuario/excluir-transacao/$ID_TRANSACAO"
+curl -i -X DELETE -b cookies-cashland.txt "$BASE_URL/usuario/deletar-meta/$ID_META"
+```
+
+Orçamentos são excluídos pela listagem completa (`DELETE /usuario/deletar-orcamento/{id_orcamento}`,
+RF-008), acessível pelo atalho Ver todos do cartão. Sem sessão, todas as rotas retornam `401`.
+
 #### Contrato e cobertura da documentação
 
 O arquivo [docs/api/swagger.json](docs/api/swagger.json) usa OpenAPI 3.0 e é carregado
@@ -432,7 +497,9 @@ incluir as rotas de páginas HTML, arquivos estáticos ou criar rotas de detalhe
 | RF-005 — contas financeiras               | 10        |
 | RF-006 — transações, recorrências e saldo | 15        |
 | RF-007 — metas financeiras                | 7         |
-| **Total**                                 | **57**    |
+| RF-008 — orçamentos                       | 7         |
+| RF-009 — Dashboard (reutiliza 14 acima)   | 0         |
+| **Total**                                 | **64**    |
 
 Os modelos preservam as respostas reais, inclusive `mensagem` versus `erro`, arrays
 sem envelope e o objeto `{mensagem, metas}`. Não há paginação no servidor. Joi retorna

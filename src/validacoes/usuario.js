@@ -1990,6 +1990,17 @@ export const schemaADMIN_excluirMeta = Joi.object({
 
 })
 
+// Nome opcional do orçamento: vazio ou nulo mantém (ou restaura) o nome gerado pelo banco.
+const schemaNomeOrcamento = Joi.string()
+    .trim()
+    .max(100)
+    .allow(null, '')
+    .optional()
+    .messages({
+        'string.base': 'O nome do orçamento deve ser um texto.',
+        'string.max': 'O nome do orçamento deve possuir no máximo 100 caracteres.'
+    });
+
 export const schemaCriarOrcamento = Joi.object({
 
     id_conta: Joi.number()
@@ -2019,6 +2030,8 @@ export const schemaCriarOrcamento = Joi.object({
             'number.max': 'O identificador da categoria deve ser no máximo 2147483647.',
             'number.unsafe': 'O identificador da categoria está fora do intervalo numérico permitido.'
         }),
+
+    nome: schemaNomeOrcamento,
 
     descricao: Joi.string()
         .trim()
@@ -2234,6 +2247,8 @@ export const schemaEditarOrcamento = Joi.object({
             'number.unsafe': 'O identificador da categoria está fora do intervalo numérico permitido.'
         }),
 
+    nome: schemaNomeOrcamento,
+
     descricao: Joi.string()
         .trim()
         .allow(null, '')
@@ -2284,7 +2299,7 @@ export const schemaEditarOrcamento = Joi.object({
             'any.invalid': 'A data inicial deve ser uma data existente no calendário.'
         })
 })
-    .or('id_conta', 'id_categoria', 'descricao', 'valor_orcamento', 'tipo_periodo', 'periodo_inicio')
+    .or('nome', 'id_conta', 'id_categoria', 'descricao', 'valor_orcamento', 'tipo_periodo', 'periodo_inicio')
     .custom((value, helpers) => {
         // Um vínculo omitido pode continuar preenchido no banco.
         if (value.id_conta === null && value.id_categoria === null) {
@@ -2503,6 +2518,8 @@ export const schemaADMIN_editarOrcamento = Joi.object({
             'number.unsafe': 'O identificador da categoria está fora do intervalo numérico permitido.'
         }),
 
+    nome: schemaNomeOrcamento,
+
     descricao: Joi.string()
         .trim()
         .allow(null, '')
@@ -2553,7 +2570,7 @@ export const schemaADMIN_editarOrcamento = Joi.object({
             'any.invalid': 'A data inicial deve ser uma data existente no calendário.'
         })
 })
-    .or('id_conta', 'id_categoria', 'descricao', 'valor_orcamento', 'tipo_periodo', 'periodo_inicio')
+    .or('nome', 'id_conta', 'id_categoria', 'descricao', 'valor_orcamento', 'tipo_periodo', 'periodo_inicio')
     .custom((value, helpers) => {
         // Um vínculo omitido pode continuar preenchido no banco.
         if (value.id_conta === null && value.id_categoria === null) {
