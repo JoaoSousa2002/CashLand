@@ -38,7 +38,7 @@ BEGIN
     RETURN NEW;
 
 END;
-$function$
+$function$;
 
 CREATE OR REPLACE FUNCTION public.atualizar_status_meta()
  RETURNS trigger
@@ -59,7 +59,7 @@ BEGIN
     RETURN NEW;
 
 END;
-$function$
+$function$;
 
 CREATE OR REPLACE FUNCTION public.atualizar_valor_meta()
  RETURNS trigger
@@ -130,7 +130,7 @@ BEGIN
     RETURN NEW;
 
 END;
-$function$
+$function$;
 
 
 -- TRIGGERS

@@ -229,7 +229,9 @@ A edição completa de cada registro (e a exclusão de orçamentos) é feita nas
 - `node --test tests/browser/dashboard.test.js`: 7 testes, 7 aprovados. Inclui sessão, orçamentos atuais, indicadores, gráficos, listas, responsividade em 1280, 390 e 320 px, ação rápida de criação, validação visual e exclusão com confirmação (cancelar preserva; confirmar chama a rota DELETE e recarrega as listas).
 - `npm test`: 170 testes, 170 aprovados.
 - `npm run test:frontend` (suíte completa de navegador): 55 testes, 55 aprovados (listagens das RF-003 a RF-008 em 1280 × 900, 390 × 844 e 320 × 568, orçamentos e Dashboard).
-- Não executado nesta sessão: os fluxos na URL publicada com banco real e a aplicação da migration de índices.
+- Migrations: as cinco de `supabase/migrations/` constam como aplicadas no banco publicado (`supabase migration list --linked`); os índices `idx_transacoes_*` e `idx_metas_conta`, o gatilho `trigger_verificar_nome_meta_unico` e a função corrigida `atualizar_orcamentos_por_transacao` foram conferidos no catálogo.
+- Roteiro na URL publicada (17/11/2026, https://cashland-cdf0.onrender.com/, conta de usuário de teste, Chrome headless): login; painel sem erro de console e sem rolagem horizontal em 1280, 390 e 320 px; Create de despesa e de meta pelas ações rápidas; Read após recarregar; Update pelo botão Pagar (status Pago e data de pagamento no banco, saldo da conta atualizado); Delete com confirmação (Cancelar preserva, Excluir remove da lista e do banco, saldo volta ao valor anterior). Cada passo foi conferido por consulta ao banco e os registros de teste foram removidos. Login do administrador também verificado.
+- Correção aplicada antes do roteiro: a função `atualizar_orcamentos_por_transacao` publicada no banco divergia do DDL (comparava `OLD.modalidade`, coluna inexistente em `transacoes`) e impedia qualquer UPDATE em transações; foi recriada pela migration `20261115150000_rf008_corrige_gatilho_orcamentos.sql`.
 
 ## 7. Testes
 

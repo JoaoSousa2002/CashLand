@@ -112,7 +112,7 @@ BEGIN
 
     RETURN NEW;
 END;
-$function$
+$function$;
 
 CREATE OR REPLACE FUNCTION public.gerar_nome_orcamento()
  RETURNS trigger
@@ -183,7 +183,7 @@ BEGIN
     NEW.nome := v_nome || ' [' || v_periodo || ']';
     RETURN NEW;
 END;
-$function$
+$function$;
 
 CREATE OR REPLACE FUNCTION public.recalcular_valores_orcamento()
  RETURNS trigger
@@ -208,7 +208,7 @@ BEGIN
     -- O limite permanece sendo o informado na criação/edição.
     RETURN NEW;
 END;
-$function$
+$function$;
 
 CREATE OR REPLACE FUNCTION public.atualizar_data_atualizacao_orcamento()
  RETURNS trigger
@@ -230,7 +230,7 @@ BEGIN
     NEW.data_atualizacao := CURRENT_TIMESTAMP;
     RETURN NEW;
 END;
-$function$
+$function$;
 
 
 -- Triggers
