@@ -5354,8 +5354,7 @@
               "nullable": true,
               "enum": [
                 "Pendente",
-                "Pago",
-                null
+                "Pago"
               ],
               "description": "Estado usado para filtrar registros. "
             },
@@ -8738,8 +8737,6 @@
                       "$ref": "#/components/schemas/CategoriaAdminUsuarioCompleto"
                     },
                     {
-                      "type": "object",
-                      "nullable": true,
                       "enum": [
                         null
                       ]
@@ -11825,8 +11822,7 @@
               "nullable": true,
               "enum": [
                 "Pendente",
-                "Pago",
-                null
+                "Pago"
               ],
               "description": "Estado usado para filtrar registros. "
             },
@@ -15377,8 +15373,7 @@
               "débito",
               "crédito",
               "boleto",
-              "dinheiro",
-              null
+              "dinheiro"
             ]
           },
           "destino": {
@@ -15500,8 +15495,7 @@
               "débito",
               "crédito",
               "boleto",
-              "dinheiro",
-              null
+              "dinheiro"
             ]
           },
           "destino": {
@@ -15631,8 +15625,7 @@
               "débito",
               "crédito",
               "boleto",
-              "dinheiro",
-              null
+              "dinheiro"
             ]
           },
           "destino": {
@@ -16786,8 +16779,6 @@
           "data_pagamento": {
             "anyOf": [
               {
-                "type": "string",
-                "nullable": true,
                 "enum": [
                   null
                 ]
@@ -16952,8 +16943,6 @@
                   {
                     "properties": {
                       "data_pagamento": {
-                        "type": "string",
-                        "nullable": true,
                         "enum": [
                           null
                         ]
@@ -17012,8 +17001,6 @@
               {
                 "properties": {
                   "id_meta": {
-                    "type": "integer",
-                    "nullable": true,
                     "enum": [
                       null
                     ]
@@ -17142,8 +17129,6 @@
           "data_pagamento": {
             "anyOf": [
               {
-                "type": "string",
-                "nullable": true,
                 "enum": [
                   null
                 ]
@@ -17301,8 +17286,6 @@
                   {
                     "properties": {
                       "data_pagamento": {
-                        "type": "string",
-                        "nullable": true,
                         "enum": [
                           null
                         ]
@@ -17361,8 +17344,6 @@
               {
                 "properties": {
                   "id_meta": {
-                    "type": "integer",
-                    "nullable": true,
                     "enum": [
                       null
                     ]
@@ -17834,8 +17815,6 @@
           "data_pagamento": {
             "anyOf": [
               {
-                "type": "string",
-                "nullable": true,
                 "enum": [
                   null
                 ]
@@ -17997,8 +17976,6 @@
                   {
                     "properties": {
                       "data_pagamento": {
-                        "type": "string",
-                        "nullable": true,
                         "enum": [
                           null
                         ]
@@ -18057,8 +18034,6 @@
               {
                 "properties": {
                   "id_meta": {
-                    "type": "integer",
-                    "nullable": true,
                     "enum": [
                       null
                     ]
