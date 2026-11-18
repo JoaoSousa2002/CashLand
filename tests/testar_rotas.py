@@ -1976,7 +1976,7 @@ class TestesRF08(TestesHTTP):
             if admin:
                 prefixo = "/admin"
                 ids["id_usuario"] = 1
-            for dados in [ids, {**ids, "valor_orcamento": 1.234}, {**ids, "id_conta": None, "id_categoria": None}, {**ids, "nome": "Proibido"}]:
+            for dados in [ids, {**ids, "valor_orcamento": 1.234}, {**ids, "id_conta": None, "id_categoria": None}, {**ids, "nome": "x" * 101}]:
                 chamadas.append(self.chamada("PATCH", prefixo + "/editar-orcamento", dados, admin=admin))
             for query in [{"periodo_inicio": "2026-11-30", "periodo_fim": "2026-11-01"}, {"id_orcamento": "abc"}, {"tipo_periodo": "Diario"}, {"nome": " "}]:
                 chamadas.append(self.chamada("GET", prefixo + "/listar-orcamentos", query=query, admin=admin))

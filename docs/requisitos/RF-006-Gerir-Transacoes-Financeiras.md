@@ -111,10 +111,10 @@ O proprietário do registro é obtido pela conta ou pela recorrência. As rotas 
 1. Usuário abre `/tela-principal/listar-transacoes`.
 2. Seleciona Transações ou Recorrências.
 3. O sistema consulta a lista correspondente.
-4. Usuário informa pesquisa por nome ou ID.
-5. Opcionalmente abre filtros avançados.
+4. Usuário informa pesquisa por nome ou ID. No modo Transações, pode também escolher uma categoria na barra de pesquisa; a lista é consultada de novo com `id_categoria`, combinada com a pesquisa e os filtros avançados.
+5. Opcionalmente abre filtros avançados (contas, meta, recorrência, status e períodos).
 6. Aplica os filtros.
-7. O frontend renderiza linhas e opções de operação.
+7. O frontend renderiza linhas e opções de operação. A coluna Categoria mostra o nome da categoria de cada transação ou recorrência (Transferência não tem categoria e aparece como `---`).
 8. Ao selecionar editar, navega para `/tela-principal/editar-transacao` com o identificador.
 9. O formulário carrega os dados e bloqueia campos não editáveis.
 10. Usuário altera campos permitidos e salva.
@@ -279,14 +279,17 @@ Existem **cinco arquivos HTML físicos**, mas cada um suporta estados/modos dist
 ┌─────────────────────────────────────────────────────────────┐
 │ Minhas transações financeiras                              │
 │ [● Transações] [○ Recorrências]                            │
-│ Nome ou ID: [________________] [Pesquisar] [Filtrar]        │
-├─────────┬────────────┬────────┬────────┬───────────────────┤
-│ ID      │ Nome       │ Valor  │ Status │ Opções            │
-├─────────┼────────────┼────────┼────────┼───────────────────┤
-│ 101     │ Mercado    │ 120,00 │ Pago   │ [Editar] [Excluir]│
-│ 102     │ Internet   │  80,00 │Pendente│ [Editar] [Excluir]│
-└─────────┴────────────┴────────┴────────┴───────────────────┘
+│ Nome ou ID: [__________] Categoria: [Todas ▼]               │
+│                               [Pesquisar] [Filtrar]         │
+├──────┬──────────┬─────────────┬────────┬────────┬──────────┤
+│ ID   │ Nome     │ Categoria   │ Valor  │ Status │ Opções   │
+├──────┼──────────┼─────────────┼────────┼────────┼──────────┤
+│ 101  │ Mercado  │ Alimentação │ 120,00 │ Pago   │ [⋯]      │
+│ 102  │ Internet │ Moradia     │  80,00 │Pendente│ [⋯]      │
+└──────┴──────────┴─────────────┴────────┴────────┴──────────┘
 ```
+
+*Colunas completas: Opções, ID, Nome, Tipo, Categoria, Conta de origem, Conta de destino, Valor, Vencimento, Status, Recorrência e Parcela. O seletor de categoria lista os nomes em ordem alfabética, sem IDs; o nome é único por usuário (`categorias_usuario_nome_unique`).*
 
 ### Mockup 6 — Listagem do usuário (recorrências) e filtros
 
@@ -300,7 +303,7 @@ Existem **cinco arquivos HTML físicos**, mas cada um suporta estados/modos dist
 ├─────────────────────────────────────────────────────────────┤
 │ Filtros avançados                               [X]        │
 │ Contas financeiras: [Adicionar conta]                      │
-│ Períodos / categorias / situação (conforme modo)            │
+│ Meta / recorrência / status / períodos (só transações)      │
 │                                      [Aplicar filtros]     │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -341,11 +344,13 @@ Existem **cinco arquivos HTML físicos**, mas cada um suporta estados/modos dist
 │ Usuário-alvo: [________________]                            │
 │ [● Transações] [○ Recorrências]                            │
 │ Nome ou ID: [________________] [Pesquisar] [Filtrar]        │
-├─────────┬────────────┬────────┬────────┬───────────────────┤
-│ ID      │ Nome       │ Valor  │ Status │ Opções            │
-│ 245     │ Compra     │ 155,00 │ Pago   │ [Editar] [Excluir]│
-└─────────┴────────────┴────────┴────────┴───────────────────┘
+├──────┬──────────┬─────────────────┬────────┬────────┬──────┤
+│ ID   │ Nome     │ Categoria       │ Valor  │ Status │ Opç. │
+│ 245  │ Compra   │ Mercado (#12)   │ 155,00 │ Pago   │ [⋯]  │
+└──────┴──────────┴─────────────────┴────────┴────────┴──────┘
 ```
+
+*Na tela administrativa, a categoria aparece com nome e ID, como as contas; o filtro por categoria fica nos filtros avançados, porque as opções dependem do usuário-alvo.*
 
 ### Mockup 10 — Editar transação ou recorrência como administrador
 

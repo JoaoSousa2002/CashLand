@@ -61,7 +61,7 @@
         .selecao-conta { display: flex; align-items: center; gap: 8px; }
         .selecao-conta select { flex: 1; }
         .selecao-conta button { flex-shrink: 0; }
-        #tabela-registros { min-width: 1400px; }
+        #tabela-registros { min-width: 1560px; }
     </style>
 </head>
 
@@ -89,13 +89,6 @@
                     <div id="erro-id_meta" aria-live="polite"></div>
                 </div>
                 <div id="filtros-transacoes">
-                    <div class="input-dados">
-                        <label for="id_categoria">Categoria:</label>
-                        <select id="id_categoria" name="id_categoria" disabled aria-describedby="erro-id_categoria">
-                            <option value="">Carregando categorias...</option>
-                        </select>
-                        <div id="erro-id_categoria" aria-live="polite"></div>
-                    </div>
                     <div class="input-dados">
                         <label for="id_recorrencia">ID da recorrência associada:</label>
                         <input type="number" id="id_recorrencia" name="id_recorrencia" min="0" step="1" aria-describedby="erro-id_recorrencia">
@@ -243,6 +236,13 @@
                         <input type="text" id="pesquisa" placeholder="Pesquisar por nome ou ID..." aria-describedby="erro-pesquisa">
                         <div id="erro-pesquisa" aria-live="polite"></div>
                     </div>
+                    <div class="input-dados" id="campo-categoria">
+                        <label for="id_categoria">Categoria:</label>
+                        <select id="id_categoria" name="id_categoria" disabled aria-describedby="erro-id_categoria">
+                            <option value="">Carregando categorias...</option>
+                        </select>
+                        <div id="erro-id_categoria" aria-live="polite"></div>
+                    </div>
                     <input type="submit" id="botao-pesquisar" value="Pesquisar" disabled>
                     <button type="button" id="botao-filtrar" disabled>Filtrar</button>
                 </form>
@@ -272,6 +272,7 @@
         let modo = 'Transacoes';
         let filtrosAplicados = {};
         let contas = [];
+        let categorias = [];
         let contasProntas = false;
         let categoriasProntas = false;
         const loading = document.getElementById('loading-overlay');
@@ -340,14 +341,17 @@
             pesquisa.placeholder = transacoes ? 'Pesquisar por nome ou ID...' : 'Pesquisar por ID da recorrência...';
             document.getElementById('filtros-transacoes').hidden = !transacoes;
             document.querySelectorAll('#filtros-transacoes input, #filtros-transacoes select').forEach(campo => {
-                campo.disabled = !transacoes || (campo.id === 'id_categoria' && !categoriasProntas);
+                campo.disabled = !transacoes;
             });
+            // O filtro de categoria fica na barra de pesquisa e vale só para transações.
+            document.getElementById('campo-categoria').hidden = !transacoes;
+            document.getElementById('id_categoria').disabled = !transacoes || !sessaoPronta || !categoriasProntas || !categorias.length;
             document.getElementById('titulo-filtros').textContent = transacoes ? 'Filtros de transações' : 'Filtros de recorrências';
             document.getElementById('tabela-registros').setAttribute('aria-label', transacoes ? 'Transações' : 'Recorrências');
             const colunas = transacoes
-                ? [['ID', 65], ['Nome', 180], ['Tipo', 110], ['Conta de origem', 170], ['Conta de destino', 170],
+                ? [['ID', 65], ['Nome', 180], ['Tipo', 110], ['Categoria', 160], ['Conta de origem', 170], ['Conta de destino', 170],
                     ['Valor', 130], ['Vencimento', 120], ['Status', 170], ['Recorrência', 110], ['Parcela', 80]]
-                : [['ID', 65], ['Nome', 180], ['Conta', 170], ['Modalidade', 120], ['Frequência', 110],
+                : [['ID', 65], ['Nome', 180], ['Categoria', 160], ['Conta', 170], ['Modalidade', 120], ['Frequência', 110],
                     ['Valor', 250], ['Quantidade', 100], ['Início', 120], ['Situação', 100]];
             colunas.unshift(['Opções', 84]);
             const cabecalho = document.getElementById('cabecalho-tabela');
@@ -512,8 +516,9 @@
             let abrirOverlay = false;
             erros.forEach(erro => {
                 const campo = erro.campo.split('.')[0];
-                const principal = campo === 'nome' || campo === 'id_transacao' || (modo === 'Recorrencias' && campo === 'id_recorrencia');
-                const id = principal ? 'erro-pesquisa' : document.getElementById(`erro-${campo}`) ? `erro-${campo}` : 'erro-filtros';
+                const principal = campo === 'nome' || campo === 'id_transacao' || campo === 'id_categoria' || (modo === 'Recorrencias' && campo === 'id_recorrencia');
+                const id = campo === 'id_categoria' ? 'erro-id_categoria' : principal ? 'erro-pesquisa'
+                    : document.getElementById(`erro-${campo}`) ? `erro-${campo}` : 'erro-filtros';
                 if (!mensagens[id]) mensagens[id] = [];
                 mensagens[id].push(erro.mensagem);
                 if (!principal) abrirOverlay = true;
@@ -538,6 +543,13 @@
             if (id == null) return '---';
             const conta = contas.find(conta => String(conta.id_conta) === String(id));
             return conta ? `${conta.nome_conta} (#${id})` : `#${id}`;
+        }
+
+        // Exibe o nome da categoria; transferências não têm categoria.
+        function nomeCategoria(registro) {
+            if (registro.id_categoria == null) return registro.tipo_transacao === 'Transferencia' ? '---' : 'Sem categoria';
+            const categoria = categorias.find(item => String(item.id_categoria) === String(registro.id_categoria));
+            return categoria ? categoria.nome : 'Categoria indisponível';
         }
 
         function statusTransacao(registro) {
@@ -575,9 +587,9 @@
                 const valor = formatarValor(modo === 'Transacoes' ? registro.valor_transacao : registro.valor);
                 const significado = registro.modalidade === 'Parcelado' ? ' (total)' : registro.modalidade === 'Periodico' ? ' (por ocorrência)' : '';
                 const valores = modo === 'Transacoes'
-                    ? [registro.id_transacao, registro.nome, tipo, nomeConta(registro.id_conta_origem), nomeConta(registro.id_conta_destino),
+                    ? [registro.id_transacao, registro.nome, tipo, nomeCategoria(registro), nomeConta(registro.id_conta_origem), nomeConta(registro.id_conta_destino),
                         valor, formatarData(registro.data_vencimento), statusTransacao(registro), registro.id_recorrencia ?? 'Avulsa', registro.numero_parcela]
-                    : [registro.id_recorrencia, registro.nome, nomeConta(registro.id_conta), registro.modalidade === 'Periodico' ? 'Periódico' : registro.modalidade,
+                    : [registro.id_recorrencia, registro.nome, nomeCategoria(registro), nomeConta(registro.id_conta), registro.modalidade === 'Periodico' ? 'Periódico' : registro.modalidade,
                         registro.frequencia, valor + significado, registro.qtd_parcelas ?? (registro.modalidade === 'Periodico' ? 'Sem fim definido' : '---'),
                         formatarData(registro.data_inicio), registro.ativo === true ? 'Ativa' : registro.ativo === false ? 'Inativa' : '---'];
                 const linha = document.createElement('tr');
@@ -736,15 +748,17 @@
                         renderizarSelecaoContas(selecionadas);
                         continue;
                     }
+                    categorias = dados;
                     select.replaceChildren();
                     const opcao = document.createElement('option');
                     opcao.value = '';
                     opcao.textContent = dados.length ? 'Todas as categorias' : 'Nenhuma categoria encontrada';
                     select.appendChild(opcao);
-                    dados.forEach(registro => {
+                    // O nome é único por usuário, então dispensa o ID na opção.
+                    [...dados].sort((a, b) => String(a[nome]).localeCompare(String(b[nome]), 'pt-BR')).forEach(registro => {
                         const opcao = document.createElement('option');
                         opcao.value = registro[chave];
-                        opcao.textContent = `${registro[nome]} (#${registro[chave]})`;
+                        opcao.textContent = registro[nome];
                         select.appendChild(opcao);
                     });
                     select.value = selecionado;
@@ -804,7 +818,18 @@
             }
         });
         document.getElementById('botao-fechar-filtros').addEventListener('click', fecharFiltros);
-        document.getElementById('botao-recarregar').addEventListener('click', carregarOpcoesFiltros);
+        document.getElementById('botao-recarregar').addEventListener('click', async () => {
+            await carregarOpcoesFiltros();
+            // Atualiza os nomes de contas e categorias exibidos na tabela.
+            if (contasProntas && categoriasProntas) await listarRegistros();
+        });
+        document.getElementById('id_categoria').addEventListener('change', async evento => {
+            if (!sessaoPronta || modo !== 'Transacoes') return;
+            MostrarErro('erro-id_categoria', '');
+            if (evento.target.value) filtrosAplicados.id_categoria = evento.target.value;
+            else delete filtrosAplicados.id_categoria;
+            await listarRegistros();
+        });
         document.getElementById('botao-adicionar-conta').addEventListener('click', () => {
             renderizarSelecaoContas([...contasSelecionadas(), '']);
             document.querySelector('#lista-contas .selecao-conta:last-child select').focus();
@@ -817,7 +842,8 @@
             MostrarErro('erro-id_contas', '');
         });
         document.getElementById('botao-limpar-filtros').addEventListener('click', () => {
-            filtrosAplicados = {};
+            // A categoria é escolhida na barra de pesquisa e não pertence a este painel.
+            filtrosAplicados = filtrosAplicados.id_categoria ? { id_categoria: filtrosAplicados.id_categoria } : {};
             preencherFiltros();
             limparErros();
         });

@@ -61,7 +61,7 @@
         .selecao-conta { display: flex; align-items: center; gap: 8px; }
         .selecao-conta select { flex: 1; }
         .selecao-conta button { flex-shrink: 0; }
-        #tabela-registros { min-width: 1520px; }
+        #tabela-registros { min-width: 1700px; }
     </style>
 </head>
 
@@ -271,6 +271,7 @@
         let modo = 'Transacoes';
         let filtrosAplicados = {};
         let contas = [];
+        let categorias = [];
         let contasProntas = false;
         let categoriasProntas = false;
         const loading = document.getElementById('loading-overlay');
@@ -348,9 +349,9 @@
             document.getElementById('titulo-filtros').textContent = transacoes ? 'Filtros de transações' : 'Filtros de recorrências';
             document.getElementById('tabela-registros').setAttribute('aria-label', transacoes ? 'Transações' : 'Recorrências');
             const colunas = transacoes
-                ? [['ID', 65], ['Usuário', 120], ['Nome', 180], ['Tipo', 110], ['Conta de origem', 170], ['Conta de destino', 170],
+                ? [['ID', 65], ['Usuário', 120], ['Nome', 180], ['Tipo', 110], ['Categoria', 180], ['Conta de origem', 170], ['Conta de destino', 170],
                     ['Valor', 130], ['Vencimento', 120], ['Status', 170], ['Recorrência', 110], ['Parcela', 80]]
-                : [['ID', 65], ['Usuário', 120], ['Nome', 180], ['Conta', 170], ['Modalidade', 120], ['Frequência', 110],
+                : [['ID', 65], ['Usuário', 120], ['Nome', 180], ['Categoria', 180], ['Conta', 170], ['Modalidade', 120], ['Frequência', 110],
                     ['Valor', 250], ['Quantidade', 100], ['Início', 120], ['Situação', 100]];
             colunas.unshift(['Opções', 84]);
             const cabecalho = document.getElementById('cabecalho-tabela');
@@ -556,6 +557,14 @@
             return conta ? `${conta.nome_conta} (#${id})` : `#${id}`;
         }
 
+        // Exibe o nome da categoria com o ID; transferências não têm categoria.
+        function nomeCategoria(registro) {
+            const id = registro.id_categoria;
+            if (id == null) return registro.tipo_transacao === 'Transferencia' ? '---' : 'Sem categoria';
+            const categoria = categorias.find(item => String(item.id_categoria) === String(id));
+            return categoria ? `${categoria.nome} (#${id})` : `#${id}`;
+        }
+
         function statusTransacao(registro) {
             const agora = new Date();
             const hoje = `${agora.getFullYear()}-${String(agora.getMonth() + 1).padStart(2, '0')}-${String(agora.getDate()).padStart(2, '0')}`;
@@ -592,9 +601,9 @@
                 const valor = formatarValor(modo === 'Transacoes' ? registro.valor_transacao : registro.valor);
                 const significado = registro.modalidade === 'Parcelado' ? ' (total)' : registro.modalidade === 'Periodico' ? ' (por ocorrência)' : '';
                 const valores = modo === 'Transacoes'
-                    ? [registro.id_transacao, idUsuario, registro.nome, tipo, nomeConta(registro.id_conta_origem), nomeConta(registro.id_conta_destino),
+                    ? [registro.id_transacao, idUsuario, registro.nome, tipo, nomeCategoria(registro), nomeConta(registro.id_conta_origem), nomeConta(registro.id_conta_destino),
                         valor, formatarData(registro.data_vencimento), statusTransacao(registro), registro.id_recorrencia ?? 'Avulsa', registro.numero_parcela]
-                    : [registro.id_recorrencia, registro.id_usuario, registro.nome, nomeConta(registro.id_conta), registro.modalidade === 'Periodico' ? 'Periódico' : registro.modalidade,
+                    : [registro.id_recorrencia, registro.id_usuario, registro.nome, nomeCategoria(registro), nomeConta(registro.id_conta), registro.modalidade === 'Periodico' ? 'Periódico' : registro.modalidade,
                         registro.frequencia, valor + significado, registro.qtd_parcelas ?? (registro.modalidade === 'Periodico' ? 'Sem fim definido' : '---'),
                         formatarData(registro.data_inicio), registro.ativo === true ? 'Ativa' : registro.ativo === false ? 'Inativa' : '---'];
                 const linha = document.createElement('tr');
@@ -741,6 +750,7 @@
         function limparOpcoesUsuario() {
             usuarioOpcoes = null;
             contas = [];
+            categorias = [];
             contasProntas = false;
             categoriasProntas = false;
             renderizarSelecaoContas();
@@ -799,6 +809,7 @@
                         contasProntas = true;
                         renderizarSelecaoContas(selecionadas);
                     } else {
+                        categorias = registros;
                         select.replaceChildren();
                         const opcao = document.createElement('option');
                         opcao.value = '';
