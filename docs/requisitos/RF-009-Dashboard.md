@@ -154,7 +154,7 @@ A edição completa de cada registro (e a exclusão de orçamentos) é feita nas
 
 ### Estados de tela e validação
 
-- **Carregando:** cada cartão apresenta seu próprio indicador enquanto a consulta correspondente não responde.
+- **Carregando:** cada cartão apresenta seu próprio indicador enquanto a consulta correspondente não responde. Os botões de ação rápida ficam desabilitados até que contas, categorias e metas tenham sido consultadas, com sucesso ou erro, para que nenhum formulário abra com seletores vazios.
 - **Vazio:** cartão sem dados mostra orientação e atalho para criar o primeiro registro (conta, categoria, transação, meta ou orçamento).
 - **Erro:** falha de rede, de formato ou HTTP em uma consulta afeta somente os cartões que dependem dela, com opção Tentar novamente; HTTP 401 redireciona ao login.
 - **Preenchido:** listas, gráficos SVG e tabela com os dados retornados, inseridos com `textContent`.
@@ -225,13 +225,15 @@ A edição completa de cada registro (e a exclusão de orçamentos) é feita nas
 
 ### Execução dos testes — evidência
 
-- **Data:** 15/11/2026. **Ambiente:** Windows 11, Node.js v24.16.0, Chrome headless; APIs simuladas, sem conexão com o Supabase.
-- `node --test tests/browser/dashboard.test.js`: 7 testes, 7 aprovados. Inclui sessão, orçamentos atuais, indicadores, gráficos, listas, responsividade em 1280, 390 e 320 px, ação rápida de criação, validação visual e exclusão com confirmação (cancelar preserva; confirmar chama a rota DELETE e recarrega as listas).
-- `npm test`: 170 testes, 170 aprovados.
-- `npm run test:frontend` (suíte completa de navegador): 55 testes, 55 aprovados (listagens das RF-003 a RF-008 em 1280 × 900, 390 × 844 e 320 × 568, orçamentos e Dashboard).
+- **Data:** 17/11/2026. **Ambiente:** Windows 11, Node.js v24.16.0, Python 3.14.6, Chrome headless; APIs simuladas, sem conexão com o Supabase.
+- `node --test tests/browser/dashboard.test.js`: 9 testes, 9 aprovados. Inclui sessão, orçamentos atuais, indicadores, gráficos, listas, responsividade em 1280, 390 e 320 px, ação rápida de criação, validação visual, exclusão com confirmação (cancelar preserva; confirmar chama a rota DELETE e recarrega as listas) e a liberação das ações rápidas só depois de contas, categorias e metas (também quando a consulta de contas falha).
+- `npm test`: 182 testes, 182 aprovados.
+- `npm run test:frontend` (suíte completa de navegador, um arquivo por vez): 63 testes, 63 aprovados (listagens das RF-003 a RF-008 em 1280 × 900, 390 × 844 e 320 × 568, coluna e filtro de categoria das transações, orçamentos e Dashboard).
+- `python tests/testar_rotas.py`: RF-006 20, RF-007 23, admin de metas 8 e RF-008 11 testes, todos OK.
 - Migrations: as cinco de `supabase/migrations/` constam como aplicadas no banco publicado (`supabase migration list --linked`); os índices `idx_transacoes_*` e `idx_metas_conta`, o gatilho `trigger_verificar_nome_meta_unico` e a função corrigida `atualizar_orcamentos_por_transacao` foram conferidos no catálogo.
-- Roteiro na URL publicada (17/11/2026, https://cashland-cdf0.onrender.com/, conta de usuário de teste, Chrome headless): login; painel sem erro de console e sem rolagem horizontal em 1280, 390 e 320 px; Create de despesa e de meta pelas ações rápidas; Read após recarregar; Update pelo botão Pagar (status Pago e data de pagamento no banco, saldo da conta atualizado); Delete com confirmação (Cancelar preserva, Excluir remove da lista e do banco, saldo volta ao valor anterior). Cada passo foi conferido por consulta ao banco e os registros de teste foram removidos. Login do administrador também verificado.
+- Roteiro na URL publicada (17/11/2026, https://cashland-cdf0.onrender.com/, conta de usuário de teste, Chrome headless): login; painel sem erro de console e sem rolagem horizontal em 1280, 390 e 320 px; Create de despesa e de meta pelas ações rápidas; Read após recarregar; Update pelo botão Pagar (status Pago e data de pagamento no banco, saldo da conta atualizado); Delete com confirmação (Cancelar preserva, Excluir remove da lista e do banco, saldo volta ao valor anterior). Cada passo foi conferido por consulta ao banco e os registros de teste foram removidos. Login do administrador também verificado. Repetido em 17/11/2026, à noite, com o mesmo resultado (11 de 11 passos), depois de uma bateria de API na mesma URL (C/R/U/D de categoria, conta, transação, recorrência, meta e orçamento; 401 sem sessão, 403 de usuário comum em rota administrativa e 400 de validação).
 - Correção aplicada antes do roteiro: a função `atualizar_orcamentos_por_transacao` publicada no banco divergia do DDL (comparava `OLD.modalidade`, coluna inexistente em `transacoes`) e impedia qualquer UPDATE em transações; foi recriada pela migration `20261115150000_rf008_corrige_gatilho_orcamentos.sql`.
+- Correção de 17/11/2026: os botões de ação rápida eram liberados antes de contas, categorias e metas chegarem. Na URL publicada, o botão Despesa ficou disponível em 1,2 s e o formulário abriu sem contas até a resposta de `listar-contas` (1,8 s a 2,3 s). Agora os botões só são liberados depois dessas consultas.
 
 ## 7. Testes
 

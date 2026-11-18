@@ -217,6 +217,10 @@ export async function deletarMeta(req, res) {
         .select('id_meta')
         .maybeSingle()
 
+    // 23503: o banco recusa a exclusão porque outros registros ainda apontam para este.
+    if (erroDeletaMeta?.code === '23503') {
+        return res.status(409).json({ mensagem: "Essa meta está vinculada a transações ou recorrências e não pode ser excluída" })
+    }
     if (erroDeletaMeta) {
         console.log("/usuario/deletar-meta: >>>>> Erro ao deletar a meta: " + erroDeletaMeta.message)
         return res.status(500).json({ mensagem: "Erro ao deletar a meta, tenve novamente mais tarde" })

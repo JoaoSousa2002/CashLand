@@ -62,7 +62,7 @@ O Dashboard da tela principal apresenta somente os orçamentos atuais, cujo per�
 - Alterar o tipo de período exige informar o início correspondente. Na edição, campos de período omitidos preservam o período armazenado, inclusive quando antigo.
 - Os identificadores de orçamento, conta, categoria e usuário devem ser inteiros entre 1 e 2.147.483.647 nos schemas de orçamentos.
 - Na consulta, as datas dos filtros devem ser válidas; quando ambas forem informadas, o fim não pode ser anterior ao início. A consulta aceita períodos históricos.
-- Nome, valor atual, fim do período e datas de controle não podem ser enviados como campos de criação ou edição. Na área comum, o proprietário vem da sessão.
+- Valor atual, fim do período e datas de controle não podem ser enviados como campos de criação ou edição. Na área comum, o proprietário vem da sessão.
 - Edição e exclusão administrativas exigem o identificador do proprietário; na listagem administrativa, esse filtro é opcional.
 - A edição deve conter ao menos um campo alterável além dos identificadores. Campos desconhecidos são rejeitados, e a exclusão não aceita campos no corpo da solicitação.
 

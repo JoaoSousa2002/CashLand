@@ -149,6 +149,7 @@ A RF-004 organiza os dados financeiros por categorias pertencentes a uma conta e
 | RN003-09 | Listagem comum aplica `Cache-Control: no-store`.                                                    |
 | RN003-10 | Operações administrativas exigem autenticação e perfil Admin.                                       |
 | RN003-11 | FK de categorias para usuários usa `ON DELETE CASCADE`.                                             |
+| RN003-12 | Categoria referenciada por transações ou recorrências (inclusive canceladas) não é excluída: a API responde HTTP 409 com o motivo. |
 | RN003-12 | IDs validados pelo Joi devem ser inteiros maiores ou iguais a zero.                                 |
 
 ### Requisitos Não-Funcionais

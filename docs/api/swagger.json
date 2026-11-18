@@ -2769,6 +2769,23 @@
               }
             }
           },
+          "409": {
+            "description": "O banco recusou a exclusão porque outros registros ainda apontam para este (chave estrangeira).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                },
+                "examples": {
+                  "exemplo1": {
+                    "value": {
+                      "mensagem": "Essa categoria está vinculada a transações ou recorrências e não pode ser excluída"
+                    }
+                  }
+                }
+              }
+            }
+          },
           "429": {
             "description": "Limite limitadorExclusaoComum excedido: 15 requisições por IP em 15 minutos.",
             "content": {
@@ -7052,6 +7069,23 @@
               }
             }
           },
+          "409": {
+            "description": "O banco recusou a exclusão porque outros registros ainda apontam para este (chave estrangeira).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                },
+                "examples": {
+                  "exemplo1": {
+                    "value": {
+                      "mensagem": "Essa meta está vinculada a transações ou recorrências e não pode ser excluída"
+                    }
+                  }
+                }
+              }
+            }
+          },
           "429": {
             "description": "Limite limitadorExclusaoComum excedido: 15 requisições por IP em 15 minutos.",
             "content": {
@@ -8574,6 +8608,23 @@
               }
             }
           },
+          "409": {
+            "description": "O banco recusou a exclusão porque outros registros ainda apontam para este (chave estrangeira).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                },
+                "examples": {
+                  "exemplo1": {
+                    "value": {
+                      "mensagem": "Esse usuário possui registros financeiros vinculados e não pode ser excluído. Desative o usuário para bloquear o acesso"
+                    }
+                  }
+                }
+              }
+            }
+          },
           "429": {
             "description": "Limite limitadorExclusaoAdmin excedido: 60 requisições por IP em 15 minutos.",
             "content": {
@@ -9323,6 +9374,23 @@
                           "mensagem": "\"campo_extra\" is not allowed"
                         }
                       ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "O banco recusou a exclusão porque outros registros ainda apontam para este (chave estrangeira).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                },
+                "examples": {
+                  "exemplo1": {
+                    "value": {
+                      "mensagem": "Essa categoria está vinculada a transações ou recorrências e não pode ser excluída"
                     }
                   }
                 }
@@ -10595,6 +10663,23 @@
                   "exemplo1": {
                     "value": {
                       "erro": "Acesso restrito a administradores"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "O banco recusou a exclusão porque outros registros ainda apontam para este (chave estrangeira).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                },
+                "examples": {
+                  "exemplo1": {
+                    "value": {
+                      "mensagem": "Essa conta está vinculada a transações, recorrências ou metas e não pode ser excluída. Inative a conta para deixar de usá-la"
                     }
                   }
                 }
@@ -13016,6 +13101,23 @@
                           "mensagem": "\"campo_extra\" is not allowed"
                         }
                       ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "O banco recusou a exclusão porque outros registros ainda apontam para este (chave estrangeira).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mensagem"
+                },
+                "examples": {
+                  "exemplo1": {
+                    "value": {
+                      "mensagem": "Essa meta está vinculada a transações ou recorrências e não pode ser excluída"
                     }
                   }
                 }

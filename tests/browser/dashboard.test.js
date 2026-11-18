@@ -26,12 +26,18 @@ let atrasoSessao = 0;
 let atrasoOrcamentos = 0;
 let atrasoSaldo = 0;
 let falhaSaldo = false;
+let atrasoContas = 0;
+let falhaContas = false;
 const chamadas = [];
 const esperar = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 app.use(async (req, res, next) => {
     chamadas.push({ caminho: req.path, metodo: req.method, query: { ...req.query }, cookie: req.cookies.token });
     if (req.path === '/me') await esperar(atrasoSessao);
+    if (req.path === '/usuario/listar-contas') {
+        await esperar(atrasoContas);
+        if (falhaContas) return res.status(500).json({ mensagem: 'Falha simulada nas contas' });
+    }
     if (req.path === '/usuario/listar-orcamentos') {
         await esperar(atrasoOrcamentos);
         if (falha === 'rede') return req.socket.destroy();
@@ -123,6 +129,8 @@ async function abrir(opcoes = {}) {
     atrasoOrcamentos = opcoes.atrasoOrcamentos ?? 0;
     atrasoSaldo = opcoes.atrasoSaldo ?? 0;
     falhaSaldo = opcoes.falhaSaldo ?? false;
+    atrasoContas = opcoes.atrasoContas ?? 0;
+    falhaContas = opcoes.falhaContas ?? false;
     chamadas.length = 0;
     await navegador.enviar('Network.setCookie', {
         name: 'token', value: gerarToken({ id_usuario: opcoes.usuario ?? 900, tipo: 'Comum' }), url: origem
@@ -225,6 +233,40 @@ test('aguarda sessão e carrega orçamentos independentemente de saldo lento ou 
     assert.equal(await avaliar("document.getElementById('saldo-usuario').textContent"), 'Carregando...');
     await ate("document.getElementById('saldo-usuario').textContent === 'Indisponível'");
     assert.equal(await avaliar("document.querySelectorAll('#corpo-orcamentos button').length"), 5);
+});
+
+test('ações rápidas só liberam depois de contas, categorias e metas, sem abrir seletores vazios', async () => {
+    await abrir({ atrasoContas: 900 });
+    // Sessão pronta e listas de categorias e metas já respondidas, mas contas ainda pendentes.
+    for (let i = 0; i < 200 && !['/usuario/listar-categoria', '/usuario/listar-metas'].every(c => chamadas.some(x => x.caminho === c)); i++) await esperar(25);
+    await esperar(300);
+    const pendente = await avaliar("[...document.querySelectorAll('[data-acao]')].map(b => b.disabled)");
+    assert.ok(pendente.length >= 6 && pendente.every(Boolean), JSON.stringify(pendente));
+    await avaliar("document.querySelector('.dash-acoes [data-acao=\"despesa\"]').click()");
+    assert.equal(await avaliar("!!document.querySelector('.modal')"), false);
+    await ate("!document.querySelector('.dash-acoes [data-acao=\"despesa\"]').disabled");
+    await avaliar("document.querySelector('.dash-acoes [data-acao=\"despesa\"]').click()");
+    await ate("!!document.querySelector('.modal #valor_transacao')");
+    const opcoes = await avaliar("[...document.querySelector('.modal #id_conta_origem').options].map(o => o.textContent)");
+    assert.ok(opcoes.includes('Conta principal') && opcoes.includes('Poupança'), JSON.stringify(opcoes));
+    await avaliar("document.querySelector('.modal-fechar').click()");
+    await ate("!document.querySelector('.modal')");
+    // Um clique em cada botão abre um único modal (os ouvintes não são duplicados).
+    await avaliar("document.querySelector('.dash-acoes [data-acao=\"categoria\"]').click()");
+    await ate("!!document.querySelector('.modal')");
+    assert.equal(await avaliar("document.querySelectorAll('.modal').length"), 1);
+    await avaliar("document.querySelector('.modal-fechar').click()");
+    await ate("!document.querySelector('.modal')");
+    assert.deepEqual(navegador.erros, []);
+});
+
+test('falha ao listar contas não deixa as ações rápidas bloqueadas', async () => {
+    await abrir({ falhaContas: true });
+    await ate("!document.querySelector('.dash-acoes [data-acao=\"categoria\"]').disabled");
+    await avaliar("document.querySelector('.dash-acoes [data-acao=\"categoria\"]').click()");
+    await ate("!!document.querySelector('.modal #nome')");
+    await avaliar("document.querySelector('.modal-fechar').click()");
+    await ate("!document.querySelector('.modal')");
 });
 
 test('carregamento, lista vazia e falhas HTTP, de rede e de formato são distintos', async () => {

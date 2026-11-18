@@ -198,8 +198,8 @@ A integração com a RF-006 permite associar transações e recorrências a uma 
 ### Fluxo alternativo: exclusão cancelada ou impedida
 
 - Se o usuário selecionar Cancelar, a confirmação é fechada e a meta é preservada.
-- Se confirmar a exclusão de uma meta referenciada por transações ou recorrências, a chave estrangeira pode impedir a remoção.
-- Na falha de exclusão retornada pelo banco, a API responde HTTP 500 e a interface informa que a operação não foi concluída.
+- Se confirmar a exclusão de uma meta referenciada por transações ou recorrências, a chave estrangeira impede a remoção: a API responde HTTP 409 ("Essa meta está vinculada a transações ou recorrências e não pode ser excluída") e a interface apresenta essa mensagem.
+- Nas demais falhas de exclusão retornadas pelo banco, a API responde HTTP 500 e a interface informa que a operação não foi concluída.
 
 ### Fluxo alternativo: sessão ou permissão inválida
 
@@ -413,4 +413,4 @@ flowchart TB
 - `python tests/testar_rotas.py --testes-admin-metas`: 8 testes, OK.
 - `npm run test:frontend`: as páginas `listar-metas.html` e `ADMIN_listar-metas.html` foram aprovadas em 1280 × 900, 390 × 844 e 320 × 568.
 - `npm run test:idor` (E2E contra um Supabase de testes): **não executado**. Exige `SUPABASE_TEST_URL` e `SUPABASE_TEST_SECRET_KEY`; sem essa configuração a suíte é pulada.
-- Trigger `trigger_verificar_nome_meta_unico`: **não executado contra o banco real nesta sessão**; depende da aplicação da migration `supabase/migrations/20261115130000_rf007_nome_meta_unico.sql`.
+- Trigger `trigger_verificar_nome_meta_unico`: migration `supabase/migrations/20261115130000_rf007_nome_meta_unico.sql` aplicada no banco publicado; em 17/11/2026 o catálogo (`pg_trigger`) confirmou o gatilho ativo na tabela `metas`.

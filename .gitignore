@@ -3,6 +3,7 @@ cookies*.txt
 supabase/.temp/
 supabase/.branches/
 node_modules/
+.claude/
 
 logs/
 *.log
