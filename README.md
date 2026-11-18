@@ -427,8 +427,9 @@ curl -i -X DELETE -b cookies-admin-cashland.txt "$BASE_URL/admin/excluir-recorre
 Cancelar uma recorrência mantém o registro com `ativo=false` e preserva transações pagas;
 remove somente as pendentes. Se a remoção falhar após inativar, a API retorna `500` e
 orienta repetir o cancelamento. A exclusão de uma transação individual é definitiva.
-Exclua os registros de teste na ordem de seus vínculos; o banco pode impedir excluir
-contas, categorias ou metas que ainda estejam referenciadas.
+Exclua os registros de teste na ordem de seus vínculos: categorias, contas, metas ou usuários
+ainda referenciados por outros registros (inclusive recorrências canceladas, que permanecem
+com `ativo=false`) não são excluídos, e a API responde `409` com o motivo.
 
 **Encerrar a sessão:** público, sem corpo, com `200`. `-c` atualiza o arquivo de cookies
 para refletir a limpeza feita pelo servidor.

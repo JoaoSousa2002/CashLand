@@ -239,6 +239,10 @@ export async function deletarUsuario(req, res) {
         .delete()
         .eq('id_usuario', id_usuario).select('id_usuario')
 
+    // 23503: o banco recusa a exclusão porque outros registros ainda apontam para este.
+    if (error?.code === '23503') {
+        return res.status(409).json({ mensagem: "Esse usuário possui registros financeiros vinculados e não pode ser excluído. Desative o usuário para bloquear o acesso" })
+    }
     if (error) {
         res.locals.auditoria.resultado = 'ERRO';
         console.log("admin/deletar-usuario: Erro a deletar o ususario, verifique o banco de dados: "+error.message)

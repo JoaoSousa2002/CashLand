@@ -386,6 +386,10 @@ export async function deletarConta(req, res) {
         .eq('id_usuario', id_usuario)
         .single()
 
+    // 23503: o banco recusa a exclusão porque outros registros ainda apontam para este.
+    if (erroDelete?.code === '23503') {
+        return res.status(409).json({ mensagem: "Essa conta está vinculada a transações, recorrências ou metas e não pode ser excluída. Inative a conta para deixar de usá-la" })
+    }
     if (erroDelete) {
         console.log("Erro ao deletar a conta: "+ erroDelete.message)
         return res.status(500).json({mensagem:"Erro ao deletar a conta, tente novamente mais tarde"})

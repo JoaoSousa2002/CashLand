@@ -202,6 +202,10 @@ export async function deletarCategoria(req, res) {
         .eq('id_usuario', req.usuario.id_usuario)
         .select('nome')
         .single()
+    // 23503: o banco recusa a exclusão porque outros registros ainda apontam para este.
+    if (error?.code === '23503') {
+        return res.status(409).json({ mensagem: "Essa categoria está vinculada a transações ou recorrências e não pode ser excluída" })
+    }
     if (error) {
         res.locals.auditoria.resultado = 'ERRO';
         console.log("/usuario/deletar-categoria: Erro ao deletar acategoria: " + error)

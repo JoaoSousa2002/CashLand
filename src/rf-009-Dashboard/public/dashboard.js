@@ -228,6 +228,11 @@ async function redirecionaTela() {
 
     // ------------------------------------------------------------ carregamento
     async function carregarContas() {
+        await listarContas();
+        await carregarSaldos();
+    }
+
+    async function listarContas() {
         estado.erros.contas = null;
         try {
             const { ok, dados } = await requisitar('/usuario/listar-contas');
@@ -238,7 +243,6 @@ async function redirecionaTela() {
             estado.erros.contas = erro.message || 'Não foi possível carregar as contas.';
         }
         renderizar();
-        await carregarSaldos();
     }
 
     async function carregarSaldos() {
@@ -316,7 +320,11 @@ async function redirecionaTela() {
     }
 
     async function carregarTudo() {
-        await Promise.all([carregarContas(), carregarCategorias(), carregarTransacoes(), carregarMetas(), carregarOrcamentos()]);
+        // Os formulários das ações rápidas usam contas, categorias e metas. Os botões só são
+        // liberados depois dessas consultas (com sucesso ou erro), para não abrir seletores vazios.
+        const contas = listarContas();
+        const base = Promise.all([contas, carregarCategorias(), carregarMetas()]).then(habilitarAcoes);
+        await Promise.all([contas.then(carregarSaldos), base, carregarTransacoes(), carregarOrcamentos()]);
     }
 
     // ------------------------------------------------------------ cálculos
@@ -997,7 +1005,10 @@ async function redirecionaTela() {
         await carregarTudo();
     }
 
+    let acoesHabilitadas = false;
     function habilitarAcoes() {
+        if (acoesHabilitadas) return;
+        acoesHabilitadas = true;
         document.querySelectorAll('[data-acao]').forEach(botao => {
             botao.disabled = false;
             botao.addEventListener('click', () => AcoesRapidas.abrir(botao.dataset.acao));
@@ -1071,9 +1082,6 @@ async function redirecionaTela() {
             hoje: () => estado.hoje,
             aoConcluir
         });
-        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', habilitarAcoes, { once: true });
-        else habilitarAcoes();
-
         await carregarTudo();
 
         const acaoInicial = new URLSearchParams(location.search).get('acao');
